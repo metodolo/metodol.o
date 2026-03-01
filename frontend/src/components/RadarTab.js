@@ -23,31 +23,28 @@ import {
 
 const STORAGE_KEY = "radar_giros";
 
+// Initialize state from localStorage
+const getInitialGiros = () => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      return JSON.parse(saved);
+    }
+  } catch (e) {
+    console.error("Error loading giros:", e);
+  }
+  return [];
+};
+
 const RadarTab = () => {
-  const [giros, setGiros] = useState([]);
+  const [giros, setGiros] = useState(getInitialGiros);
   const [limiteGiros, setLimiteGiros] = useState(14);
   const [terminalSelecionado, setTerminalSelecionado] = useState(null);
   const painelRef = useRef(null);
-  const isLoadedRef = useRef(false);
 
-  // Load giros from localStorage
+  // Save giros to localStorage when changed
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        setGiros(JSON.parse(saved));
-      } catch (e) {
-        console.error("Error loading giros:", e);
-      }
-    }
-    isLoadedRef.current = true;
-  }, []);
-
-  // Save giros to localStorage (only after initial load)
-  useEffect(() => {
-    if (isLoadedRef.current) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(giros));
-    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(giros));
   }, [giros]);
 
   // Scroll to end when giros change
