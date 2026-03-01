@@ -1,0 +1,143 @@
+{
+  "identity": {
+    "name": "E1: The Anti-AI Designer",
+    "persona": "You are a specialized UI/UX Architect for high-stakes trading and gambling interfaces. You reject generic 'SaaS' aesthetics in favor of high-contrast, 'Terminal/Matrix' inspired precision tools. You prioritize data density, rapid readability, and 'Zone' focus.",
+    "core_principles": [
+      "Precision over Decoration: Every pixel must serve the data.",
+      "High Contrast is King: #000000 background is non-negotiable.",
+      "Neon Guiding Lights: Use color ONLY to signal status (Win/Loss/Alert).",
+      "Glass Cockpit: Semi-transparent layers over a texture to create depth."
+    ]
+  },
+  "theme": {
+    "mode": "dark",
+    "strategy": "hardcoded-dark"
+  },
+  "typography": {
+    "primary_font": "Segoe UI, sans-serif",
+    "heading_font": "Montserrat, sans-serif",
+    "brand_font": "Playfair Display, serif",
+    "scale": {
+      "xs": "0.75rem",
+      "sm": "0.875rem",
+      "base": "1rem",
+      "lg": "1.125rem",
+      "xl": "1.25rem",
+      "2xl": "1.5rem",
+      "3xl": "1.875rem",
+      "4xl": "2.25rem"
+    },
+    "weights": {
+      "light": 300,
+      "normal": 400,
+      "medium": 500,
+      "bold": 700,
+      "black": 900
+    },
+    "rules": [
+      "Use 'Playfair Display' ONLY for the 'Método L.O' logo and top-level prestige headers.",
+      "Use 'Montserrat' (Bold/Black) for numeric data, KPIs, and section titles.",
+      "Use 'Segoe UI' for all inputs, tables, and functional text."
+    ]
+  },
+  "colors": {
+    "palette": {
+      "background": "#000000",
+      "foreground": "#ffffff",
+      "card": "rgba(17, 17, 17, 0.7)",
+      "primary": "#00ff95",
+      "primary_foreground": "#000000",
+      "secondary": "#1a1a1a",
+      "secondary_foreground": "#ffffff",
+      "danger": "#ff3131",
+      "accent": "#ccff00",
+      "muted": "#2a2a2a",
+      "muted_foreground": "#a0a0a0",
+      "border": "#333333"
+    },
+    "semantic": {
+      "success": "#00ff95",
+      "error": "#ff3131",
+      "warning": "#ccff00",
+      "info": "#00d9ff",
+      "win": "#00ff95",
+      "loss": "#ff3131"
+    },
+    "gradients": {
+      "win_glow": "0 0 20px rgba(0, 255, 149, 0.5)",
+      "loss_glow": "0 0 20px rgba(255, 49, 49, 0.5)",
+      "gold_text": "linear-gradient(to bottom, #cfc09f 22%, #634f2c 24%, #cfc09f 26%, #cfc09f 27%, #ffecb3 40%, #3a2c0f 78%)"
+    }
+  },
+  "layout": {
+    "container": {
+      "max_width": "1400px",
+      "padding": "1rem",
+      "center": true
+    },
+    "spacing": {
+      "section_gap": "2rem",
+      "component_gap": "1rem",
+      "internal_padding": "1.5rem"
+    },
+    "grid_strategy": {
+      "dashboard": "grid-cols-1 lg:grid-cols-12 gap-6",
+      "radar": "grid-cols-1 md:grid-cols-8 gap-4",
+      "roulette_board": "repeat(3, 1fr)"
+    }
+  },
+  "components": {
+    "card": {
+      "style": "glass",
+      "bg": "rgba(17, 17, 17, 0.7)",
+      "border": "1px solid rgba(255, 255, 255, 0.1)",
+      "radius": "0.75rem",
+      "backdrop_blur": "blur(10px)"
+    },
+    "button": {
+      "variants": {
+        "primary": "bg-[#00ff95] text-black font-bold hover:bg-[#00cc7a] shadow-[0_0_15px_rgba(0,255,149,0.4)] transition-all uppercase tracking-wide",
+        "danger": "bg-[#ff3131] text-white font-bold hover:bg-[#cc0000] shadow-[0_0_15px_rgba(255,49,49,0.4)] transition-all uppercase tracking-wide",
+        "ghost": "bg-transparent text-white border border-white/20 hover:bg-white/10",
+        "roulette_number": "w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg transition-transform hover:scale-110"
+      }
+    },
+    "input": {
+      "bg": "rgba(0,0,0,0.5)",
+      "border": "1px solid #333",
+      "text": "white",
+      "focus_ring": "ring-2 ring-[#00ff95]"
+    },
+    "visual_enhancers": {
+      "watermark": {
+        "url": "https://customer-assets.emergentagent.com/job_lo-dashboard/artifacts/mn01mdaq_a931c1ea-8f17-4344-bcf1-5bf96285d85b.jpg",
+        "opacity": "0.15",
+        "blend_mode": "overlay",
+        "position": "fixed inset-0 z-[-1] bg-cover bg-center bg-no-repeat"
+      }
+    }
+  },
+  "assets": {
+    "fonts": {
+      "google_fonts_url": "https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Segoe+UI&display=swap"
+    },
+    "icons": "lucide-react"
+  },
+  "universal_guidelines": [
+    "ALWAYS use the 'watermark' background on all pages.",
+    "Do NOT use pure white backgrounds anywhere. Use the 'card' rgba color.",
+    "Text must be readable against the dark background. Use font-bold for small text if needed.",
+    "Animations should be snappy (0.2s) for buttons, but smooth (0.5s) for charts.",
+    "Roulette Numbers: Red numbers must be red (#ff3131), Black numbers must be dark grey/white (#333 or white text), Zero is Green (#00ff95).",
+    "Data-Test-IDs are MANDATORY for all interactive elements (buttons, inputs, key stats)."
+  ],
+  "instructions_to_main_agent": [
+    "1. INSTALL DEPENDENCIES: `npm install lucide-react recharts framer-motion clsx tailwind-merge`",
+    "2. SETUP TAILWIND: Update `tailwind.config.js` to use the specific hex codes provided in 'colors'.",
+    "3. GLOBAL CSS: Add the Google Fonts import to `index.css`.",
+    "4. APP STRUCTURE: Create a layout wrapper that applies the background watermark universally.",
+    "5. ROUTING: Implement React Router for /, /login, /admin, /automatico.",
+    "6. RADAR COMPONENT: Create a virtual numeric keypad (0-36) for inputting spins.",
+    "7. CHARTS: Use Recharts for the 'Evolution Chart' in Bankroll Management, using the neon green color for the line."
+  ]
+}
