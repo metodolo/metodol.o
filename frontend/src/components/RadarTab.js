@@ -28,6 +28,7 @@ const RadarTab = () => {
   const [limiteGiros, setLimiteGiros] = useState(14);
   const [terminalSelecionado, setTerminalSelecionado] = useState(null);
   const painelRef = useRef(null);
+  const isLoadedRef = useRef(false);
 
   // Load giros from localStorage
   useEffect(() => {
@@ -39,11 +40,14 @@ const RadarTab = () => {
         console.error("Error loading giros:", e);
       }
     }
+    isLoadedRef.current = true;
   }, []);
 
-  // Save giros to localStorage
+  // Save giros to localStorage (only after initial load)
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(giros));
+    if (isLoadedRef.current) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(giros));
+    }
   }, [giros]);
 
   // Scroll to end when giros change
