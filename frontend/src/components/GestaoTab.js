@@ -107,11 +107,12 @@ const GestaoTab = () => {
   const zerarTudo = () => {
     if (window.confirm("Zerar tudo?")) {
       localStorage.removeItem(STORAGE_KEY);
-      setBancaAtual(bancaInicial);
+      const valorInicial = bancaInicial || 500;
+      setBancaAtual(valorInicial);
       setDiaAtual(1);
       setMetas(0);
       setStops(0);
-      setHistoricoBanca([bancaInicial]);
+      setHistoricoBanca([valorInicial]);
       setHistoricoValores([]);
     }
   };
