@@ -20,6 +20,9 @@ const GestaoTab = () => {
   const [stops, setStops] = useState(0);
   const [historicoBanca, setHistoricoBanca] = useState([500]);
   const [historicoValores, setHistoricoValores] = useState([]);
+  
+  // Flag to prevent auto-save after reset
+  const [isResetting, setIsResetting] = useState(false);
 
   // Load saved data
   useEffect(() => {
