@@ -42,6 +42,26 @@ const GestaoTab = () => {
     }
   }, []);
 
+  // Auto-save when config inputs change
+  useEffect(() => {
+    // Only save if there's existing data (not on first load)
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const dataToSave = {
+        bancaAtual,
+        diaAtual,
+        metas,
+        stops,
+        historicoBanca,
+        historicoValores,
+        inpBanca: String(bancaInicial),
+        inpMeta: String(metaPercent),
+        inpStop: String(stopPercent),
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+    }
+  }, [bancaInicial, metaPercent, stopPercent, bancaAtual, diaAtual, metas, stops, historicoBanca, historicoValores]);
+
   // Save data
   const saveData = (newData) => {
     const dataToSave = {
