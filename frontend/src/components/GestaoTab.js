@@ -131,7 +131,13 @@ const GestaoTab = () => {
   // Reset everything
   const zerarTudo = () => {
     if (window.confirm("Zerar tudo?")) {
+      // Set flag to prevent auto-save from restoring data
+      setIsResetting(true);
+      
+      // Clear localStorage
       localStorage.removeItem(STORAGE_KEY);
+      
+      // Reset all states
       const valorInicial = bancaInicial || 500;
       setBancaAtual(valorInicial);
       setDiaAtual(1);
@@ -139,6 +145,11 @@ const GestaoTab = () => {
       setStops(0);
       setHistoricoBanca([valorInicial]);
       setHistoricoValores([]);
+      
+      // Re-enable auto-save after a short delay
+      setTimeout(() => {
+        setIsResetting(false);
+      }, 100);
     }
   };
 
