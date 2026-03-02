@@ -1,0 +1,51 @@
+{
+  "summary": "Tested GESTÃO DE BANCA 'Reiniciar Tudo' functionality. The reset button works correctly - it clears localStorage and resets DIAS META, DIAS STOP, and BANCA ATUAL as expected. However, found a minor issue with custom initial values not being preserved after page reload when localStorage is cleared.",
+
+  "backend_issues": {
+    "critical_bugs": [],
+    "flaky_endpoints": []
+  },
+
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "component": "GestaoTab Reset Function",
+        "issue": "Custom initial banca values are lost after page reload when localStorage is cleared by reset function",
+        "flow": "Set custom initial value (e.g. 1000) -> Create data -> Reset (works correctly) -> Page reload -> Custom value reverts to default 500",
+        "affected_selectors": ["[data-testid='input-inicial']", "[data-testid='banca-atual']"],
+        "fix_priority": "MEDIUM"
+      }
+    ],
+    "design_issues": []
+  },
+
+  "passed_tests": [
+    "Login with CPF 000.000.000-00 and password admin123",
+    "Navigation to Gestão de Banca tab",
+    "GANHEI button functionality (creates meta data)",
+    "PERDI button functionality (creates stop data)", 
+    "Data creation and state updates (DIAS META, DIAS STOP, BANCA ATUAL)",
+    "REINICIAR TUDO button click and confirm dialog acceptance",
+    "Data reset verification (Meta: 0, Stop: 0, Banca reset to initial)",
+    "LocalStorage clearance after reset",
+    "Chart and projection table reset", 
+    "Immediate reset functionality works correctly"
+  ],
+
+  "test_report_links": [
+    "/app/.screenshots/gestao_error.png"
+  ],
+
+  "success_percentage": {
+    "backend": "N/A - Frontend only testing",
+    "frontend": "90%"
+  },
+
+  "action_item_for_main_agent": "MINOR ISSUE: The 'Reiniciar Tudo' button works correctly for clearing data, but custom initial banca values are not preserved after page reload. Consider saving initial configuration separately from game data or restoring custom initial values when localStorage is empty.",
+
+  "updated_files": [],
+
+  "should_call_test_agent_after_fix": "false",
+  "should_main_agent_test_itself": "true"
+}
