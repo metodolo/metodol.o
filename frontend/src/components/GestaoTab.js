@@ -47,7 +47,9 @@ const GestaoTab = () => {
 
   // Auto-save when config inputs change
   useEffect(() => {
-    // Only save if there's existing data (not on first load)
+    // Don't save during reset or if no existing data
+    if (isResetting) return;
+    
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       const dataToSave = {
@@ -63,7 +65,7 @@ const GestaoTab = () => {
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
     }
-  }, [bancaInicial, metaPercent, stopPercent, bancaAtual, diaAtual, metas, stops, historicoBanca, historicoValores]);
+  }, [bancaInicial, metaPercent, stopPercent, bancaAtual, diaAtual, metas, stops, historicoBanca, historicoValores, isResetting]);
 
   // Save data
   const saveData = (newData) => {
