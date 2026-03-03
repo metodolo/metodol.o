@@ -1,0 +1,12 @@
+[build]
+builder = "nixpacks"
+
+[build.nixpacks]
+nixPkgsArchive = "5148520bfab61f99fd25fb9ff7bfbb50dad3c9db"
+
+[deploy]
+startCommand = "npm run serve"
+
+[[services]]
+healthcheckPath = "/"
+healthcheckTimeout = 100
