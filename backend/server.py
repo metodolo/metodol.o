@@ -21,7 +21,7 @@ import pytz
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-from supabase_client import get_supabase, get_supabase_admin
+from supabase_client import get_supabase, get_supabase_admin, is_supabase_configured
 
 # Configure logging
 logging.basicConfig(
@@ -708,13 +708,20 @@ async def health_check():
     """Health check endpoint"""
     try:
         sb = get_supabase_admin()
-        # Simple query to test connection
-        sb.table('users').select('id').limit(1).execute()
-        return {
-            "status": "healthy",
-            "database": "connected",
-            "server_time": datetime.now(timezone.utc).isoformat()
-        }
+        if sb:
+            # Simple query to test connection
+            sb.table('users').select('id').limit(1).execute()
+            return {
+                "status": "healthy",
+                "database": "connected",
+                "server_time": datetime.now(timezone.utc).isoformat()
+            }
+        else:
+            return {
+                "status": "healthy",
+                "database": "not_configured",
+                "server_time": datetime.now(timezone.utc).isoformat()
+            }
     except Exception as e:
         return JSONResponse(
             status_code=500,
