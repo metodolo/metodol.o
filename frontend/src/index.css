@@ -23,6 +23,19 @@ html {
     zoom: 1.0;
 }
 
+/* Desktop: increase size */
+@media (min-width: 768px) {
+    html {
+        zoom: 1.15;
+    }
+}
+
+@media (min-width: 1024px) {
+    html {
+        zoom: 1.25;
+    }
+}
+
 body {
     margin: 0;
     font-family: 'Segoe UI', Arial, sans-serif;

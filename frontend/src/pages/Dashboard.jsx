@@ -30,7 +30,7 @@ const Dashboard = () => {
       {/* Watermark */}
       <div className="watermark-bg" />
 
-      <div className="app-container max-w-[600px] mx-auto p-2">
+      <div className="app-container max-w-[600px] lg:max-w-[800px] xl:max-w-[900px] mx-auto p-2 lg:p-4">
         {/* Error banner */}
         {error && (
           <div

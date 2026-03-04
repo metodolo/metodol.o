@@ -5,76 +5,43 @@
 O usuário deseja converter um arquivo HTML contendo a lógica do "RADAR V22" e "Método L.O" em uma aplicação web moderna full-stack.
 
 ### Requisitos Originais
-- **Stack Desejado**: Next.js, TypeScript, TailwindCSS (frontend); Supabase (Auth/DB); Vercel (frontend); Railway (backend)
+- **Stack**: React + Vite (frontend), FastAPI (backend), Supabase (DB)
+- **Deploy**: Vercel (frontend), Railway (backend)
 - **Lógica Core**: Replicar fielmente o layout, lógica e regras do HTML fornecido
-- **Fase 1**: Autenticação (Google OAuth e CPF/Senha), Controle de Sessão (1 dispositivo), Modo Manual, Modo Automático (stub), Painel Admin, Controle de Uso, Pagamento (stub)
-
-### Mudanças de Stack
-- Frontend migrado de **Create React App** para **Vite** para compatibilidade com Vercel/Railway
-- Backend usa **FastAPI** em vez de framework Node.js
-- Autenticação via **Emergent OAuth** para Google
 
 ---
 
-## Status Atual: COMPLETO ✅
+## Status Atual
 
-### O que foi implementado
-
-#### Frontend (React + Vite + TailwindCSS)
+### ✅ COMPLETO
 - [x] Migração de Create React App para Vite
-- [x] Página de Login (CPF/Senha + Google OAuth)
-- [x] Dashboard com abas (Radar de Jogo e Gestão de Banca)
-- [x] Radar de Jogo - lógica completa do HTML original
-- [x] Gestão de Banca - controle financeiro completo
-- [x] Painel Admin (/admin)
-- [x] Modo Automático (stub)
-- [x] Persistência via localStorage
-- [x] Configuração para deploy no Vercel E Railway
+- [x] Deploy no Vercel funcionando
+- [x] Deploy no Railway funcionando
+- [x] Login com Google OAuth (Emergent)
+- [x] Login com CPF/Senha
+- [x] Radar de Jogo - lógica completa
+- [x] Gestão de Banca - controle financeiro
+- [x] **Bug corrigido: Regiões múltiplas** - números que pertencem a 2+ regiões agora contam para todas
+- [x] **UI aumentada** - tamanho do app maior no desktop (zoom 1.25)
 
-#### Backend (FastAPI + Python)
-- [x] Autenticação CPF/Senha com bcrypt
-- [x] Integração Google OAuth via Emergent
-- [x] Controle de sessão única (1 dispositivo)
-- [x] Sistema de heartbeat para controle de uso
-- [x] APIs de administração
-- [x] Integração com Supabase
-- [x] Configuração para deploy no Railway
+### 🟡 EM PROGRESSO
+- [ ] Limite de 1 dispositivo ativo por usuário (backend pronto, falta integrar frontend)
+- [ ] Sistema de heartbeat para controle de tempo (backend pronto, frontend envia)
+- [ ] Completar painel Admin
 
-#### Banco de Dados (Supabase)
-- [x] Schema SQL completo
-- [x] Tabelas: users, active_sessions, subscriptions, usage_limits, usage_heartbeats, feature_flags
-- [x] Script para criar usuário admin
-
-#### Documentação
-- [x] README.md completo com instruções de deploy
-- [x] Scripts SQL
-- [x] Variáveis de ambiente documentadas
-- [x] Guia para desenvolvedores
+### 🔵 FUTURO
+- [ ] Integração Mercado Pago para pagamentos
+- [ ] Persistência de dados do Radar/Gestão no banco
+- [ ] Modo Automático com API externa
 
 ---
 
-## Arquitetura Final
+## URLs de Produção
 
-```
-frontend/                    # React + Vite
-├── src/
-│   ├── components/          # RadarTab, GestaoTab, UI
-│   ├── pages/               # Login, Dashboard, Admin
-│   ├── context/             # AuthContext
-│   ├── services/            # api.js
-│   ├── engine/              # radarEngine.js (lógica)
-│   └── main.jsx             # Entry point
-├── vite.config.js           # Config Vite
-├── vercel.json              # Config Vercel
-└── railway.toml             # Config Railway
-
-backend/                     # FastAPI
-├── server.py                # API principal
-├── supabase_client.py       # Cliente Supabase
-├── requirements.txt         # Dependências
-├── railway.toml             # Config Railway
-└── sql/                     # Scripts SQL
-```
+| Serviço | URL |
+|---------|-----|
+| Frontend (Vercel) | https://metodol-o.vercel.app |
+| Backend (Railway) | https://metodolo-production-19fc.up.railway.app |
 
 ---
 
@@ -87,48 +54,36 @@ backend/                     # FastAPI
 
 ---
 
-## Backlog (Futuro)
+## Arquitetura
 
-### P1 - Alta Prioridade
-- [ ] Implementar persistência de dados do Radar no banco
-- [ ] Implementar persistência de dados da Gestão no banco
-- [ ] Integrar sistema de pagamento real (Mercado Pago)
+```
+frontend/                    # React + Vite
+├── src/
+│   ├── components/          # RadarTab, GestaoTab
+│   ├── pages/               # Login, Dashboard, Admin
+│   ├── engine/              # radarEngine.js (lógica)
+│   └── services/            # api.js
+├── vite.config.js
+└── vercel.json
 
-### P2 - Média Prioridade
-- [ ] Modo Automático - integração com API externa
-- [ ] Notificações push
-- [ ] Histórico de sessões
-
-### P3 - Baixa Prioridade
-- [ ] Migrar para Next.js (se necessário no futuro)
-- [ ] PWA (Progressive Web App)
-- [ ] Modo offline
+backend/                     # FastAPI
+├── server.py                # API principal
+├── supabase_client.py
+├── requirements.txt
+├── railway.toml
+└── sql/                     # Scripts SQL
+```
 
 ---
 
 ## Changelog
 
+### 2024-03-04
+- Corrigido bug: regiões múltiplas agora destacam todas com mesmo valor máximo
+- Aumentado tamanho do app no desktop (zoom 1.25, container 900px)
+- Corrigido domínio Railway (porta 8080)
+
 ### 2024-03-03
-- Migração completa de Create React App para Vite
-- Frontend funcional em Vite 6 + React 18
-- Configurações de deploy para Vercel e Railway
+- Migração completa para Vite
+- Deploy Vercel + Railway funcionando
 - README.md completo
-- Scripts SQL para Supabase
-- PRD.md criado
-
----
-
-## Notas Técnicas
-
-### Por que Vite em vez de CRA?
-- Create React App usa `react-scripts` que é incompatível com Node.js 24+ (usado no Vercel)
-- Vite é mais moderno, rápido e compatível com ambas plataformas
-
-### Variáveis de Ambiente
-- Frontend usa `import.meta.env.VITE_*` (padrão Vite)
-- Backend usa `os.environ.get()`
-
-### Autenticação
-- JWT armazenado em cookie httpOnly + localStorage
-- Sessão válida por 7 dias
-- Heartbeat a cada 30 segundos para controle de uso

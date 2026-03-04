@@ -8,6 +8,7 @@ import {
   calculateTerminalWeights,
   calculateRegionFrequencies,
   getStrongestRegion,
+  isStrongestRegion,
   countColors,
   getTendency,
   getTerminalFamily,
@@ -230,7 +231,7 @@ const RadarTab = () => {
         </span>
         <div className="grid grid-cols-3 gap-2">
           {Object.entries(regionFreqs).map(([r, count]) => {
-            const isStrong = strongestRegion?.name === r && count > 0;
+            const isStrong = isStrongestRegion(regionFreqs, r) && count > 0;
             return (
               <div
                 key={r}

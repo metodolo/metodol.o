@@ -181,18 +181,44 @@ export const calculateRegionFrequencies = (giros) => {
 };
 
 /**
- * Get strongest region
+ * Get strongest regions (can be multiple if they have same max count)
  */
 export const getStrongestRegion = (freqs) => {
   const maxVal = Math.max(...Object.values(freqs));
   if (maxVal === 0) return null;
 
+  // Return first region for backwards compatibility
   for (const r in freqs) {
     if (freqs[r] === maxVal) {
       return { name: r, count: maxVal, numbers: REGIOES_MAPEADAS[r] };
     }
   }
   return null;
+};
+
+/**
+ * Get ALL strongest regions (returns array)
+ */
+export const getAllStrongestRegions = (freqs) => {
+  const maxVal = Math.max(...Object.values(freqs));
+  if (maxVal === 0) return [];
+
+  const strongest = [];
+  for (const r in freqs) {
+    if (freqs[r] === maxVal) {
+      strongest.push({ name: r, count: maxVal, numbers: REGIOES_MAPEADAS[r] });
+    }
+  }
+  return strongest;
+};
+
+/**
+ * Check if a region is one of the strongest
+ */
+export const isStrongestRegion = (freqs, regionName) => {
+  const maxVal = Math.max(...Object.values(freqs));
+  if (maxVal === 0) return false;
+  return freqs[regionName] === maxVal;
 };
 
 /**
