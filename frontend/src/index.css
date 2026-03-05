@@ -106,7 +106,7 @@ body {
 /* Card styles */
 .card-glass {
     background: var(--card);
-    border: 2px solid var(--border);
+    border: 2px solid #D4AF37;
     border-radius: 12px;
     padding: 12px;
     backdrop-filter: blur(10px);
@@ -366,27 +366,27 @@ body {
 
 .day-header {
     font-weight: bold;
-    color: var(--accent);
-    border-bottom: 2px solid #444;
+    color: #fff;
+    border-bottom: 2px solid #D4AF37;
     margin-top: 15px;
     font-size: 0.75rem;
 }
 
 .row-meta {
-    background: rgba(0, 255, 149, 0.2) !important;
+    background: rgba(212, 175, 55, 0.1) !important;
     color: #fff;
-    border-left: 4px solid var(--primary);
+    border-left: 4px solid #D4AF37;
 }
 
 .row-stop {
-    background: rgba(255, 49, 49, 0.2) !important;
+    background: rgba(212, 175, 55, 0.1) !important;
     color: #fff;
-    border-left: 4px solid var(--danger);
+    border-left: 4px solid #D4AF37;
 }
 
 .row-atual {
     background: rgba(255, 255, 255, 0.1);
-    border-left: 4px solid var(--accent);
+    border-left: 4px solid #D4AF37;
 }
 
 /* Scrollbar */
