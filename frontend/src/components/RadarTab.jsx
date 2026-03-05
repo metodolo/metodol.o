@@ -323,14 +323,14 @@ const RadarTab = () => {
       <div className="flex gap-2">
         <button
           onClick={undo}
-          className="flex-1 py-4 bg-[#ff9800] text-white font-bold rounded-lg"
+          className="flex-1 py-4 bg-black text-white font-bold rounded-lg border-2 border-[#D4AF37] hover:bg-[#1a1a1a] transition-colors"
           data-testid="btn-undo"
         >
           CORRIGIR
         </button>
         <button
           onClick={limpar}
-          className="flex-1 py-4 bg-[#f44336] text-white font-bold rounded-lg"
+          className="flex-1 py-4 bg-black text-white font-bold rounded-lg border-2 border-[#D4AF37] hover:bg-[#1a1a1a] transition-colors"
           data-testid="btn-clear"
         >
           LIMPAR
