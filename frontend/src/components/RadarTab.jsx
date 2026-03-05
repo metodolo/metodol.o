@@ -108,7 +108,7 @@ const RadarTab = () => {
   return (
     <div className="space-y-3" data-testid="radar-tab">
       {/* Counter header */}
-      <div className="flex justify-between items-center bg-[rgba(17,17,17,0.8)] p-4 rounded-xl border border-[#333] gap-2">
+      <div className="flex justify-between items-center bg-[rgba(17,17,17,0.8)] p-4 rounded-xl border-2 border-[#D4AF37] gap-2">
         <div className="flex-1 text-center">
           <small className="text-gray-400">VERM.</small>
           <br />
@@ -125,7 +125,7 @@ const RadarTab = () => {
       </div>
 
       {/* Keyboard */}
-      <div className="grid grid-cols-6 gap-1 bg-[rgba(17,17,17,0.9)] p-2 rounded-xl border-2 border-[#333]">
+      <div className="grid grid-cols-6 gap-1 bg-[rgba(17,17,17,0.9)] p-2 rounded-xl border-2 border-[#D4AF37]">
         <button
           className="roulette-btn green col-span-6"
           onClick={() => addNumber(0)}
