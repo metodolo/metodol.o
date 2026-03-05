@@ -167,9 +167,9 @@ const RadarTab = () => {
 
         {/* Header */}
         <div className="flex justify-between items-center mb-2">
-          <span className="label-accent" style={{ margin: 0 }}>HISTÓRICO</span>
+          <span className="label-accent" style={{ margin: 0, color: '#fff', borderColor: '#D4AF37' }}>HISTÓRICO</span>
           <span
-            className="bg-[#222] text-[#ccff00] px-3 py-1 rounded-lg font-bold text-sm border border-[#ccff00]"
+            className="bg-[#000] text-white px-3 py-1 rounded-lg font-bold text-sm border-2 border-[#D4AF37]"
             data-testid="cycle-counter"
           >
             {giros.length} / {limiteGiros}
@@ -217,7 +217,7 @@ const RadarTab = () => {
 
       {/* Regions card */}
       <div className="card-glass">
-        <span className="label-accent">
+        <span className="label-accent" style={{ color: '#fff', borderColor: '#D4AF37' }}>
           REGIÕES{strongestRegion ? ` - FOCO: ` : ""}
           {strongestRegion && (
             <span>
@@ -235,7 +235,7 @@ const RadarTab = () => {
             return (
               <div
                 key={r}
-                className={`bg-[rgba(26,26,26,0.6)] p-2 rounded-lg text-center border ${isStrong ? "border-[#ccff00]" : "border-[#333]"}`}
+                className={`bg-[rgba(26,26,26,0.6)] p-2 rounded-lg text-center border ${isStrong ? "border-[#D4AF37]" : "border-[#333]"}`}
               >
                 <span className="font-bold">
                   {colorizeTitle(r).map((part, idx) => (
@@ -245,7 +245,7 @@ const RadarTab = () => {
                   ))}
                 </span>
                 <br />
-                <small className="text-[#ccff00]">{count}X</small>
+                <small className="text-white">{count}X</small>
               </div>
             );
           })}
@@ -274,7 +274,7 @@ const RadarTab = () => {
 
       {/* Radar de Ocultos */}
       <div className="card-glass">
-        <span className="label-accent">RADAR DE OCULTOS</span>
+        <span className="label-accent" style={{ color: '#fff', borderColor: '#D4AF37' }}>RADAR DE OCULTOS</span>
         <div className="grid grid-cols-3 gap-2" data-testid="terminal-weights">
           {terminalWeights.slice(0, 9).map(({ terminal, peso }) => {
             if (peso === 0) return null;
@@ -289,7 +289,7 @@ const RadarTab = () => {
               >
                 <span className="font-bold text-lg">{terminal}</span>
                 <br />
-                <small className="text-[#ccff00]">{peso}X</small>
+                <small className="text-white">{peso}X</small>
               </div>
             );
           })}
@@ -298,8 +298,8 @@ const RadarTab = () => {
 
       {/* Suggestion card */}
       {alvoFinal !== null && terminalFamily.length > 0 && (
-        <div className="card-glass border-2 border-[#ccff00] text-center" data-testid="suggestion-card">
-          <span className="text-[#ccff00] font-bold">
+        <div className="card-glass border-2 border-[#D4AF37] text-center" data-testid="suggestion-card">
+          <span className="text-white font-bold">
             FAMÍLIA: <span data-testid="family-target">{alvoFinal}</span>
           </span>
           <div className="flex flex-wrap justify-center gap-2 mt-2">

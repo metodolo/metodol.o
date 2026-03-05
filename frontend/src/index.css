@@ -114,13 +114,13 @@ body {
 
 /* Label accent */
 .label-accent {
-    color: var(--accent);
+    color: #fff;
     font-size: 0.9rem;
     font-weight: bold;
     text-transform: uppercase;
     margin-bottom: 8px;
     display: block;
-    border-left: 4px solid var(--accent);
+    border-left: 4px solid #D4AF37;
     padding-left: 8px;
 }
 
@@ -144,9 +144,9 @@ body {
 .tab-btn {
     flex: 1;
     padding: 12px;
-    border: none;
-    background: #222;
-    color: #888;
+    border: 2px solid #D4AF37;
+    background: #000;
+    color: #fff;
     cursor: pointer;
     border-radius: 8px;
     font-weight: bold;
@@ -156,9 +156,10 @@ body {
 }
 
 .tab-btn.active {
-    background: var(--primary);
-    color: #000;
-    box-shadow: 0 0 10px var(--primary);
+    background: #000;
+    color: #fff;
+    border: 2px solid #D4AF37;
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
 }
 
 /* Roulette number buttons */
@@ -240,8 +241,8 @@ body {
 .ciclo-btn {
     flex: 1;
     padding: 8px;
-    border: 1px solid #444;
-    background: #222;
+    border: 2px solid #D4AF37;
+    background: #000;
     color: #fff;
     border-radius: 6px;
     font-weight: bold;
@@ -251,9 +252,10 @@ body {
 }
 
 .ciclo-btn.active {
-    background: var(--accent);
-    color: #000;
-    border-color: var(--accent);
+    background: #000;
+    color: #fff;
+    border-color: #D4AF37;
+    box-shadow: 0 0 8px rgba(212, 175, 55, 0.5);
 }
 
 /* Soma item (ocultos) */
@@ -268,14 +270,14 @@ body {
 }
 
 .soma-selecionada {
-    border: 3px solid var(--accent) !important;
-    box-shadow: 0 0 15px var(--accent);
+    border: 3px solid #D4AF37 !important;
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.5);
 }
 
 /* Confluencia gold */
 .gold-confluencia {
-    border: 3px solid var(--accent) !important;
-    box-shadow: 0 0 12px var(--accent);
+    border: 3px solid #D4AF37 !important;
+    box-shadow: 0 0 12px rgba(212, 175, 55, 0.5);
     transform: scale(1.05);
     z-index: 5;
 }
