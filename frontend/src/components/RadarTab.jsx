@@ -115,7 +115,7 @@ const RadarTab = () => {
           <span className="text-4xl font-black neon-red" data-testid="count-red">{red}</span>
         </div>
         <div className="flex-[2] text-center">
-          <span className="logo-metodo">Método L.O</span>
+          <div className="logo-metodo mx-auto"></div>
         </div>
         <div className="flex-1 text-center">
           <small className="text-gray-400">PRETO</small>

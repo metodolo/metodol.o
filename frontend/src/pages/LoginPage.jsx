@@ -74,8 +74,8 @@ const LoginPage = () => {
         <div className="card-glass p-8">
           {/* Logo */}
           <div className="text-center mb-8">
-            <h1 className="logo-metodo-large mb-2">Método L.O</h1>
-            <p className="text-gray-400 text-sm">RADAR V22 + GESTÃO PRO</p>
+            <div className="logo-metodo-large mx-auto"></div>
+            <p className="text-gray-400 text-sm mt-2">RADAR V22 + GESTÃO PRO</p>
           </div>
 
           {/* Error message */}
