@@ -219,15 +219,15 @@ const GestaoTab = () => {
 
       {/* Score */}
       <div className="grid grid-cols-2 gap-2">
-        <div className="placar-item-meta">
-          <small className="text-[#00ff95] font-bold">DIAS META</small>
+        <div className="p-4 rounded-xl text-center bg-black border-2 border-[#D4AF37]">
+          <small className="text-white font-bold">DIAS META</small>
           <br />
-          <span className="text-3xl font-bold" data-testid="count-meta">{metas}</span>
+          <span className="text-3xl font-bold text-white" data-testid="count-meta">{metas}</span>
         </div>
-        <div className="placar-item-stop">
-          <small className="text-[#ff3131] font-bold">DIAS STOP</small>
+        <div className="p-4 rounded-xl text-center bg-black border-2 border-[#D4AF37]">
+          <small className="text-white font-bold">DIAS STOP</small>
           <br />
-          <span className="text-3xl font-bold" data-testid="count-stop">{stops}</span>
+          <span className="text-3xl font-bold text-white" data-testid="count-stop">{stops}</span>
         </div>
       </div>
 
@@ -236,32 +236,32 @@ const GestaoTab = () => {
         {/* Inputs */}
         <div className="grid grid-cols-3 gap-2 mb-3">
           <div>
-            <label className="text-[9px] text-gray-400">INICIAL</label>
+            <label className="text-[9px] text-white">INICIAL</label>
             <input
               type="number"
               value={bancaInicial}
               onChange={(e) => setBancaInicial(parseFloat(e.target.value) || 0)}
-              className="input-dark"
+              className="w-full p-3 bg-black border-2 border-[#D4AF37] rounded-lg text-white text-center"
               data-testid="input-inicial"
             />
           </div>
           <div>
-            <label className="text-[9px] text-gray-400">META %</label>
+            <label className="text-[9px] text-white">META %</label>
             <input
               type="number"
               value={metaPercent}
               onChange={(e) => setMetaPercent(parseFloat(e.target.value) || 0)}
-              className="input-dark"
+              className="w-full p-3 bg-black border-2 border-[#D4AF37] rounded-lg text-white text-center"
               data-testid="input-meta"
             />
           </div>
           <div>
-            <label className="text-[9px] text-gray-400">STOP %</label>
+            <label className="text-[9px] text-white">STOP %</label>
             <input
               type="number"
               value={stopPercent}
               onChange={(e) => setStopPercent(parseFloat(e.target.value) || 0)}
-              className="input-dark"
+              className="w-full p-3 bg-black border-2 border-[#D4AF37] rounded-lg text-white text-center"
               data-testid="input-stop"
             />
           </div>
@@ -269,22 +269,22 @@ const GestaoTab = () => {
 
         {/* Current balance */}
         <div className="text-center mb-3">
-          <small className="text-gray-400">BANCA ATUAL</small>
+          <small className="text-white">BANCA ATUAL</small>
           <br />
-          <span className="text-2xl font-bold text-[#00ff95]" data-testid="banca-atual">
+          <span className="text-2xl font-bold text-white" data-testid="banca-atual">
             R$ {bancaAtual.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
           </span>
         </div>
 
         {/* Optional value input */}
-        <div className="bg-[rgba(255,255,255,0.05)] p-2 rounded-lg text-center mb-3 border border-[#00ff95]">
-          <small className="text-[#00ff95]">VALOR DIFERENTE? (OPCIONAL)</small>
+        <div className="bg-black p-2 rounded-lg text-center mb-3 border-2 border-[#D4AF37]">
+          <small className="text-white">VALOR DIFERENTE? (OPCIONAL)</small>
           <input
             type="number"
             placeholder="Vazio = Automático"
             value={valorRealInput}
             onChange={(e) => setValorRealInput(e.target.value)}
-            className="input-dark mt-2 w-[80%]"
+            className="w-[80%] mt-2 p-3 bg-black border border-[#D4AF37] rounded-lg text-white text-center"
             data-testid="input-valor-real"
           />
         </div>
@@ -293,14 +293,14 @@ const GestaoTab = () => {
         <div className="grid grid-cols-2 gap-2">
           <button
             onClick={() => registrarAcao("meta")}
-            className="btn-gestao bg-[#00ff95] text-black"
+            className="py-4 px-6 rounded-lg font-bold bg-black border-2 border-[#D4AF37] text-white hover:bg-gray-900"
             data-testid="btn-ganhei"
           >
             ✅ GANHEI
           </button>
           <button
             onClick={() => registrarAcao("stop")}
-            className="btn-gestao bg-[#ff3131] text-white"
+            className="py-4 px-6 rounded-lg font-bold bg-black border-2 border-[#D4AF37] text-white hover:bg-gray-900"
             data-testid="btn-perdi"
           >
             ❌ PERDI
@@ -324,17 +324,17 @@ const GestaoTab = () => {
               <Line
                 type="monotone"
                 dataKey="banca"
-                stroke="#00ff95"
+                stroke="#D4AF37"
                 strokeWidth={2}
                 dot={false}
-                fill="rgba(0, 255, 149, 0.05)"
+                fill="rgba(212, 175, 55, 0.1)"
               />
             </LineChart>
           </ResponsiveContainer>
         </div>
 
         {/* Table header */}
-        <div className="day-row day-header">
+        <div className="day-row day-header text-white">
           <div>DIA</div>
           <div>INÍCIO</div>
           <div>META(+)</div>
@@ -346,11 +346,11 @@ const GestaoTab = () => {
         <div className="max-h-[300px] overflow-y-auto" data-testid="projection-table">
           {rows.map((row, idx) => (
             <div key={idx} className={`day-row ${row.cls}`}>
-              <div>{row.dia}</div>
-              <div>{row.inicio}</div>
-              <div className="text-[#00ff95]">{row.meta}</div>
-              <div className="text-[#ff3131]">{row.stop}</div>
-              <div>{row.final}</div>
+              <div className="text-white">{row.dia}</div>
+              <div className="text-white">{row.inicio}</div>
+              <div className="text-white">{row.meta}</div>
+              <div className="text-white">{row.stop}</div>
+              <div className="text-white">{row.final}</div>
             </div>
           ))}
         </div>
