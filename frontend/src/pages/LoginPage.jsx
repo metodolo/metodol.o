@@ -70,8 +70,8 @@ const LoginPage = () => {
       {/* Watermark */}
       <div className="watermark-bg" />
 
-      <div className="app-container w-full max-w-md">
-        <div className="card-glass p-8">
+      <div className="w-full max-w-md relative z-10">
+        <div className="bg-black/80 backdrop-blur-sm p-8 rounded-xl border border-gray-800">
           {/* Logo */}
           <div className="text-center mb-8">
             <h1 className="logo-metodo-large">Método L.O</h1>
@@ -89,14 +89,14 @@ const LoginPage = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* CPF */}
             <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="text"
                 placeholder="CPF"
                 value={cpf}
                 onChange={handleCPFChange}
                 maxLength={14}
-                className="input-dark w-full pl-10 text-left"
+                className="w-full pl-10 py-4 bg-black border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-gray-500"
                 data-testid="cpf-input"
                 required
               />
@@ -106,25 +106,25 @@ const LoginPage = () => {
             {isRegister && (
               <>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="email"
                     placeholder="Email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="input-dark w-full pl-10 text-left"
+                    className="w-full pl-10 py-4 bg-black border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-gray-500"
                     data-testid="email-input"
                     required
                   />
                 </div>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
                     type="text"
                     placeholder="Nome (opcional)"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="input-dark w-full pl-10 text-left"
+                    className="w-full pl-10 py-4 bg-black border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-gray-500"
                     data-testid="name-input"
                   />
                 </div>
@@ -133,20 +133,20 @@ const LoginPage = () => {
 
             {/* Password */}
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type={showPassword ? "text" : "password"}
                 placeholder="Senha"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="input-dark w-full pl-10 pr-10 text-left"
+                className="w-full pl-10 pr-10 py-4 bg-black border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-gray-500"
                 data-testid="password-input"
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300"
               >
                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
@@ -156,7 +156,7 @@ const LoginPage = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-4 bg-[#00ff95] text-black font-bold rounded-lg hover:bg-[#00cc7a] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              className="w-full py-4 bg-black border border-gray-600 text-white font-bold rounded-lg hover:bg-gray-900 hover:border-gray-500 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
               data-testid="submit-btn"
             >
               {loading && <Loader2 className="w-5 h-5 animate-spin" />}
