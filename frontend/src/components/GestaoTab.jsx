@@ -214,7 +214,7 @@ const GestaoTab = () => {
     <div className="space-y-3" data-testid="gestao-tab">
       {/* Header */}
       <div className="text-center mb-4">
-        <div className="logo-metodo-large mx-auto"></div>
+        <span className="logo-metodo-large">Método L.O</span>
       </div>
 
       {/* Score */}
