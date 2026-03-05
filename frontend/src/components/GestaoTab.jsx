@@ -213,7 +213,9 @@ const GestaoTab = () => {
   return (
     <div className="space-y-3" data-testid="gestao-tab">
       {/* Header */}
-      <div className="gestao-header">Método L.O</div>
+      <div className="text-center mb-4">
+        <span className="logo-metodo-large">Método L.O</span>
+      </div>
 
       {/* Score */}
       <div className="grid grid-cols-2 gap-2">

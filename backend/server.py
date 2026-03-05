@@ -169,6 +169,7 @@ class AdminUserUpdate(BaseModel):
     daily_seconds_limit: Optional[int] = None
     subscription_status: Optional[str] = None
     api_enabled: Optional[bool] = None
+    trial_days: Optional[int] = None
 
 
 # ============== Auth Routes ==============
@@ -571,8 +572,9 @@ async def admin_list_users(request: Request):
     user_list = []
     for u in users_result.data:
         # Get subscription
-        sub = sb.table('subscriptions').select('status').eq('user_id', u['id']).execute()
-        sub_status = sub.data[0]['status'] if sub.data else 'none'
+        sub_result = sb.table('subscriptions').select('*').eq('user_id', u['id']).execute()
+        sub = sub_result.data[0] if sub_result.data else None
+        sub_status = sub['status'] if sub else 'none'
         
         # Get usage limit
         limit = sb.table('usage_limits').select('daily_seconds_limit').eq('user_id', u['id']).execute()
@@ -598,6 +600,7 @@ async def admin_list_users(request: Request):
             "role": u.get('role', 'user'),
             "is_active": u.get('is_active', True),
             "subscription_status": sub_status,
+            "subscription_end": sub.get('current_period_end') if sub else None,
             "daily_seconds_limit": daily_limit,
             "seconds_used_today": seconds_used,
             "api_enabled": api_enabled,
@@ -630,11 +633,35 @@ async def admin_update_user(user_id: str, body: AdminUserUpdate, request: Reques
     
     # Update subscription
     if body.subscription_status is not None:
+        subscription_data = {'status': body.subscription_status}
+        
+        # Calculate period end based on subscription type
+        if body.subscription_status == 'trial':
+            days = body.trial_days or 7  # Default 7 days trial
+            subscription_data['current_period_end'] = (datetime.now(timezone.utc) + timedelta(days=days)).isoformat()
+            subscription_data['provider'] = 'trial'
+        elif body.subscription_status == 'monthly':
+            subscription_data['current_period_end'] = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+            subscription_data['provider'] = 'admin'
+            subscription_data['status'] = 'active'
+        elif body.subscription_status == 'yearly':
+            subscription_data['current_period_end'] = (datetime.now(timezone.utc) + timedelta(days=365)).isoformat()
+            subscription_data['provider'] = 'admin'
+            subscription_data['status'] = 'active'
+        elif body.subscription_status == 'lifetime':
+            subscription_data['current_period_end'] = (datetime.now(timezone.utc) + timedelta(days=36500)).isoformat()  # 100 years
+            subscription_data['provider'] = 'lifetime'
+            subscription_data['status'] = 'active'
+        elif body.subscription_status == 'none':
+            subscription_data['current_period_end'] = None
+            subscription_data['provider'] = None
+        
         existing = sb.table('subscriptions').select('id').eq('user_id', user_id).execute()
         if existing.data:
-            sb.table('subscriptions').update({'status': body.subscription_status}).eq('user_id', user_id).execute()
+            sb.table('subscriptions').update(subscription_data).eq('user_id', user_id).execute()
         else:
-            sb.table('subscriptions').insert({'user_id': user_id, 'status': body.subscription_status}).execute()
+            subscription_data['user_id'] = user_id
+            sb.table('subscriptions').insert(subscription_data).execute()
     
     # Update usage limit
     if body.daily_seconds_limit is not None:
