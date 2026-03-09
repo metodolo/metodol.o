@@ -71,11 +71,17 @@ export const AuthProvider = ({ children }) => {
           if (result.reason === "device_mismatch") {
             setError(result.message || "Sua conta foi conectada em outro dispositivo");
             logout();
-          } else if (result.reason === "session_not_found" || result.reason === "session_expired") {
+          } else if (result.reason === "session_not_found" || result.reason === "session_expired" || result.reason === "no_session") {
+            setError("Sua sessão foi encerrada");
             logout();
           }
         }
       } catch (err) {
+        // If we get 401, it means the session is no longer valid
+        if (err.message?.includes("401") || err.message?.includes("Não autenticado") || err.message?.includes("Sessão")) {
+          setError("Sua conta foi conectada em outro dispositivo");
+          logout();
+        }
         console.error("Session validation error:", err);
       }
     };
