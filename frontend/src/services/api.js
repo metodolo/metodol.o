@@ -112,6 +112,14 @@ export const authApi = {
       body: JSON.stringify({ device_id: deviceId }),
     });
   },
+
+  // Change password
+  changePassword: async (currentPassword, newPassword) => {
+    return apiRequest("/auth/change-password", {
+      method: "POST",
+      body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+    });
+  },
 };
 
 // ============== Usage API ==============

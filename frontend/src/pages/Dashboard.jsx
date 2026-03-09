@@ -6,10 +6,11 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import RadarTab from "../components/RadarTab";
 import GestaoTab from "../components/GestaoTab";
+import ChangePasswordModal from "../components/ChangePasswordModal";
 import { LogOut, Settings, User, Clock, Shield } from "lucide-react";
 
 const Dashboard = () => {
-  const { user, subscription, usage, logout, isAdmin, error, setError } = useAuth();
+  const { user, subscription, usage, logout, isAdmin, error, setError, mustChangePassword } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("radar");
 
@@ -27,6 +28,11 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen pb-10">
+      {/* Change Password Modal */}
+      {mustChangePassword && (
+        <ChangePasswordModal onSuccess={() => {}} />
+      )}
+
       {/* Watermark */}
       <div className="watermark-bg" />
 

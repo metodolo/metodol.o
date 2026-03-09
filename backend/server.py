@@ -163,6 +163,10 @@ class SessionValidateRequest(BaseModel):
 class HeartbeatRequest(BaseModel):
     device_id: str
 
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
 class AdminUserUpdate(BaseModel):
     is_active: Optional[bool] = None
     role: Optional[str] = None
@@ -341,7 +345,8 @@ async def login_cpf(request: CPFLoginRequest, response: Response):
             "cpf": user.get('cpf'),
             "email": user['email'],
             "name": user.get('name'),
-            "role": user.get('role', 'user')
+            "role": user.get('role', 'user'),
+            "must_change_password": user.get('must_change_password', False)
         },
         "subscription": {"status": subscription.get('status', 'none')},
         "session_token": session_token
@@ -466,7 +471,8 @@ async def get_me(request: Request):
             "email": user['email'],
             "name": user.get('name'),
             "picture": user.get('picture'),
-            "role": user.get('role', 'user')
+            "role": user.get('role', 'user'),
+            "must_change_password": user.get('must_change_password', False)
         },
         "subscription": {
             "status": subscription.get('status', 'none'),
@@ -494,6 +500,38 @@ async def logout(request: Request, response: Response):
     
     response.delete_cookie(key="session_token", path="/")
     return {"message": "Logout realizado com sucesso"}
+
+
+@api_router.post("/auth/change-password")
+async def change_password(request: Request, body: ChangePasswordRequest):
+    """Change user password"""
+    user, _ = await get_current_user_from_request(request)
+    
+    sb = get_supabase_admin()
+    
+    # Verify current password
+    user_data = sb.table('users').select('password_hash').eq('id', user['id']).execute()
+    if not user_data.data:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    
+    if not verify_password(body.current_password, user_data.data[0]['password_hash']):
+        raise HTTPException(status_code=401, detail="Senha atual incorreta")
+    
+    # Validate new password
+    if len(body.new_password) < 6:
+        raise HTTPException(status_code=400, detail="A nova senha deve ter pelo menos 6 caracteres")
+    
+    if body.current_password == body.new_password:
+        raise HTTPException(status_code=400, detail="A nova senha deve ser diferente da atual")
+    
+    # Update password and remove must_change_password flag
+    new_hash = get_password_hash(body.new_password)
+    sb.table('users').update({
+        'password_hash': new_hash,
+        'must_change_password': False
+    }).eq('id', user['id']).execute()
+    
+    return {"message": "Senha alterada com sucesso"}
 
 
 @api_router.post("/auth/validate-session")

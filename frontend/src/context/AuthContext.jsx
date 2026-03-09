@@ -21,6 +21,7 @@ export const AuthProvider = ({ children }) => {
   const [features, setFeatures] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [mustChangePassword, setMustChangePassword] = useState(false);
 
   const checkAuth = useCallback(async () => {
     try {
@@ -29,6 +30,7 @@ export const AuthProvider = ({ children }) => {
       setSubscription(data.subscription);
       setUsage(data.usage);
       setFeatures(data.features);
+      setMustChangePassword(data.user?.must_change_password || false);
       setError(null);
       return true;
     } catch (err) {
@@ -36,6 +38,7 @@ export const AuthProvider = ({ children }) => {
       setSubscription(null);
       setUsage(null);
       setFeatures(null);
+      setMustChangePassword(false);
       return false;
     }
   }, []);
@@ -96,6 +99,7 @@ export const AuthProvider = ({ children }) => {
   const login = useCallback(async (userData, subData) => {
     setUser(userData);
     setSubscription(subData);
+    setMustChangePassword(userData?.must_change_password || false);
     await checkAuth(); // Refresh full data
   }, [checkAuth]);
 
@@ -109,8 +113,16 @@ export const AuthProvider = ({ children }) => {
       setSubscription(null);
       setUsage(null);
       setFeatures(null);
+      setMustChangePassword(false);
     }
   }, []);
+
+  const clearMustChangePassword = useCallback(() => {
+    setMustChangePassword(false);
+    if (user) {
+      setUser({ ...user, must_change_password: false });
+    }
+  }, [user]);
 
   const value = {
     user,
@@ -121,10 +133,12 @@ export const AuthProvider = ({ children }) => {
     error,
     isAuthenticated: !!user,
     isAdmin: user?.role === "admin",
+    mustChangePassword,
     login,
     logout,
     checkAuth,
     setError,
+    clearMustChangePassword,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
