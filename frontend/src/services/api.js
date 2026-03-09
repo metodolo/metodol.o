@@ -161,6 +161,31 @@ export const adminApi = {
       method: "DELETE",
     });
   },
+
+  // List pending subscriptions
+  listPendingSubscriptions: async () => {
+    return apiRequest("/admin/pending-subscriptions");
+  },
+
+  // Create pending subscription
+  createPendingSubscription: async (email, subscriptionType, trialDays, notes) => {
+    return apiRequest("/admin/pending-subscriptions", {
+      method: "POST",
+      body: JSON.stringify({ 
+        email, 
+        subscription_type: subscriptionType, 
+        trial_days: trialDays,
+        notes 
+      }),
+    });
+  },
+
+  // Delete pending subscription
+  deletePendingSubscription: async (pendingId) => {
+    return apiRequest(`/admin/pending-subscriptions/${pendingId}`, {
+      method: "DELETE",
+    });
+  },
 };
 
 // ============== Health API ==============

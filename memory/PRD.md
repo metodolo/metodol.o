@@ -31,6 +31,7 @@
 - Radar de Ocultos (terminais)
 - Família de números
 - Histórico de giros (14 ou 50)
+- Botões CORRIGIR/LIMPAR com tema preto e dourado
 
 ### ✅ Gestão de Banca
 - Banca inicial, Meta %, Stop %
@@ -40,26 +41,34 @@
 - Persistência em localStorage
 
 ### ✅ Painel Admin
-- Lista de usuários
-- Ativar/Desativar usuários
-- Ativar/Desativar API
-- Derrubar sessões
-- Configurar limite de tempo diário
-- **Gerenciar Assinaturas:**
-  - Nenhum
-  - Teste (3, 7, 14, 30 dias)
-  - Mensal (30 dias)
-  - Anual (365 dias)
-  - Vitalício (sem expiração)
+- **Aba Usuários:**
+  - Lista de usuários cadastrados
+  - Ativar/Desativar usuários
+  - Ativar/Desativar API
+  - Derrubar sessões
+  - Configurar limite de tempo diário
+  - Gerenciar Assinaturas: Nenhum, Teste, Mensal, Anual, Vitalício
+  
+- **Aba Pré-Cadastros (NOVO):**
+  - Adicionar email de futuro usuário
+  - Selecionar tipo de assinatura antes do cadastro
+  - Opções: Teste (3, 7, 14, 30 dias), Mensal, Anual, Vitalício
+  - Observações opcionais
+  - Quando o usuário se cadastrar, recebe automaticamente o plano configurado
 
 ### ✅ Design
 - Logo da roleta como fundo
 - Escrita "Método L.O" em dourado (estilo premium)
 - Tamanho aumentado no desktop (zoom 1.25)
+- Tema preto e dourado em toda a aplicação
 
 ---
 
 ## Pendente
+
+### 🔴 Script SQL Necessário (AÇÃO NECESSÁRIA)
+Para a funcionalidade de pré-cadastros funcionar, execute o script:
+`/app/backend/sql/03_pending_subscriptions.sql` no SQL Editor do Supabase
 
 ### 🔵 Integração Mercado Pago
 - Pagamentos reais
@@ -69,7 +78,15 @@
 
 ## Changelog
 
+### 2024-03-09
+- Implementado sistema de Pré-Cadastros no Painel Admin
+- Adicionada aba "Pré-Cadastros" para cadastrar emails antes do usuário se registrar
+- Backend: novos endpoints `/api/admin/pending-subscriptions`
+- Fluxo de registro modificado para aplicar assinaturas pendentes automaticamente
+- Script SQL criado: `03_pending_subscriptions.sql`
+
 ### 2024-03-05
+- Botões CORRIGIR/LIMPAR alterados para tema preto e dourado
 - Logo da roleta como fundo
 - Escrita "Método L.O" em dourado
 - Gerenciamento de assinaturas completo no Admin

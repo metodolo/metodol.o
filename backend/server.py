@@ -171,8 +171,60 @@ class AdminUserUpdate(BaseModel):
     api_enabled: Optional[bool] = None
     trial_days: Optional[int] = None
 
+class PendingSubscriptionCreate(BaseModel):
+    email: EmailStr
+    subscription_type: str  # trial, monthly, yearly, lifetime
+    trial_days: Optional[int] = 7
+    notes: Optional[str] = None
+
 
 # ============== Auth Routes ==============
+
+async def apply_pending_subscription(sb, user_id: str, email: str):
+    """Check and apply pending subscription for a new user"""
+    pending = sb.table('pending_subscriptions').select('*').eq('email', email.lower()).execute()
+    
+    if not pending.data:
+        # No pending subscription, create default trial
+        sb.table('subscriptions').insert({
+            'user_id': user_id,
+            'status': 'trial'
+        }).execute()
+        return None
+    
+    pending_sub = pending.data[0]
+    subscription_type = pending_sub['subscription_type']
+    
+    # Calculate subscription data based on type
+    subscription_data = {
+        'user_id': user_id,
+        'provider': 'pre-registered'
+    }
+    
+    if subscription_type == 'trial':
+        days = pending_sub.get('trial_days') or 7
+        subscription_data['status'] = 'trial'
+        subscription_data['current_period_end'] = (datetime.now(timezone.utc) + timedelta(days=days)).isoformat()
+    elif subscription_type == 'monthly':
+        subscription_data['status'] = 'active'
+        subscription_data['current_period_end'] = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+    elif subscription_type == 'yearly':
+        subscription_data['status'] = 'active'
+        subscription_data['current_period_end'] = (datetime.now(timezone.utc) + timedelta(days=365)).isoformat()
+    elif subscription_type == 'lifetime':
+        subscription_data['status'] = 'active'
+        subscription_data['current_period_end'] = (datetime.now(timezone.utc) + timedelta(days=36500)).isoformat()
+    else:
+        subscription_data['status'] = 'trial'
+    
+    # Create subscription
+    sb.table('subscriptions').insert(subscription_data).execute()
+    
+    # Delete pending subscription (it's been applied)
+    sb.table('pending_subscriptions').delete().eq('id', pending_sub['id']).execute()
+    
+    return pending_sub
+
 
 @api_router.post("/auth/register")
 async def register_cpf(request: CPFRegisterRequest):
@@ -197,7 +249,7 @@ async def register_cpf(request: CPFRegisterRequest):
     password_hash = get_password_hash(request.password)
     user_data = {
         'cpf': formatted_cpf,
-        'email': request.email,
+        'email': request.email.lower(),
         'name': request.name,
         'password_hash': password_hash,
         'role': 'user',
@@ -207,11 +259,8 @@ async def register_cpf(request: CPFRegisterRequest):
     result = sb.table('users').insert(user_data).execute()
     user = result.data[0]
     
-    # Create subscription
-    sb.table('subscriptions').insert({
-        'user_id': user['id'],
-        'status': 'trial'
-    }).execute()
+    # Apply pending subscription or create default trial
+    applied_pending = await apply_pending_subscription(sb, user['id'], request.email)
     
     # Create usage limit (2 hours default)
     sb.table('usage_limits').insert({
@@ -225,7 +274,11 @@ async def register_cpf(request: CPFRegisterRequest):
         'api_enabled': False
     }).execute()
     
-    return {"message": "Usuário criado com sucesso", "user_id": user['id']}
+    message = "Usuário criado com sucesso"
+    if applied_pending:
+        message = f"Usuário criado com assinatura {applied_pending['subscription_type']} pré-configurada"
+    
+    return {"message": message, "user_id": user['id']}
 
 
 @api_router.post("/auth/login/cpf")
@@ -310,12 +363,12 @@ async def login_google(request: GoogleAuthRequest, response: Response):
     sb = get_supabase_admin()
     
     # Find or create user
-    result = sb.table('users').select('*').eq('email', email).execute()
+    result = sb.table('users').select('*').eq('email', email.lower()).execute()
     
     if not result.data:
         # Create new user
         user_data = {
-            'email': email,
+            'email': email.lower(),
             'name': name,
             'picture': picture,
             'role': 'user',
@@ -324,8 +377,10 @@ async def login_google(request: GoogleAuthRequest, response: Response):
         result = sb.table('users').insert(user_data).execute()
         user = result.data[0]
         
-        # Create default records
-        sb.table('subscriptions').insert({'user_id': user['id'], 'status': 'trial'}).execute()
+        # Apply pending subscription or create default trial
+        await apply_pending_subscription(sb, user['id'], email)
+        
+        # Create usage limit and feature flags
         sb.table('usage_limits').insert({'user_id': user['id'], 'daily_seconds_limit': 7200}).execute()
         sb.table('feature_flags').insert({'user_id': user['id'], 'api_enabled': False}).execute()
     else:
@@ -721,6 +776,85 @@ async def admin_invalidate_sessions(user_id: str, request: Request):
     sb.table('active_sessions').delete().eq('user_id', user_id).execute()
     
     return {"message": "Sessões invalidadas"}
+
+
+# ============== Pending Subscriptions Routes ==============
+
+@api_router.get("/admin/pending-subscriptions")
+async def admin_list_pending_subscriptions(request: Request):
+    """List all pending subscriptions (admin only)"""
+    user, _ = await get_current_user_from_request(request)
+    if user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    sb = get_supabase_admin()
+    try:
+        result = sb.table('pending_subscriptions').select('*').order('created_at', desc=True).execute()
+        return {"pending_subscriptions": result.data or []}
+    except Exception as e:
+        if 'PGRST205' in str(e) or 'pending_subscriptions' in str(e):
+            raise HTTPException(
+                status_code=503, 
+                detail="Tabela de pré-cadastros não encontrada. Execute o script SQL: /app/backend/sql/03_pending_subscriptions.sql no Supabase."
+            )
+        raise
+
+
+@api_router.post("/admin/pending-subscriptions")
+async def admin_create_pending_subscription(body: PendingSubscriptionCreate, request: Request):
+    """Create a pending subscription for a future user (admin only)"""
+    user, _ = await get_current_user_from_request(request)
+    if user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    sb = get_supabase_admin()
+    
+    try:
+        # Check if email already has a pending subscription
+        existing_pending = sb.table('pending_subscriptions').select('id').eq('email', body.email.lower()).execute()
+        if existing_pending.data:
+            raise HTTPException(status_code=400, detail="Este email já tem uma assinatura pendente configurada")
+        
+        # Check if user already exists
+        existing_user = sb.table('users').select('id').eq('email', body.email.lower()).execute()
+        if existing_user.data:
+            raise HTTPException(status_code=400, detail="Este email já está cadastrado no sistema. Use o painel de usuários para gerenciar.")
+        
+        # Create pending subscription
+        pending_data = {
+            'email': body.email.lower(),
+            'subscription_type': body.subscription_type,
+            'trial_days': body.trial_days if body.subscription_type == 'trial' else None,
+            'notes': body.notes,
+            'created_at': datetime.now(timezone.utc).isoformat(),
+            'created_by': user['id']
+        }
+        
+        result = sb.table('pending_subscriptions').insert(pending_data).execute()
+        
+        return {"message": "Pré-cadastro criado com sucesso", "pending_subscription": result.data[0] if result.data else None}
+    except HTTPException:
+        raise
+    except Exception as e:
+        if 'PGRST205' in str(e) or 'pending_subscriptions' in str(e):
+            raise HTTPException(
+                status_code=503, 
+                detail="Tabela de pré-cadastros não encontrada. Execute o script SQL: /app/backend/sql/03_pending_subscriptions.sql no Supabase."
+            )
+        raise
+
+
+@api_router.delete("/admin/pending-subscriptions/{pending_id}")
+async def admin_delete_pending_subscription(pending_id: str, request: Request):
+    """Delete a pending subscription (admin only)"""
+    user, _ = await get_current_user_from_request(request)
+    if user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    sb = get_supabase_admin()
+    sb.table('pending_subscriptions').delete().eq('id', pending_id).execute()
+    
+    return {"message": "Pré-cadastro removido"}
 
 
 # ============== Health Check ==============
