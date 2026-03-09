@@ -60,7 +60,36 @@ export const AuthProvider = ({ children }) => {
     init();
   }, [checkAuth]);
 
-  // Heartbeat interval (30 seconds)
+  // Session validation interval (every 5 seconds) - to detect login from another device quickly
+  useEffect(() => {
+    if (!user) return;
+
+    const validateSession = async () => {
+      try {
+        const result = await authApi.validateSession();
+        if (!result.valid) {
+          if (result.reason === "device_mismatch") {
+            setError(result.message || "Sua conta foi conectada em outro dispositivo");
+            logout();
+          } else if (result.reason === "session_not_found" || result.reason === "session_expired") {
+            logout();
+          }
+        }
+      } catch (err) {
+        console.error("Session validation error:", err);
+      }
+    };
+
+    // Check immediately
+    validateSession();
+
+    // Then every 5 seconds for quick detection
+    const sessionInterval = setInterval(validateSession, 5000);
+
+    return () => clearInterval(sessionInterval);
+  }, [user]);
+
+  // Heartbeat interval (30 seconds) - for usage tracking
   useEffect(() => {
     if (!user) return;
 
