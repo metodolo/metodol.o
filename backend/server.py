@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 import os
 import logging
+import asyncio
 from pathlib import Path
 from pydantic import BaseModel, EmailStr
 from typing import Optional
@@ -17,6 +18,7 @@ import secrets
 import httpx
 from passlib.context import CryptContext
 import pytz
+import resend
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -42,6 +44,14 @@ HEARTBEAT_INTERVAL = 30
 
 # Emergent Auth URL
 EMERGENT_AUTH_URL = "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data"
+
+# Resend configuration
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY')
+ADMIN_EMAIL = os.environ.get('ADMIN_NOTIFICATION_EMAIL', 'metodolo37@gmail.com')
+SENDER_EMAIL = os.environ.get('SENDER_EMAIL', 'onboarding@resend.dev')
+
+if RESEND_API_KEY:
+    resend.api_key = RESEND_API_KEY
 
 
 # ============== Helper Functions ==============
@@ -80,6 +90,80 @@ def get_today_date_br() -> str:
     """Get today's date in Brazil timezone"""
     now = datetime.now(SAO_PAULO_TZ)
     return now.strftime('%Y-%m-%d')
+
+async def send_new_user_notification(user_email: str, user_name: str, user_cpf: str = None, auth_method: str = "CPF"):
+    """Send email notification to admin when a new user registers"""
+    if not RESEND_API_KEY:
+        logger.warning("RESEND_API_KEY not configured, skipping email notification")
+        return
+    
+    try:
+        now_br = datetime.now(SAO_PAULO_TZ).strftime('%d/%m/%Y às %H:%M')
+        
+        html_content = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #1a1a1a; color: #ffffff;">
+            <div style="text-align: center; padding: 20px; border-bottom: 2px solid #D4AF37;">
+                <h1 style="color: #D4AF37; margin: 0;">Método L.O</h1>
+                <p style="color: #888; margin-top: 10px;">Novo Cadastro Realizado</p>
+            </div>
+            
+            <div style="padding: 30px 20px;">
+                <h2 style="color: #00ff95; margin-bottom: 20px;">🆕 Novo Usuário Cadastrado!</h2>
+                
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 10px; border-bottom: 1px solid #333; color: #888;">Email:</td>
+                        <td style="padding: 10px; border-bottom: 1px solid #333; color: #fff;"><strong>{user_email}</strong></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border-bottom: 1px solid #333; color: #888;">Nome:</td>
+                        <td style="padding: 10px; border-bottom: 1px solid #333; color: #fff;">{user_name or 'Não informado'}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border-bottom: 1px solid #333; color: #888;">CPF:</td>
+                        <td style="padding: 10px; border-bottom: 1px solid #333; color: #fff;">{user_cpf or 'Login via Google'}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border-bottom: 1px solid #333; color: #888;">Método de Cadastro:</td>
+                        <td style="padding: 10px; border-bottom: 1px solid #333; color: #fff;">{auth_method}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border-bottom: 1px solid #333; color: #888;">Data/Hora:</td>
+                        <td style="padding: 10px; border-bottom: 1px solid #333; color: #fff;">{now_br}</td>
+                    </tr>
+                </table>
+                
+                <div style="margin-top: 30px; padding: 20px; background-color: #222; border-radius: 8px; border-left: 4px solid #D4AF37;">
+                    <p style="margin: 0; color: #D4AF37;"><strong>⚠️ Ação Necessária:</strong></p>
+                    <p style="margin: 10px 0 0 0; color: #ccc;">
+                        Acesse o Painel Admin para escolher o plano deste usuário:
+                        <br>• Teste (3, 7, 14 ou 30 dias)
+                        <br>• Mensal
+                        <br>• Anual
+                        <br>• Vitalício
+                    </p>
+                </div>
+            </div>
+            
+            <div style="text-align: center; padding: 20px; border-top: 1px solid #333; color: #666; font-size: 12px;">
+                <p>Este é um email automático do sistema Método L.O</p>
+            </div>
+        </div>
+        """
+        
+        params = {
+            "from": SENDER_EMAIL,
+            "to": [ADMIN_EMAIL],
+            "subject": f"🆕 Novo Cadastro - {user_email}",
+            "html": html_content
+        }
+        
+        # Run sync SDK in thread to keep FastAPI non-blocking
+        email_result = await asyncio.to_thread(resend.Emails.send, params)
+        logger.info(f"Email notification sent for new user: {user_email}, email_id: {email_result.get('id')}")
+        
+    except Exception as e:
+        logger.error(f"Failed to send email notification: {str(e)}")
 
 async def get_emergent_user_data(session_id: str) -> dict:
     """Get user data from Emergent OAuth session"""
@@ -278,6 +362,15 @@ async def register_cpf(request: CPFRegisterRequest):
         'api_enabled': False
     }).execute()
     
+    # Send email notification to admin (only if no pending subscription was applied)
+    if not applied_pending:
+        await send_new_user_notification(
+            user_email=request.email,
+            user_name=request.name,
+            user_cpf=formatted_cpf,
+            auth_method="CPF/Senha"
+        )
+    
     message = "Usuário criado com sucesso"
     if applied_pending:
         message = f"Usuário criado com assinatura {applied_pending['subscription_type']} pré-configurada"
@@ -370,6 +463,7 @@ async def login_google(request: GoogleAuthRequest, response: Response):
     # Find or create user
     result = sb.table('users').select('*').eq('email', email.lower()).execute()
     
+    applied_pending = None
     if not result.data:
         # Create new user
         user_data = {
@@ -383,11 +477,20 @@ async def login_google(request: GoogleAuthRequest, response: Response):
         user = result.data[0]
         
         # Apply pending subscription or create default trial
-        await apply_pending_subscription(sb, user['id'], email)
+        applied_pending = await apply_pending_subscription(sb, user['id'], email)
         
         # Create usage limit and feature flags
         sb.table('usage_limits').insert({'user_id': user['id'], 'daily_seconds_limit': 7200}).execute()
         sb.table('feature_flags').insert({'user_id': user['id'], 'api_enabled': False}).execute()
+        
+        # Send email notification to admin (only if no pending subscription was applied)
+        if not applied_pending:
+            await send_new_user_notification(
+                user_email=email,
+                user_name=name,
+                user_cpf=None,
+                auth_method="Google OAuth"
+            )
     else:
         user = result.data[0]
         # Update info

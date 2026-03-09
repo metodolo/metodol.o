@@ -1,7 +1,7 @@
 /**
  * Auth Context for RADAR V22 / Método L.O
  */
-import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { authApi, usageApi } from "../services/api";
 
 const AuthContext = createContext(null);
@@ -22,6 +22,21 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [mustChangePassword, setMustChangePassword] = useState(false);
+  const [sessionKicked, setSessionKicked] = useState(false);
+  
+  // Ref to track if we're logged in (for intervals)
+  const isLoggedInRef = useRef(false);
+
+  const forceLogout = useCallback(() => {
+    console.log("Force logout triggered");
+    localStorage.removeItem("session_token");
+    setUser(null);
+    setSubscription(null);
+    setUsage(null);
+    setFeatures(null);
+    setMustChangePassword(false);
+    isLoggedInRef.current = false;
+  }, []);
 
   const checkAuth = useCallback(async () => {
     try {
@@ -32,16 +47,13 @@ export const AuthProvider = ({ children }) => {
       setFeatures(data.features);
       setMustChangePassword(data.user?.must_change_password || false);
       setError(null);
+      isLoggedInRef.current = true;
       return true;
     } catch (err) {
-      setUser(null);
-      setSubscription(null);
-      setUsage(null);
-      setFeatures(null);
-      setMustChangePassword(false);
+      forceLogout();
       return false;
     }
-  }, []);
+  }, [forceLogout]);
 
   useEffect(() => {
     // CRITICAL: If returning from OAuth callback, skip the /me check
@@ -60,54 +72,59 @@ export const AuthProvider = ({ children }) => {
     init();
   }, [checkAuth]);
 
-  // Session validation interval (every 5 seconds) - to detect login from another device quickly
+  // Session validation interval (every 3 seconds) - to detect login from another device quickly
   useEffect(() => {
     if (!user) return;
 
     const validateSession = async () => {
+      if (!isLoggedInRef.current) return;
+      
       try {
         const result = await authApi.validateSession();
+        console.log("Session validation result:", result);
+        
         if (!result.valid) {
-          if (result.reason === "device_mismatch") {
-            setError(result.message || "Sua conta foi conectada em outro dispositivo");
-            logout();
-          } else if (result.reason === "session_not_found" || result.reason === "session_expired" || result.reason === "no_session") {
-            setError("Sua sessão foi encerrada");
-            logout();
-          }
+          console.log("Session invalid, reason:", result.reason);
+          setError(result.message || "Sua conta foi conectada em outro dispositivo");
+          setSessionKicked(true);
+          forceLogout();
+          // Redirect to login
+          window.location.href = "/login";
         }
       } catch (err) {
-        // If we get 401, it means the session is no longer valid
-        if (err.message?.includes("401") || err.message?.includes("Não autenticado") || err.message?.includes("Sessão")) {
-          setError("Sua conta foi conectada em outro dispositivo");
-          logout();
-        }
         console.error("Session validation error:", err);
+        // Any error means session is invalid
+        setError("Sua sessão foi encerrada");
+        setSessionKicked(true);
+        forceLogout();
+        window.location.href = "/login";
       }
     };
 
     // Check immediately
     validateSession();
 
-    // Then every 5 seconds for quick detection
-    const sessionInterval = setInterval(validateSession, 5000);
+    // Then every 3 seconds for quick detection
+    const sessionInterval = setInterval(validateSession, 3000);
 
     return () => clearInterval(sessionInterval);
-  }, [user]);
+  }, [user, forceLogout]);
 
   // Heartbeat interval (30 seconds) - for usage tracking
   useEffect(() => {
     if (!user) return;
 
     const sendHeartbeat = async () => {
+      if (!isLoggedInRef.current) return;
+      
       try {
         const result = await usageApi.heartbeat();
         if (!result.allowed) {
-          // Limit exceeded or session invalid
           setError(result.message);
           if (result.reason === "device_mismatch") {
-            // Force logout
-            logout();
+            setSessionKicked(true);
+            forceLogout();
+            window.location.href = "/login";
           }
         } else {
           setUsage({
@@ -129,13 +146,15 @@ export const AuthProvider = ({ children }) => {
     const interval = setInterval(sendHeartbeat, 30000);
 
     return () => clearInterval(interval);
-  }, [user]);
+  }, [user, forceLogout]);
 
   const login = useCallback(async (userData, subData) => {
     setUser(userData);
     setSubscription(subData);
     setMustChangePassword(userData?.must_change_password || false);
-    await checkAuth(); // Refresh full data
+    setSessionKicked(false);
+    isLoggedInRef.current = true;
+    await checkAuth();
   }, [checkAuth]);
 
   const logout = useCallback(async () => {
@@ -144,13 +163,9 @@ export const AuthProvider = ({ children }) => {
     } catch (err) {
       console.error("Logout error:", err);
     } finally {
-      setUser(null);
-      setSubscription(null);
-      setUsage(null);
-      setFeatures(null);
-      setMustChangePassword(false);
+      forceLogout();
     }
-  }, []);
+  }, [forceLogout]);
 
   const clearMustChangePassword = useCallback(() => {
     setMustChangePassword(false);
@@ -169,6 +184,7 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated: !!user,
     isAdmin: user?.role === "admin",
     mustChangePassword,
+    sessionKicked,
     login,
     logout,
     checkAuth,
