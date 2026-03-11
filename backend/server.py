@@ -67,7 +67,7 @@ SUBSCRIPTION_PLANS = {
     "monthly": {
         "title": "Método L.O - Plano Mensal",
         "description": "Acesso completo por 30 dias",
-        "price": 97.00,
+        "price": 200.00,
         "days": 30
     },
     "annual": {
