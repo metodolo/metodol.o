@@ -2,7 +2,7 @@
 RADAR V22 + Método L.O - Main Server
 FastAPI backend with Supabase REST API
 """
-from fastapi import FastAPI, APIRouter, HTTPException, Request, Response
+from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, BackgroundTasks
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -19,6 +19,7 @@ import httpx
 from passlib.context import CryptContext
 import pytz
 import resend
+import mercadopago
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -47,11 +48,41 @@ EMERGENT_AUTH_URL = "https://demobackend.emergentagent.com/auth/v1/env/oauth/ses
 
 # Resend configuration
 RESEND_API_KEY = os.environ.get('RESEND_API_KEY')
-ADMIN_EMAIL = os.environ.get('ADMIN_NOTIFICATION_EMAIL', 'metodolo37@gmail.com')
+ADMIN_EMAIL = os.environ.get('ADMIN_NOTIFICATION_EMAIL', 'lahis0319@gmail.com')
 SENDER_EMAIL = os.environ.get('SENDER_EMAIL', 'onboarding@resend.dev')
 
 if RESEND_API_KEY:
     resend.api_key = RESEND_API_KEY
+
+# Mercado Pago configuration
+MERCADO_PAGO_ACCESS_TOKEN = os.environ.get('MERCADO_PAGO_ACCESS_TOKEN')
+MERCADO_PAGO_PUBLIC_KEY = os.environ.get('MERCADO_PAGO_PUBLIC_KEY')
+
+mp_sdk = None
+if MERCADO_PAGO_ACCESS_TOKEN:
+    mp_sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
+
+# Subscription plans configuration (prices in BRL)
+SUBSCRIPTION_PLANS = {
+    "monthly": {
+        "title": "Método L.O - Plano Mensal",
+        "description": "Acesso completo por 30 dias",
+        "price": 97.00,
+        "days": 30
+    },
+    "annual": {
+        "title": "Método L.O - Plano Anual",
+        "description": "Acesso completo por 1 ano (2 meses grátis!)",
+        "price": 970.00,
+        "days": 365
+    },
+    "lifetime": {
+        "title": "Método L.O - Acesso Vitalício",
+        "description": "Acesso completo para sempre",
+        "price": 1997.00,
+        "days": 36500  # 100 years
+    }
+}
 
 
 # ============== Helper Functions ==============
@@ -264,6 +295,10 @@ class PendingSubscriptionCreate(BaseModel):
     subscription_type: str  # trial, monthly, yearly, lifetime
     trial_days: Optional[int] = 7
     notes: Optional[str] = None
+
+class CreatePaymentRequest(BaseModel):
+    plan_type: str  # monthly, annual, lifetime
+    user_id: Optional[str] = None
 
 
 # ============== Auth Routes ==============
@@ -996,6 +1031,312 @@ async def admin_delete_pending_subscription(pending_id: str, request: Request):
     sb.table('pending_subscriptions').delete().eq('id', pending_id).execute()
     
     return {"message": "Pré-cadastro removido"}
+
+
+# ============== Payment Routes (Mercado Pago) ==============
+
+@api_router.get("/payments/plans")
+async def get_payment_plans():
+    """Get available subscription plans"""
+    return {
+        "plans": [
+            {
+                "id": "monthly",
+                "name": SUBSCRIPTION_PLANS["monthly"]["title"],
+                "description": SUBSCRIPTION_PLANS["monthly"]["description"],
+                "price": SUBSCRIPTION_PLANS["monthly"]["price"],
+                "price_formatted": f"R$ {SUBSCRIPTION_PLANS['monthly']['price']:.2f}".replace('.', ',')
+            },
+            {
+                "id": "annual",
+                "name": SUBSCRIPTION_PLANS["annual"]["title"],
+                "description": SUBSCRIPTION_PLANS["annual"]["description"],
+                "price": SUBSCRIPTION_PLANS["annual"]["price"],
+                "price_formatted": f"R$ {SUBSCRIPTION_PLANS['annual']['price']:.2f}".replace('.', ',')
+            },
+            {
+                "id": "lifetime",
+                "name": SUBSCRIPTION_PLANS["lifetime"]["title"],
+                "description": SUBSCRIPTION_PLANS["lifetime"]["description"],
+                "price": SUBSCRIPTION_PLANS["lifetime"]["price"],
+                "price_formatted": f"R$ {SUBSCRIPTION_PLANS['lifetime']['price']:.2f}".replace('.', ',')
+            }
+        ],
+        "public_key": MERCADO_PAGO_PUBLIC_KEY
+    }
+
+
+@api_router.post("/payments/create-preference")
+async def create_payment_preference(body: CreatePaymentRequest, request: Request):
+    """Create a Mercado Pago payment preference"""
+    if not mp_sdk:
+        raise HTTPException(status_code=503, detail="Mercado Pago não configurado")
+    
+    user, _ = await get_current_user_from_request(request)
+    
+    plan = SUBSCRIPTION_PLANS.get(body.plan_type)
+    if not plan:
+        raise HTTPException(status_code=400, detail="Plano inválido")
+    
+    # Create unique reference for this payment
+    external_reference = f"{user['id']}_{body.plan_type}_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
+    
+    # Base URL for redirects (will be updated for production)
+    base_url = os.environ.get('FRONTEND_URL', 'https://metodol-o.vercel.app')
+    
+    preference_data = {
+        "items": [
+            {
+                "title": plan["title"],
+                "description": plan["description"],
+                "quantity": 1,
+                "currency_id": "BRL",
+                "unit_price": plan["price"]
+            }
+        ],
+        "payer": {
+            "email": user.get('email', '')
+        },
+        "external_reference": external_reference,
+        "back_urls": {
+            "success": f"{base_url}/pagamento/sucesso",
+            "failure": f"{base_url}/pagamento/erro",
+            "pending": f"{base_url}/pagamento/pendente"
+        },
+        "auto_return": "approved",
+        "notification_url": f"{os.environ.get('BACKEND_URL', 'https://radar-management.preview.emergentagent.com')}/api/payments/webhook",
+        "statement_descriptor": "METODO LO",
+        "metadata": {
+            "user_id": user['id'],
+            "plan_type": body.plan_type,
+            "user_email": user.get('email', '')
+        }
+    }
+    
+    try:
+        result = mp_sdk.preference().create(preference_data)
+        
+        if result["status"] == 201:
+            response_data = result["response"]
+            
+            # Try to save payment attempt to database (non-blocking)
+            try:
+                sb = get_supabase_admin()
+                sb.table('payment_attempts').insert({
+                    'user_id': user['id'],
+                    'plan_type': body.plan_type,
+                    'external_reference': external_reference,
+                    'preference_id': response_data['id'],
+                    'amount': plan["price"],
+                    'status': 'pending',
+                    'created_at': datetime.now(timezone.utc).isoformat()
+                }).execute()
+            except Exception as db_error:
+                logger.warning(f"Could not save payment attempt: {db_error}")
+            
+            return {
+                "preference_id": response_data["id"],
+                "init_point": response_data["init_point"],
+                "sandbox_init_point": response_data.get("sandbox_init_point"),
+                "external_reference": external_reference
+            }
+        else:
+            logger.error(f"Mercado Pago error: {result}")
+            raise HTTPException(status_code=400, detail="Erro ao criar preferência de pagamento")
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Payment preference error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro interno: {str(e)}")
+
+
+@api_router.post("/payments/webhook")
+async def handle_payment_webhook(request: Request, background_tasks: BackgroundTasks):
+    """Handle Mercado Pago payment webhooks"""
+    try:
+        body = await request.json()
+        logger.info(f"Webhook received: {body}")
+        
+        # Only process payment notifications
+        if body.get("type") != "payment":
+            return JSONResponse(status_code=200, content={"status": "ignored"})
+        
+        payment_id = body.get("data", {}).get("id")
+        if not payment_id:
+            return JSONResponse(status_code=200, content={"status": "no_payment_id"})
+        
+        # Verify payment with Mercado Pago
+        if not mp_sdk:
+            return JSONResponse(status_code=200, content={"status": "mp_not_configured"})
+        
+        payment_result = mp_sdk.payment().get(payment_id)
+        
+        if payment_result["status"] != 200:
+            logger.error(f"Failed to get payment info: {payment_result}")
+            return JSONResponse(status_code=200, content={"status": "payment_fetch_failed"})
+        
+        payment = payment_result["response"]
+        external_reference = payment.get("external_reference", "")
+        payment_status = payment.get("status")
+        
+        logger.info(f"Payment {payment_id} status: {payment_status}, ref: {external_reference}")
+        
+        # Process approved payments
+        if payment_status == "approved":
+            background_tasks.add_task(
+                process_approved_payment,
+                external_reference,
+                payment_id,
+                payment.get("transaction_amount"),
+                payment.get("metadata", {})
+            )
+        
+        return JSONResponse(status_code=200, content={"status": "received"})
+    
+    except Exception as e:
+        logger.error(f"Webhook error: {str(e)}")
+        return JSONResponse(status_code=200, content={"status": "error"})
+
+
+async def process_approved_payment(external_reference: str, payment_id: str, amount: float, metadata: dict):
+    """Process an approved payment and activate subscription"""
+    try:
+        # Parse external reference: user_id_plan_type_timestamp
+        parts = external_reference.split("_")
+        if len(parts) < 2:
+            logger.error(f"Invalid external reference: {external_reference}")
+            return
+        
+        user_id = parts[0]
+        plan_type = parts[1]
+        
+        plan = SUBSCRIPTION_PLANS.get(plan_type)
+        if not plan:
+            logger.error(f"Invalid plan type in reference: {plan_type}")
+            return
+        
+        sb = get_supabase_admin()
+        
+        # Calculate subscription end date
+        days = plan["days"]
+        end_date = (datetime.now(timezone.utc) + timedelta(days=days)).isoformat()
+        
+        # Update subscription
+        sb.table('subscriptions').upsert({
+            'user_id': user_id,
+            'status': 'active',
+            'provider': 'mercadopago',
+            'provider_subscription_id': str(payment_id),
+            'current_period_end': end_date,
+            'updated_at': datetime.now(timezone.utc).isoformat()
+        }, on_conflict='user_id').execute()
+        
+        # Update payment attempt status
+        sb.table('payment_attempts').update({
+            'status': 'approved',
+            'payment_id': str(payment_id),
+            'updated_at': datetime.now(timezone.utc).isoformat()
+        }).eq('external_reference', external_reference).execute()
+        
+        logger.info(f"Subscription activated for user {user_id}, plan {plan_type}")
+        
+        # Send confirmation email to admin
+        user_result = sb.table('users').select('email, name').eq('id', user_id).execute()
+        if user_result.data and RESEND_API_KEY:
+            user_data = user_result.data[0]
+            await send_payment_notification(user_data.get('email'), user_data.get('name'), plan_type, amount)
+    
+    except Exception as e:
+        logger.error(f"Error processing approved payment: {str(e)}")
+
+
+async def send_payment_notification(user_email: str, user_name: str, plan_type: str, amount: float):
+    """Send payment confirmation email to admin"""
+    if not RESEND_API_KEY:
+        return
+    
+    try:
+        plan = SUBSCRIPTION_PLANS.get(plan_type, {})
+        now_br = datetime.now(SAO_PAULO_TZ).strftime('%d/%m/%Y às %H:%M')
+        
+        html_content = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #1a1a1a; color: #ffffff;">
+            <div style="text-align: center; padding: 20px; border-bottom: 2px solid #D4AF37;">
+                <h1 style="color: #D4AF37; margin: 0;">Método L.O</h1>
+                <p style="color: #888; margin-top: 10px;">💰 Pagamento Confirmado!</p>
+            </div>
+            
+            <div style="padding: 30px 20px;">
+                <h2 style="color: #00ff95; margin-bottom: 20px;">✅ Novo Pagamento Recebido!</h2>
+                
+                <table style="width: 100%; border-collapse: collapse;">
+                    <tr>
+                        <td style="padding: 10px; border-bottom: 1px solid #333; color: #888;">Cliente:</td>
+                        <td style="padding: 10px; border-bottom: 1px solid #333; color: #fff;"><strong>{user_email}</strong></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border-bottom: 1px solid #333; color: #888;">Nome:</td>
+                        <td style="padding: 10px; border-bottom: 1px solid #333; color: #fff;">{user_name or 'Não informado'}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border-bottom: 1px solid #333; color: #888;">Plano:</td>
+                        <td style="padding: 10px; border-bottom: 1px solid #333; color: #fff;">{plan.get('title', plan_type)}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border-bottom: 1px solid #333; color: #888;">Valor:</td>
+                        <td style="padding: 10px; border-bottom: 1px solid #333; color: #00ff95; font-weight: bold;">R$ {amount:.2f}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border-bottom: 1px solid #333; color: #888;">Data/Hora:</td>
+                        <td style="padding: 10px; border-bottom: 1px solid #333; color: #fff;">{now_br}</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div style="text-align: center; padding: 20px; border-top: 1px solid #333; color: #666; font-size: 12px;">
+                <p>Este é um email automático do sistema Método L.O</p>
+            </div>
+        </div>
+        """
+        
+        params = {
+            "from": SENDER_EMAIL,
+            "to": [ADMIN_EMAIL],
+            "subject": f"💰 Pagamento Confirmado - R$ {amount:.2f} - {user_email}",
+            "html": html_content
+        }
+        
+        await asyncio.to_thread(resend.Emails.send, params)
+        logger.info(f"Payment notification email sent for {user_email}")
+        
+    except Exception as e:
+        logger.error(f"Failed to send payment notification: {str(e)}")
+
+
+@api_router.get("/payments/status/{external_reference}")
+async def check_payment_status(external_reference: str, request: Request):
+    """Check payment status by external reference"""
+    user, _ = await get_current_user_from_request(request)
+    
+    sb = get_supabase_admin()
+    result = sb.table('payment_attempts').select('*').eq('external_reference', external_reference).execute()
+    
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Pagamento não encontrado")
+    
+    payment = result.data[0]
+    
+    # Verify user owns this payment
+    if payment['user_id'] != user['id'] and user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    return {
+        "status": payment.get('status'),
+        "plan_type": payment.get('plan_type'),
+        "amount": payment.get('amount'),
+        "created_at": payment.get('created_at')
+    }
 
 
 # ============== Health Check ==============
