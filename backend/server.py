@@ -1236,8 +1236,10 @@ async def create_payment_preference(body: CreatePaymentRequest, request: Request
         "payment_methods": {
             "excluded_payment_types": [],
             "excluded_payment_methods": [],
-            "installments": 12
+            "installments": 12,
+            "default_payment_method_id": None
         },
+        "binary_mode": False,
         "external_reference": external_reference,
         "back_urls": {
             "success": f"{base_url}/pagamento/sucesso",
