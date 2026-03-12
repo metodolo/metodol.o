@@ -194,6 +194,26 @@ export const adminApi = {
       method: "DELETE",
     });
   },
+
+  // List blacklist
+  listBlacklist: async () => {
+    return apiRequest("/admin/blacklist");
+  },
+
+  // Add to blacklist
+  addToBlacklist: async (type, value, reason) => {
+    return apiRequest("/admin/blacklist", {
+      method: "POST",
+      body: JSON.stringify({ type, value, reason }),
+    });
+  },
+
+  // Remove from blacklist
+  removeFromBlacklist: async (blacklistId) => {
+    return apiRequest(`/admin/blacklist/${blacklistId}`, {
+      method: "DELETE",
+    });
+  },
 };
 
 // ============== Health API ==============

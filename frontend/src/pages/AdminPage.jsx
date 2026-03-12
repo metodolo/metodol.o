@@ -19,6 +19,8 @@ import {
   UserPlus,
   Mail,
   Trash2,
+  Ban,
+  ShieldOff,
 } from "lucide-react";
 
 const AdminPage = () => {
@@ -26,10 +28,11 @@ const AdminPage = () => {
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [pendingSubscriptions, setPendingSubscriptions] = useState([]);
+  const [blacklist, setBlacklist] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [actionLoading, setActionLoading] = useState(null);
-  const [activeTab, setActiveTab] = useState("users"); // users or pending
+  const [activeTab, setActiveTab] = useState("users"); // users, pending, or blacklist
   
   // Form state for new pending subscription
   const [newEmail, setNewEmail] = useState("");
@@ -37,6 +40,12 @@ const AdminPage = () => {
   const [newTrialDays, setNewTrialDays] = useState(7);
   const [newNotes, setNewNotes] = useState("");
   const [formLoading, setFormLoading] = useState(false);
+  
+  // Form state for blacklist
+  const [blacklistType, setBlacklistType] = useState("email");
+  const [blacklistValue, setBlacklistValue] = useState("");
+  const [blacklistReason, setBlacklistReason] = useState("");
+  const [blacklistLoading, setBlacklistLoading] = useState(false);
 
   // Redirect if not admin
   useEffect(() => {
@@ -69,11 +78,21 @@ const AdminPage = () => {
     }
   };
 
+  // Load blacklist
+  const loadBlacklist = async () => {
+    try {
+      const data = await adminApi.listBlacklist();
+      setBlacklist(data.blacklist || []);
+    } catch (err) {
+      console.error("Error loading blacklist:", err);
+    }
+  };
+
   // Load all data
   const loadAllData = async () => {
     setLoading(true);
     try {
-      await Promise.all([loadUsers(), loadPendingSubscriptions()]);
+      await Promise.all([loadUsers(), loadPendingSubscriptions(), loadBlacklist()]);
     } finally {
       setLoading(false);
     }
@@ -161,6 +180,43 @@ const AdminPage = () => {
     try {
       await adminApi.deletePendingSubscription(pendingId);
       await loadPendingSubscriptions();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Add to blacklist
+  const addToBlacklist = async (e) => {
+    e.preventDefault();
+    if (!blacklistValue.trim()) {
+      setError("Por favor, insira um valor válido");
+      return;
+    }
+    
+    setBlacklistLoading(true);
+    try {
+      await adminApi.addToBlacklist(blacklistType, blacklistValue.trim(), blacklistReason.trim());
+      // Reset form
+      setBlacklistValue("");
+      setBlacklistReason("");
+      // Reload lists
+      await Promise.all([loadBlacklist(), loadUsers()]);
+      setError("");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBlacklistLoading(false);
+    }
+  };
+
+  // Remove from blacklist
+  const removeFromBlacklist = async (blacklistId) => {
+    setActionLoading(blacklistId);
+    try {
+      await adminApi.removeFromBlacklist(blacklistId);
+      await loadBlacklist();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -259,6 +315,18 @@ const AdminPage = () => {
           >
             <UserPlus className="w-4 h-4" />
             Pré-Cadastros ({pendingSubscriptions.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("blacklist")}
+            className={`flex-1 py-3 px-4 rounded-lg font-bold text-sm flex items-center justify-center gap-2 border-2 ${
+              activeTab === "blacklist" 
+                ? "bg-black text-white border-[#D4AF37]" 
+                : "bg-[#222] text-gray-400 border-transparent hover:border-[#333]"
+            }`}
+            data-testid="tab-blacklist"
+          >
+            <Ban className="w-4 h-4" />
+            Lista Negra ({blacklist.length})
           </button>
         </div>
 
@@ -440,6 +508,146 @@ const AdminPage = () => {
                           <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
                           <Trash2 className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : activeTab === "blacklist" ? (
+          /* Blacklist Tab */
+          <div className="space-y-4">
+            {/* Add to blacklist form */}
+            <div className="card-glass p-4">
+              <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-[#D4AF37]">
+                <Ban className="w-5 h-5" />
+                Bloquear Email ou CPF
+              </h3>
+              <form onSubmit={addToBlacklist} className="space-y-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">Tipo</label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setBlacklistType("email")}
+                      className={`flex-1 py-2 px-4 rounded font-bold text-sm ${
+                        blacklistType === "email"
+                          ? "bg-red-500 text-white"
+                          : "bg-red-500/20 text-red-400"
+                      }`}
+                    >
+                      Email
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBlacklistType("cpf")}
+                      className={`flex-1 py-2 px-4 rounded font-bold text-sm ${
+                        blacklistType === "cpf"
+                          ? "bg-red-500 text-white"
+                          : "bg-red-500/20 text-red-400"
+                      }`}
+                    >
+                      CPF
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">
+                    {blacklistType === "email" ? "Email para bloquear" : "CPF para bloquear"}
+                  </label>
+                  <input
+                    type={blacklistType === "email" ? "email" : "text"}
+                    value={blacklistValue}
+                    onChange={(e) => setBlacklistValue(e.target.value)}
+                    placeholder={blacklistType === "email" ? "exemplo@email.com" : "000.000.000-00"}
+                    className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-4 py-3 text-white focus:border-[#D4AF37] focus:outline-none"
+                    data-testid="input-blacklist-value"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Motivo (opcional)</label>
+                  <input
+                    type="text"
+                    value={blacklistReason}
+                    onChange={(e) => setBlacklistReason(e.target.value)}
+                    placeholder="Ex: Fraude, Teste indevido..."
+                    className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-4 py-3 text-white focus:border-[#D4AF37] focus:outline-none"
+                    data-testid="input-blacklist-reason"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={blacklistLoading || !blacklistValue.trim()}
+                  className="w-full py-3 bg-red-500 text-white font-bold rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  data-testid="btn-add-blacklist"
+                >
+                  {blacklistLoading ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <>
+                      <Ban className="w-5 h-5" />
+                      Bloquear
+                    </>
+                  )}
+                </button>
+              </form>
+            </div>
+
+            {/* Blacklist entries */}
+            <div className="card-glass p-4">
+              <h3 className="text-lg font-bold mb-4 text-white">
+                Bloqueados ({blacklist.length})
+              </h3>
+              
+              {blacklist.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  Nenhum email ou CPF bloqueado.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {blacklist.map((item) => (
+                    <div
+                      key={item.id}
+                      className="bg-[#1a1a1a] border border-red-500/30 rounded-lg p-3 flex flex-wrap items-center gap-3"
+                      data-testid={`blacklist-${item.id}`}
+                    >
+                      <div className="flex-1 min-w-[200px]">
+                        <div className="font-bold text-white flex items-center gap-2">
+                          <ShieldOff className="w-4 h-4 text-red-400" />
+                          {item.value}
+                        </div>
+                        {item.reason && (
+                          <div className="text-xs text-gray-500 mt-1">Motivo: {item.reason}</div>
+                        )}
+                        <div className="text-xs text-gray-500 mt-1">
+                          Bloqueado em: {new Date(item.created_at).toLocaleDateString("pt-BR")}
+                        </div>
+                      </div>
+                      
+                      <span className={`px-3 py-1 rounded text-sm font-bold ${
+                        item.type === "email" 
+                          ? "bg-orange-500/20 text-orange-400"
+                          : "bg-purple-500/20 text-purple-400"
+                      }`}>
+                        {item.type.toUpperCase()}
+                      </span>
+                      
+                      <button
+                        onClick={() => removeFromBlacklist(item.id)}
+                        disabled={actionLoading === item.id}
+                        className="p-2 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30"
+                        title="Desbloquear"
+                        data-testid={`unblock-${item.id}`}
+                      >
+                        {actionLoading === item.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Check className="w-4 h-4" />
                         )}
                       </button>
                     </div>

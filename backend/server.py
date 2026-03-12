@@ -208,6 +208,27 @@ async def get_emergent_user_data(session_id: str) -> dict:
         return response.json()
 
 
+def check_blacklist(sb, email: str = None, cpf: str = None) -> bool:
+    """Check if email or CPF is blacklisted. Returns True if blocked."""
+    try:
+        if email:
+            result = sb.table('blacklist').select('id').eq('type', 'email').eq('value', email.lower()).execute()
+            if result.data:
+                return True
+        
+        if cpf:
+            # Clean CPF for comparison
+            cpf_clean = re.sub(r'[^0-9]', '', cpf)
+            result = sb.table('blacklist').select('id').eq('type', 'cpf').eq('value', cpf_clean).execute()
+            if result.data:
+                return True
+        
+        return False
+    except Exception as e:
+        logger.warning(f"Blacklist check error: {e}")
+        return False
+
+
 # ============== Auth Helpers ==============
 
 async def get_current_user_from_request(request: Request):
@@ -281,6 +302,11 @@ class HeartbeatRequest(BaseModel):
 class ChangePasswordRequest(BaseModel):
     current_password: str
     new_password: str
+
+class BlacklistRequest(BaseModel):
+    type: str  # 'email' or 'cpf'
+    value: str
+    reason: Optional[str] = None
 
 class AdminUserUpdate(BaseModel):
     is_active: Optional[bool] = None
@@ -356,7 +382,12 @@ async def register_cpf(request: CPFRegisterRequest):
         raise HTTPException(status_code=400, detail="CPF inválido")
     
     formatted_cpf = format_cpf(request.cpf)
+    cpf_clean = re.sub(r'[^0-9]', '', request.cpf)
     sb = get_supabase_admin()
+    
+    # Check blacklist
+    if check_blacklist(sb, email=request.email, cpf=cpf_clean):
+        raise HTTPException(status_code=403, detail="Acesso bloqueado. Entre em contato com o suporte.")
     
     # Check if CPF exists
     existing = sb.table('users').select('id').eq('cpf', formatted_cpf).execute()
@@ -421,12 +452,20 @@ async def login_cpf(request: CPFLoginRequest, response: Response):
     
     sb = get_supabase_admin()
     
+    # Check blacklist
+    if check_blacklist(sb, cpf=cpf_clean):
+        raise HTTPException(status_code=403, detail="Acesso bloqueado. Entre em contato com o suporte.")
+    
     # Find user
     result = sb.table('users').select('*').eq('cpf', formatted_cpf).execute()
     if not result.data:
         raise HTTPException(status_code=401, detail="CPF ou senha incorretos")
     
     user = result.data[0]
+    
+    # Check blacklist by email too
+    if check_blacklist(sb, email=user.get('email')):
+        raise HTTPException(status_code=403, detail="Acesso bloqueado. Entre em contato com o suporte.")
     
     if not user.get('password_hash'):
         raise HTTPException(status_code=401, detail="Esta conta usa login via Google")
@@ -494,6 +533,10 @@ async def login_google(request: GoogleAuthRequest, response: Response):
         raise HTTPException(status_code=400, detail="Email não fornecido pelo Google")
     
     sb = get_supabase_admin()
+    
+    # Check blacklist
+    if check_blacklist(sb, email=email):
+        raise HTTPException(status_code=403, detail="Acesso bloqueado. Entre em contato com o suporte.")
     
     # Find or create user
     result = sb.table('users').select('*').eq('email', email.lower()).execute()
@@ -1031,6 +1074,99 @@ async def admin_delete_pending_subscription(pending_id: str, request: Request):
     sb.table('pending_subscriptions').delete().eq('id', pending_id).execute()
     
     return {"message": "Pré-cadastro removido"}
+
+
+# ============== Blacklist Routes ==============
+
+@api_router.get("/admin/blacklist")
+async def admin_list_blacklist(request: Request):
+    """List all blacklisted emails and CPFs (admin only)"""
+    user, _ = await get_current_user_from_request(request)
+    if user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    sb = get_supabase_admin()
+    try:
+        result = sb.table('blacklist').select('*').order('created_at', desc=True).execute()
+        return {"blacklist": result.data or []}
+    except Exception as e:
+        if 'PGRST205' in str(e):
+            return {"blacklist": [], "message": "Tabela não existe. Execute o SQL 06_blacklist.sql"}
+        raise
+
+
+@api_router.post("/admin/blacklist")
+async def admin_add_to_blacklist(body: BlacklistRequest, request: Request):
+    """Add email or CPF to blacklist (admin only)"""
+    user, _ = await get_current_user_from_request(request)
+    if user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    if body.type not in ['email', 'cpf']:
+        raise HTTPException(status_code=400, detail="Tipo deve ser 'email' ou 'cpf'")
+    
+    # Clean value
+    value = body.value.lower().strip() if body.type == 'email' else re.sub(r'[^0-9]', '', body.value)
+    
+    if not value:
+        raise HTTPException(status_code=400, detail="Valor inválido")
+    
+    sb = get_supabase_admin()
+    
+    try:
+        # Check if already exists
+        existing = sb.table('blacklist').select('id').eq('type', body.type).eq('value', value).execute()
+        if existing.data:
+            raise HTTPException(status_code=400, detail="Este valor já está na lista negra")
+        
+        # Add to blacklist
+        result = sb.table('blacklist').insert({
+            'type': body.type,
+            'value': value,
+            'reason': body.reason,
+            'created_by': user['id'],
+            'created_at': datetime.now(timezone.utc).isoformat()
+        }).execute()
+        
+        # If it's an email, also deactivate and remove sessions of existing user
+        if body.type == 'email':
+            user_result = sb.table('users').select('id').eq('email', value).execute()
+            if user_result.data:
+                user_id = user_result.data[0]['id']
+                sb.table('users').update({'is_active': False}).eq('id', user_id).execute()
+                sb.table('active_sessions').delete().eq('user_id', user_id).execute()
+        
+        # If it's a CPF, also deactivate and remove sessions of existing user
+        if body.type == 'cpf':
+            # Try to find user with this CPF (formatted)
+            formatted_cpf = f"{value[:3]}.{value[3:6]}.{value[6:9]}-{value[9:]}" if len(value) == 11 else value
+            user_result = sb.table('users').select('id').eq('cpf', formatted_cpf).execute()
+            if user_result.data:
+                user_id = user_result.data[0]['id']
+                sb.table('users').update({'is_active': False}).eq('id', user_id).execute()
+                sb.table('active_sessions').delete().eq('user_id', user_id).execute()
+        
+        return {"message": f"{body.type.upper()} adicionado à lista negra", "blacklist_entry": result.data[0] if result.data else None}
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        if 'PGRST205' in str(e):
+            raise HTTPException(status_code=503, detail="Tabela blacklist não existe. Execute o SQL 06_blacklist.sql")
+        raise
+
+
+@api_router.delete("/admin/blacklist/{blacklist_id}")
+async def admin_remove_from_blacklist(blacklist_id: str, request: Request):
+    """Remove entry from blacklist (admin only)"""
+    user, _ = await get_current_user_from_request(request)
+    if user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    sb = get_supabase_admin()
+    sb.table('blacklist').delete().eq('id', blacklist_id).execute()
+    
+    return {"message": "Removido da lista negra"}
 
 
 # ============== Payment Routes (Mercado Pago) ==============
