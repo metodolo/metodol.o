@@ -1247,7 +1247,7 @@ async def create_payment_preference(body: CreatePaymentRequest, request: Request
             "pending": f"{base_url}/pagamento/pendente"
         },
         "auto_return": "approved",
-        "notification_url": f"{os.environ.get('BACKEND_URL', 'https://radar-management.preview.emergentagent.com')}/api/payments/webhook",
+        "notification_url": f"{os.environ.get('BACKEND_URL', 'https://metodo-lo.preview.emergentagent.com')}/api/payments/webhook",
         "statement_descriptor": "METODO LO",
         "metadata": {
             "user_id": user['id'],
