@@ -127,9 +127,11 @@ const RadarTab = ({ viewMode = "vertical" }) => {
   );
 
   const Keyboard = ({ compact }) => (
-    <div className={`grid grid-cols-6 gap-1 bg-[rgba(17,17,17,0.9)] rounded-xl border-2 border-[#D4AF37] ${compact ? "p-1" : "p-2"}`}>
+    <div className={`grid grid-cols-6 gap-1 bg-[rgba(17,17,17,0.9)] rounded-xl border-2 border-[#D4AF37] ${compact ? "p-1 flex-1" : "p-2"}`}
+      style={compact ? { gridTemplateRows: "auto repeat(6, 1fr)" } : {}}
+    >
       <button
-        className={`roulette-btn green col-span-6 ${compact ? "!py-2 !text-base" : ""}`}
+        className={`roulette-btn green col-span-6 ${compact ? "!text-base" : ""}`}
         onClick={() => addNumber(0)}
         data-testid="btn-0"
       >
@@ -138,7 +140,7 @@ const RadarTab = ({ viewMode = "vertical" }) => {
       {keyboard.map((n) => (
         <button
           key={n}
-          className={`roulette-btn ${VERMELHOS.includes(n) ? "red" : "black"} ${compact ? "!py-2 !text-sm !rounded" : ""}`}
+          className={`roulette-btn ${VERMELHOS.includes(n) ? "red" : "black"} ${compact ? "!text-sm !rounded" : ""}`}
           onClick={() => addNumber(n)}
           data-testid={`btn-${n}`}
         >
@@ -336,10 +338,12 @@ const RadarTab = ({ viewMode = "vertical" }) => {
   if (isHorizontal) {
     return (
       <div className="flex gap-2" data-testid="radar-tab" style={{ height: "calc(100vh - 100px)" }}>
-        {/* Left Column: Counter + Keyboard + Buttons - FIXED, never changes */}
+        {/* Left Column: Counter + Keyboard + Buttons - stretches full height */}
         <div className="flex flex-col gap-2 shrink-0" style={{ width: "40%" }}>
           <CounterHeader compact />
-          <Keyboard compact />
+          <div className="flex-1 flex flex-col">
+            <Keyboard compact />
+          </div>
           <ActionButtons compact />
         </div>
 
