@@ -147,7 +147,7 @@ const Dashboard = () => {
         </div>
 
         {/* Tab content */}
-        {activeTab === "radar" && <RadarTab />}
+        {activeTab === "radar" && <RadarTab viewMode={viewMode} />}
         {activeTab === "gestao" && <GestaoTab />}
       </div>
     </div>
