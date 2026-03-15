@@ -309,27 +309,34 @@ const RadarTab = ({ viewMode = "vertical" }) => {
     </div>
   );
 
-  const FamilyCard = ({ compact }) => {
-    if (alvoFinal === null || terminalFamily.length === 0) return null;
+  const FamilyCard = ({ compact, fillSpace }) => {
+    const hasData = alvoFinal !== null && terminalFamily.length > 0;
+    if (!hasData && !fillSpace) return null;
     return (
-      <div className={`card-glass border-2 border-[#D4AF37] text-center ${compact ? "!p-2" : ""}`} data-testid="suggestion-card">
-        <span className={`text-white font-bold ${compact ? "text-xs" : ""}`}>
-          FAMÍLIA: <span data-testid="family-target">{alvoFinal}</span>
-        </span>
-        <div className={`flex flex-wrap justify-center gap-1 mt-1`}>
-          {terminalFamily.map((num) => {
-            const isGold = strongestRegion?.numbers.includes(num);
-            return (
-              <div
-                key={num}
-                className={`mini-ball ${isGold ? "gold-confluencia" : ""}`}
-                style={{ background: getBgColor(num), minWidth: compact ? 28 : 40, height: compact ? 28 : 40, fontSize: compact ? '0.7rem' : '1rem' }}
-              >
-                {num}
-              </div>
-            );
-          })}
-        </div>
+      <div className={`card-glass border-2 border-[#D4AF37] text-center ${compact ? "!p-2" : ""} ${fillSpace ? "flex-1 flex flex-col justify-center" : ""}`} data-testid="suggestion-card">
+        {hasData ? (
+          <>
+            <span className={`text-white font-bold ${compact ? "text-xs" : ""}`}>
+              FAMÍLIA: <span data-testid="family-target">{alvoFinal}</span>
+            </span>
+            <div className={`flex flex-wrap justify-center gap-1 mt-1`}>
+              {terminalFamily.map((num) => {
+                const isGold = strongestRegion?.numbers.includes(num);
+                return (
+                  <div
+                    key={num}
+                    className={`mini-ball ${isGold ? "gold-confluencia" : ""}`}
+                    style={{ background: getBgColor(num), minWidth: compact ? 28 : 40, height: compact ? 28 : 40, fontSize: compact ? '0.7rem' : '1rem' }}
+                  >
+                    {num}
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        ) : (
+          <span className="text-gray-600 text-xs">Clique nos números para ver a família</span>
+        )}
       </div>
     );
   };
@@ -347,12 +354,12 @@ const RadarTab = ({ viewMode = "vertical" }) => {
           <ActionButtons compact />
         </div>
 
-        {/* Right Column: Analysis panels - scrollable independently */}
-        <div className="flex flex-col gap-1 overflow-y-auto hide-scrollbar" style={{ flex: 1, minWidth: 0 }}>
+        {/* Right Column: Analysis panels - fills full height */}
+        <div className="flex flex-col gap-1" style={{ flex: 1, minWidth: 0 }}>
           <HistoryCard compact />
           <RegionsCard compact />
           <OcultosCard compact />
-          <FamilyCard compact />
+          <FamilyCard compact fillSpace />
         </div>
       </div>
     );
