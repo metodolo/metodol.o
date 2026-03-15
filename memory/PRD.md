@@ -24,6 +24,7 @@
 - Limite de 1 dispositivo ativo por usuário (verificação a cada 5s)
 - Sistema de heartbeat para controle de tempo
 - Troca obrigatória de senha no primeiro login do admin
+- **Modo Whitelist: Somente emails pré-cadastrados pelo admin podem acessar o app**
 
 ### Radar de Jogo
 - Entrada de números 0-36
@@ -43,7 +44,7 @@
 
 ### Painel Admin
 - **Aba Usuários:** Lista, ativar/desativar, derrubar sessões, configurar limite de tempo, gerenciar assinaturas
-- **Aba Pré-Cadastros:** Adicionar email + plano antes do usuário se registrar
+- **Aba Pré-Cadastros:** Adicionar email + plano antes do usuário se registrar (funciona como whitelist)
 - **Aba Lista Negra:** Bloquear usuários por email ou CPF
 
 ### Pagamentos (Mercado Pago)
@@ -68,22 +69,16 @@
 
 ### Variáveis de Ambiente (Railway)
 ```
-SUPABASE_URL=...
-SUPABASE_ANON_KEY=...
-SUPABASE_SERVICE_KEY=...
-JWT_SECRET=...
-MERCADO_PAGO_ACCESS_TOKEN=... (PRODUÇÃO)
-MERCADO_PAGO_PUBLIC_KEY=... (PRODUÇÃO)
+SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_KEY, JWT_SECRET
+MERCADO_PAGO_ACCESS_TOKEN (PRODUÇÃO)
+MERCADO_PAGO_PUBLIC_KEY (PRODUÇÃO)
 BACKEND_URL=https://metodolo-production-19fc.up.railway.app
 FRONTEND_URL=https://metodol-o.vercel.app
-RESEND_API_KEY=...
-ADMIN_NOTIFICATION_EMAIL=...
-SENDER_EMAIL=...
+RESEND_API_KEY, ADMIN_NOTIFICATION_EMAIL, SENDER_EMAIL
 ```
 
 ### Webhook Mercado Pago
 - URL: `https://metodolo-production-19fc.up.railway.app/api/payments/webhook`
-- Configurado automaticamente em cada preferência de pagamento
 
 ---
 
@@ -103,11 +98,12 @@ SENDER_EMAIL=...
 
 ## Changelog
 
-### 2026-03-13
+### 2026-03-13 (Sessão atual)
 - Pagamento PIX via Mercado Pago confirmado e processado com sucesso
-- Configurada URL de webhook de produção (Railway) para processamento automático
-- Corrigido bug no .env onde a chave pública do MP estava concatenada com BACKEND_URL
-- Fluxo completo testado: webhook -> verificação MP -> ativação assinatura -> email notificação
+- Configurada URL de webhook de produção (Railway)
+- Corrigido bug no .env (chave pública MP concatenada)
+- requirements.txt limpo (155 → 13 pacotes essenciais)
+- **Implementado modo Whitelist: somente emails pré-cadastrados pelo admin podem registrar/entrar**
 
 ### Sessões anteriores
 - Implementado sistema de Pré-Cadastros

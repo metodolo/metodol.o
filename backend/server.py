@@ -399,6 +399,11 @@ async def register_cpf(request: CPFRegisterRequest):
     if existing.data:
         raise HTTPException(status_code=400, detail="Email já cadastrado")
     
+    # Check if email is pre-registered (whitelist mode)
+    pending = sb.table('pending_subscriptions').select('id').eq('email', request.email.lower()).execute()
+    if not pending.data:
+        raise HTTPException(status_code=403, detail="Acesso restrito. Seu email não está autorizado. Entre em contato com o administrador.")
+    
     # Create user
     password_hash = get_password_hash(request.password)
     user_data = {
@@ -543,6 +548,11 @@ async def login_google(request: GoogleAuthRequest, response: Response):
     
     applied_pending = None
     if not result.data:
+        # Check if email is pre-registered (whitelist mode)
+        pending = sb.table('pending_subscriptions').select('id').eq('email', email.lower()).execute()
+        if not pending.data:
+            raise HTTPException(status_code=403, detail="Acesso restrito. Seu email não está autorizado. Entre em contato com o administrador.")
+        
         # Create new user
         user_data = {
             'email': email.lower(),
