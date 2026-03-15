@@ -419,6 +419,27 @@ body {
     font-style: italic;
 }
 
+/* Horizontal mode - fits landscape screens */
+html.mode-horizontal {
+    zoom: 0.7 !important;
+}
+
+@media (min-width: 768px) {
+    html.mode-horizontal {
+        zoom: 0.8 !important;
+    }
+}
+
+@media (min-width: 1024px) {
+    html.mode-horizontal {
+        zoom: 0.85 !important;
+    }
+}
+
+html.mode-horizontal .app-container {
+    max-width: 100% !important;
+}
+
 /* Hide scrollbar but allow scroll */
 .hide-scrollbar {
     -ms-overflow-style: none;

@@ -1,18 +1,29 @@
 /**
  * Main Dashboard Page
  */
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import RadarTab from "../components/RadarTab";
 import GestaoTab from "../components/GestaoTab";
 import ChangePasswordModal from "../components/ChangePasswordModal";
-import { LogOut, Settings, User, Clock, Shield } from "lucide-react";
+import { LogOut, Settings, User, Clock, Shield, Smartphone, Monitor } from "lucide-react";
 
 const Dashboard = () => {
   const { user, subscription, usage, logout, isAdmin, error, setError, mustChangePassword } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("radar");
+  const [viewMode, setViewMode] = useState(() => localStorage.getItem("viewMode") || "vertical");
+
+  useEffect(() => {
+    localStorage.setItem("viewMode", viewMode);
+    if (viewMode === "horizontal") {
+      document.documentElement.classList.add("mode-horizontal");
+    } else {
+      document.documentElement.classList.remove("mode-horizontal");
+    }
+    return () => document.documentElement.classList.remove("mode-horizontal");
+  }, [viewMode]);
 
   const handleLogout = async () => {
     await logout();
@@ -100,7 +111,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Tabs */}
+        {/* Tabs + View Mode Toggle */}
         <div className="flex gap-2 mb-3 sticky top-0 z-50 bg-black py-2">
           <button
             className={`tab-btn ${activeTab === "radar" ? "active" : ""}`}
@@ -115,6 +126,23 @@ const Dashboard = () => {
             data-testid="tab-gestao"
           >
             Gestão de Banca
+          </button>
+          <button
+            onClick={() => setViewMode(viewMode === "vertical" ? "horizontal" : "vertical")}
+            className="flex items-center gap-1 px-3 border-2 border-[#D4AF37] rounded-lg text-xs font-bold transition-all"
+            style={{
+              background: viewMode === "horizontal" ? "rgba(212,175,55,0.2)" : "#000",
+              color: viewMode === "horizontal" ? "#D4AF37" : "#fff",
+              boxShadow: viewMode === "horizontal" ? "0 0 8px rgba(212,175,55,0.4)" : "none"
+            }}
+            data-testid="view-mode-toggle"
+            title={viewMode === "vertical" ? "Mudar para Horizontal" : "Mudar para Vertical"}
+          >
+            {viewMode === "vertical" ? (
+              <><Smartphone className="w-4 h-4" /><span className="hidden sm:inline">Vertical</span></>
+            ) : (
+              <><Monitor className="w-4 h-4" /><span className="hidden sm:inline">Horizontal</span></>
+            )}
           </button>
         </div>
 
