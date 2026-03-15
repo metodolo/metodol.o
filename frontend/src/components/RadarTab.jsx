@@ -131,7 +131,10 @@ const RadarTab = ({ viewMode = "vertical" }) => {
       style={compact ? { gridTemplateRows: "repeat(7, 1fr)" } : {}}
     >
       <button
-        className={`roulette-btn green col-span-6 ${compact ? "!text-base" : ""}`}
+        className={`col-span-6 ${compact
+          ? "bg-[#00ff41] text-black font-black text-base rounded cursor-pointer"
+          : "roulette-btn green"
+        }`}
         onClick={() => addNumber(0)}
         data-testid="btn-0"
       >
@@ -140,7 +143,10 @@ const RadarTab = ({ viewMode = "vertical" }) => {
       {keyboard.map((n) => (
         <button
           key={n}
-          className={`roulette-btn ${VERMELHOS.includes(n) ? "red" : "black"} ${compact ? "!text-sm !rounded" : ""}`}
+          className={compact
+            ? `${VERMELHOS.includes(n) ? "bg-[#ff3131]" : "bg-[#2b2b2b]"} text-white font-black text-sm rounded cursor-pointer`
+            : `roulette-btn ${VERMELHOS.includes(n) ? "red" : "black"}`
+          }
           onClick={() => addNumber(n)}
           data-testid={`btn-${n}`}
         >
