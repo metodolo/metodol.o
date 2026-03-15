@@ -337,9 +337,9 @@ const RadarTab = ({ viewMode = "vertical" }) => {
   // --- HORIZONTAL LAYOUT ---
   if (isHorizontal) {
     return (
-      <div className="flex gap-2" data-testid="radar-tab" style={{ height: "calc(100vh - 100px)" }}>
+      <div className="flex gap-2 h-full" data-testid="radar-tab">
         {/* Left Column: Counter + Keyboard + Buttons - stretches full height */}
-        <div className="flex flex-col gap-2 shrink-0" style={{ width: "40%" }}>
+        <div className="flex flex-col gap-1 shrink-0" style={{ width: "40%" }}>
           <CounterHeader compact />
           <div className="flex-1 flex flex-col">
             <Keyboard compact />
@@ -348,7 +348,7 @@ const RadarTab = ({ viewMode = "vertical" }) => {
         </div>
 
         {/* Right Column: Analysis panels - scrollable independently */}
-        <div className="flex flex-col gap-2 overflow-y-auto hide-scrollbar" style={{ flex: 1, minWidth: 0 }}>
+        <div className="flex flex-col gap-1 overflow-y-auto hide-scrollbar" style={{ flex: 1, minWidth: 0 }}>
           <HistoryCard compact />
           <RegionsCard compact />
           <OcultosCard compact />

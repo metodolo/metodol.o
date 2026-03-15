@@ -38,7 +38,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen pb-10">
+    <div className={viewMode === "horizontal" ? "h-screen overflow-hidden" : "min-h-screen pb-10"}>
       {/* Change Password Modal */}
       {mustChangePassword && (
         <ChangePasswordModal onSuccess={() => {}} />
@@ -47,11 +47,14 @@ const Dashboard = () => {
       {/* Watermark */}
       <div className="watermark-bg" />
 
-      <div className="app-container max-w-[600px] lg:max-w-[800px] xl:max-w-[900px] mx-auto p-2 lg:p-4">
+      <div className={viewMode === "horizontal"
+        ? "app-container w-full h-full flex flex-col p-1"
+        : "app-container max-w-[600px] lg:max-w-[800px] xl:max-w-[900px] mx-auto p-2 lg:p-4"
+      }>
         {/* Error banner */}
         {error && (
           <div
-            className="bg-red-500/20 border border-red-500 text-red-400 px-4 py-3 rounded-lg mb-3 text-sm flex justify-between items-center"
+            className="bg-red-500/20 border border-red-500 text-red-400 px-4 py-3 rounded-lg mb-1 text-sm flex justify-between items-center"
             data-testid="error-banner"
           >
             <span>{error}</span>
@@ -60,7 +63,7 @@ const Dashboard = () => {
         )}
 
         {/* Status bar */}
-        <div className="flex items-center justify-between bg-[rgba(17,17,17,0.8)] p-3 rounded-lg border border-[#333] mb-3">
+        <div className={`flex items-center justify-between bg-[rgba(17,17,17,0.8)] rounded-lg border border-[#333] ${viewMode === "horizontal" ? "p-1 px-3 mb-1" : "p-3 mb-3"}`}>
           <div className="flex items-center gap-2">
             <User className="w-5 h-5 text-[#00ff95]" />
             <span className="text-sm text-gray-300 truncate max-w-[150px]">
@@ -112,7 +115,7 @@ const Dashboard = () => {
         </div>
 
         {/* Tabs + View Mode Toggle */}
-        <div className="flex gap-2 mb-3 sticky top-0 z-50 bg-black py-2">
+        <div className={`flex gap-2 sticky top-0 z-50 bg-black ${viewMode === "horizontal" ? "py-1 mb-1" : "py-2 mb-3"}`}>
           <button
             className={`tab-btn ${activeTab === "radar" ? "active" : ""}`}
             onClick={() => setActiveTab("radar")}
@@ -147,8 +150,10 @@ const Dashboard = () => {
         </div>
 
         {/* Tab content */}
-        {activeTab === "radar" && <RadarTab viewMode={viewMode} />}
-        {activeTab === "gestao" && <GestaoTab />}
+        <div className={viewMode === "horizontal" ? "flex-1 overflow-hidden" : ""}>
+          {activeTab === "radar" && <RadarTab viewMode={viewMode} />}
+          {activeTab === "gestao" && <GestaoTab />}
+        </div>
       </div>
     </div>
   );

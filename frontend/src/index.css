@@ -419,26 +419,19 @@ body {
     font-style: italic;
 }
 
-/* Horizontal mode - fits landscape screens */
+/* Horizontal mode - uses full screen */
 html.mode-horizontal {
-    zoom: 0.65 !important;
+    zoom: 1 !important;
+    overflow: hidden;
 }
 
-@media (min-width: 768px) {
-    html.mode-horizontal {
-        zoom: 0.75 !important;
-    }
-}
-
-@media (min-width: 1024px) {
-    html.mode-horizontal {
-        zoom: 0.85 !important;
-    }
+html.mode-horizontal body {
+    overflow: hidden;
+    height: 100vh;
 }
 
 html.mode-horizontal .app-container {
     max-width: 100% !important;
-    padding: 4px 8px !important;
 }
 
 /* Hide scrollbar but allow scroll */
