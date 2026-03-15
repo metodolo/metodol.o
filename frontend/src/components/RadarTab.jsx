@@ -127,8 +127,8 @@ const RadarTab = ({ viewMode = "vertical" }) => {
   );
 
   const Keyboard = ({ compact }) => (
-    <div className={`grid grid-cols-6 gap-1 bg-[rgba(17,17,17,0.9)] rounded-xl border-2 border-[#D4AF37] ${compact ? "p-1 flex-1" : "p-2"}`}
-      style={compact ? { gridTemplateRows: "auto repeat(6, 1fr)" } : {}}
+    <div className={`grid grid-cols-6 bg-[rgba(17,17,17,0.9)] rounded-xl border-2 border-[#D4AF37] ${compact ? "p-1 flex-1 gap-[2px]" : "p-2 gap-1"}`}
+      style={compact ? { gridTemplateRows: "repeat(7, 1fr)" } : {}}
     >
       <button
         className={`roulette-btn green col-span-6 ${compact ? "!text-base" : ""}`}
