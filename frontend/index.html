@@ -9,17 +9,73 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600&display=swap" rel="stylesheet" />
     <title>Método L.O | RADAR V22</title>
+    <style>
+      /* Block text selection */
+      * { -webkit-user-select: none !important; -moz-user-select: none !important; -ms-user-select: none !important; user-select: none !important; }
+      input, textarea { -webkit-user-select: text !important; -moz-user-select: text !important; -ms-user-select: text !important; user-select: text !important; }
+    </style>
     <script>
-      // Block right-click
-      document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
-      // Block dev tools shortcuts
+      // === FULL PROTECTION AGAINST CODE INSPECTION ===
+
+      // 1. Block right-click everywhere
+      document.addEventListener('contextmenu', function(e) { e.preventDefault(); return false; }, true);
+
+      // 2. Block ALL dev tools keyboard shortcuts
       document.addEventListener('keydown', function(e) {
-        if (e.key === 'F12' ||
-            (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j' || e.key === 'C' || e.key === 'c')) ||
-            (e.ctrlKey && (e.key === 'U' || e.key === 'u'))) {
-          e.preventDefault();
+        // F12
+        if (e.keyCode === 123) { e.preventDefault(); return false; }
+        // Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C
+        if (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) { e.preventDefault(); return false; }
+        // Ctrl+U (view source)
+        if (e.ctrlKey && e.keyCode === 85) { e.preventDefault(); return false; }
+        // Ctrl+S (save page)
+        if (e.ctrlKey && e.keyCode === 83) { e.preventDefault(); return false; }
+        // Ctrl+A (select all)
+        if (e.ctrlKey && e.keyCode === 65) { e.preventDefault(); return false; }
+        // Ctrl+C (copy)
+        if (e.ctrlKey && e.keyCode === 67 && !e.shiftKey) { 
+          var el = document.activeElement;
+          if (!el || (el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA')) { e.preventDefault(); return false; }
         }
-      });
+        // Ctrl+P (print)
+        if (e.ctrlKey && e.keyCode === 80) { e.preventDefault(); return false; }
+      }, true);
+
+      // 3. Block drag
+      document.addEventListener('dragstart', function(e) { e.preventDefault(); return false; }, true);
+
+      // 4. Block copy
+      document.addEventListener('copy', function(e) {
+        var el = document.activeElement;
+        if (!el || (el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA')) { e.preventDefault(); return false; }
+      }, true);
+
+      // 5. Debugger trap - freezes DevTools when opened
+      (function() {
+        function detect() {
+          debugger;
+          setTimeout(detect, 100);
+        }
+        detect();
+      })();
+
+      // 6. Clear console constantly
+      setInterval(function() {
+        console.clear();
+        console.log('%cACESSO BLOQUEADO', 'color:red;font-size:50px;font-weight:bold');
+        console.log('%cO código deste aplicativo é protegido.', 'color:white;font-size:16px');
+      }, 1000);
+
+      // 7. Detect DevTools via window size (dock mode changes size)
+      (function() {
+        var threshold = 160;
+        function check() {
+          if (window.outerWidth - window.innerWidth > threshold || window.outerHeight - window.innerHeight > threshold) {
+            document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#000;color:#D4AF37;font-size:24px;font-weight:bold;text-align:center;padding:20px;">ACESSO BLOQUEADO<br><br><span style="font-size:14px;color:#888;">Feche as ferramentas de desenvolvedor para continuar.</span></div>';
+          }
+        }
+        setInterval(check, 500);
+      })();
     </script>
   </head>
   <body>
