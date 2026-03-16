@@ -23,15 +23,15 @@ html {
     zoom: 1.0;
 }
 
-/* Desktop: increase size */
+/* Desktop: increase size (only vertical mode) */
 @media (min-width: 768px) {
-    html {
+    html:not(.mode-horizontal) {
         zoom: 1.15;
     }
 }
 
 @media (min-width: 1024px) {
-    html {
+    html:not(.mode-horizontal) {
         zoom: 1.25;
     }
 }
@@ -421,23 +421,34 @@ body {
 
 /* Horizontal mode - full screen */
 html.mode-horizontal {
-    overflow: hidden;
-    height: 100vh;
+    overflow: hidden !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    max-height: 100vh !important;
+    max-height: 100dvh !important;
 }
 
 html.mode-horizontal body {
-    overflow: hidden;
-    height: 100vh;
+    overflow: hidden !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    max-height: 100vh !important;
+    max-height: 100dvh !important;
     margin: 0;
 }
 
 html.mode-horizontal #root {
-    height: 100vh;
-    overflow: hidden;
+    height: 100vh !important;
+    height: 100dvh !important;
+    max-height: 100vh !important;
+    max-height: 100dvh !important;
+    overflow: hidden !important;
 }
 
 html.mode-horizontal .app-container {
     max-width: 100% !important;
+    max-height: 100vh !important;
+    max-height: 100dvh !important;
 }
 
 /* Hide scrollbar but allow scroll */

@@ -48,7 +48,7 @@ const Dashboard = () => {
       <div className="watermark-bg" />
 
       <div className={viewMode === "horizontal"
-        ? "app-container w-full h-full flex flex-col p-1"
+        ? "app-container w-full h-full flex flex-col p-1 min-h-0 overflow-hidden"
         : "app-container max-w-[600px] lg:max-w-[800px] xl:max-w-[900px] mx-auto p-2 lg:p-4"
       }>
         {/* Error banner */}
@@ -150,7 +150,7 @@ const Dashboard = () => {
         </div>
 
         {/* Tab content */}
-        <div className={viewMode === "horizontal" ? "flex-1 overflow-hidden" : ""}>
+        <div className={viewMode === "horizontal" ? "flex-1 min-h-0 overflow-hidden" : ""}>
           {activeTab === "radar" && <RadarTab viewMode={viewMode} />}
           {activeTab === "gestao" && <GestaoTab />}
         </div>

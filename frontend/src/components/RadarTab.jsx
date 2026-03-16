@@ -348,11 +348,11 @@ const RadarTab = ({ viewMode = "vertical" }) => {
   // --- HORIZONTAL LAYOUT ---
   if (isHorizontal) {
     return (
-      <div className="flex gap-2 h-full" data-testid="radar-tab">
-        {/* Left Column: Counter + Keyboard + Buttons - fills full height */}
-        <div className="flex flex-col gap-1 shrink-0" style={{ width: "40%" }}>
+      <div className="flex gap-2 h-full min-h-0 overflow-hidden" data-testid="radar-tab">
+        {/* Left Column */}
+        <div className="flex flex-col gap-1 shrink-0 min-h-0" style={{ width: "40%" }}>
           <CounterHeader compact />
-          <div className="flex-1 grid grid-cols-6 gap-[2px] bg-[rgba(17,17,17,0.9)] rounded-xl border-2 border-[#D4AF37] p-1"
+          <div className="flex-1 min-h-0 grid grid-cols-6 gap-[2px] bg-[rgba(17,17,17,0.9)] rounded-xl border-2 border-[#D4AF37] p-1"
             style={{ gridTemplateRows: "repeat(7, 1fr)" }}>
             <button
               className="col-span-6 bg-[#00ff41] text-black font-black text-base rounded cursor-pointer"
@@ -371,8 +371,8 @@ const RadarTab = ({ viewMode = "vertical" }) => {
           <ActionButtons compact />
         </div>
 
-        {/* Right Column: Analysis panels - fills full height */}
-        <div className="flex flex-col gap-1" style={{ flex: 1, minWidth: 0 }}>
+        {/* Right Column */}
+        <div className="flex flex-col gap-1 min-h-0 overflow-y-auto hide-scrollbar" style={{ flex: 1, minWidth: 0 }}>
           <HistoryCard compact />
           <RegionsCard compact />
           <OcultosCard compact />
