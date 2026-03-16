@@ -207,7 +207,6 @@ const RadarTab = ({ viewMode = "vertical" }) => {
         {giros.map((n, idx) => {
           const dozen = getDozen(n);
           const column = getColumn(n);
-          const sector = getSector(n);
           const parity = getParity(n);
           const highLow = getHighLow(n);
           return (
@@ -221,7 +220,6 @@ const RadarTab = ({ viewMode = "vertical" }) => {
               </div>
               <span className={`tag ${parity.className}`} style={{ fontSize: compact ? '0.55rem' : undefined }}>{parity.text}</span>
               <span className={`tag ${highLow.className}`} style={{ fontSize: compact ? '0.55rem' : undefined }}>{highLow.text}</span>
-              <span className={`tag ${sector.className}`} style={{ fontSize: compact ? '0.55rem' : undefined }}>{sector.name}</span>
             </div>
           );
         })}

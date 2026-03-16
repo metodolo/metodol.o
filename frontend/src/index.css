@@ -419,9 +419,8 @@ body {
     font-style: italic;
 }
 
-/* Horizontal mode - uses full screen */
+/* Horizontal mode - uses full screen, zoom handled by JS */
 html.mode-horizontal {
-    zoom: 1 !important;
     overflow: hidden;
 }
 

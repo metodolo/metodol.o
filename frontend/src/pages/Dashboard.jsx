@@ -19,10 +19,30 @@ const Dashboard = () => {
     localStorage.setItem("viewMode", viewMode);
     if (viewMode === "horizontal") {
       document.documentElement.classList.add("mode-horizontal");
+      // Auto-scale based on screen height
+      const updateZoom = () => {
+        const h = window.innerHeight;
+        let zoom;
+        if (h <= 600) zoom = 0.5;        // Small tablet
+        else if (h <= 700) zoom = 0.55;   // Tablet
+        else if (h <= 768) zoom = 0.6;    // Notebook pequeno
+        else if (h <= 900) zoom = 0.7;    // Notebook
+        else if (h <= 1000) zoom = 0.8;   // Notebook grande
+        else if (h <= 1080) zoom = 0.85;  // Monitor Full HD
+        else zoom = 0.95;                 // Monitor grande
+        document.documentElement.style.zoom = zoom;
+      };
+      updateZoom();
+      window.addEventListener('resize', updateZoom);
+      return () => {
+        document.documentElement.classList.remove("mode-horizontal");
+        document.documentElement.style.zoom = '';
+        window.removeEventListener('resize', updateZoom);
+      };
     } else {
       document.documentElement.classList.remove("mode-horizontal");
+      document.documentElement.style.zoom = '';
     }
-    return () => document.documentElement.classList.remove("mode-horizontal");
   }, [viewMode]);
 
   const handleLogout = async () => {
