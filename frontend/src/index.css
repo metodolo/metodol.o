@@ -419,14 +419,21 @@ body {
     font-style: italic;
 }
 
-/* Horizontal mode - uses full screen, zoom handled by JS */
+/* Horizontal mode - uses full screen, no zoom */
 html.mode-horizontal {
     overflow: hidden;
+    height: 100vh;
 }
 
 html.mode-horizontal body {
     overflow: hidden;
     height: 100vh;
+    margin: 0;
+}
+
+html.mode-horizontal #root {
+    height: 100vh;
+    overflow: hidden;
 }
 
 html.mode-horizontal .app-container {
