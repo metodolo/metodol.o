@@ -440,6 +440,29 @@ html.mode-horizontal .app-container {
     max-width: 100% !important;
 }
 
+/* Auto zoom based on screen height */
+@media (max-height: 600px) {
+    html.mode-horizontal { zoom: 0.52; }
+}
+@media (min-height: 601px) and (max-height: 700px) {
+    html.mode-horizontal { zoom: 0.6; }
+}
+@media (min-height: 701px) and (max-height: 800px) {
+    html.mode-horizontal { zoom: 0.7; }
+}
+@media (min-height: 801px) and (max-height: 900px) {
+    html.mode-horizontal { zoom: 0.8; }
+}
+@media (min-height: 901px) and (max-height: 1000px) {
+    html.mode-horizontal { zoom: 0.88; }
+}
+@media (min-height: 1001px) and (max-height: 1100px) {
+    html.mode-horizontal { zoom: 0.95; }
+}
+@media (min-height: 1101px) {
+    html.mode-horizontal { zoom: 1; }
+}
+
 /* Hide scrollbar but allow scroll */
 .hide-scrollbar {
     -ms-overflow-style: none;

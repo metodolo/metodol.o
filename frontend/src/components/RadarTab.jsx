@@ -348,22 +348,34 @@ const RadarTab = ({ viewMode = "vertical" }) => {
   // --- HORIZONTAL LAYOUT ---
   if (isHorizontal) {
     return (
-      <div className="flex gap-2 h-full" data-testid="radar-tab">
-        {/* Left Column: Counter + Keyboard + Buttons - stretches full height */}
+      <div className="flex gap-2" data-testid="radar-tab">
+        {/* Left Column: Counter + Keyboard + Buttons */}
         <div className="flex flex-col gap-1 shrink-0" style={{ width: "40%" }}>
           <CounterHeader compact />
-          <div className="flex-1 flex flex-col">
-            <Keyboard compact />
+          <div className="grid grid-cols-6 gap-[2px] bg-[rgba(17,17,17,0.9)] rounded-xl border-2 border-[#D4AF37] p-1">
+            <button
+              className="col-span-6 bg-[#00ff41] text-black font-black text-base rounded cursor-pointer py-2"
+              onClick={() => addNumber(0)}
+              data-testid="btn-0"
+            >0</button>
+            {keyboard.map((n) => (
+              <button
+                key={n}
+                className={`${VERMELHOS.includes(n) ? "bg-[#ff3131]" : "bg-[#2b2b2b]"} text-white font-black text-sm rounded cursor-pointer py-3`}
+                onClick={() => addNumber(n)}
+                data-testid={`btn-${n}`}
+              >{n}</button>
+            ))}
           </div>
           <ActionButtons compact />
         </div>
 
-        {/* Right Column: Analysis panels - fills full height */}
-        <div className="flex flex-col gap-1" style={{ flex: 1, minWidth: 0 }}>
+        {/* Right Column: Analysis panels */}
+        <div className="flex flex-col gap-1 overflow-y-auto hide-scrollbar" style={{ flex: 1, minWidth: 0 }}>
           <HistoryCard compact />
           <RegionsCard compact />
           <OcultosCard compact />
-          <FamilyCard compact fillSpace />
+          <FamilyCard compact fillSpace={false} />
         </div>
       </div>
     );

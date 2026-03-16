@@ -22,9 +22,7 @@ const Dashboard = () => {
     } else {
       document.documentElement.classList.remove("mode-horizontal");
     }
-    return () => {
-      document.documentElement.classList.remove("mode-horizontal");
-    };
+    return () => document.documentElement.classList.remove("mode-horizontal");
   }, [viewMode]);
 
   const handleLogout = async () => {
