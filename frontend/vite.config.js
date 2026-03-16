@@ -37,10 +37,24 @@ export default defineConfig({
   },
   build: {
     outDir: 'build',
+    sourcemap: false,
     minify: 'terser',
     terserOptions: {
       compress: { drop_console: true, drop_debugger: false },
       mangle: { toplevel: true },
+    },
+    rollupOptions: {
+      output: {
+        entryFileNames: 'assets/[hash].js',
+        chunkFileNames: 'assets/[hash].js',
+        assetFileNames: 'assets/[hash][extname]',
+        manualChunks: (id) => {
+          if (id.includes('node_modules')) return 'v';
+          if (id.includes('/engine/')) return 'e';
+          if (id.includes('/pages/')) return 'p';
+          if (id.includes('/components/')) return 'c';
+        },
+      },
     },
   },
   define: {
