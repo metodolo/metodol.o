@@ -66,15 +66,18 @@
         console.log('%cO código deste aplicativo é protegido.', 'color:white;font-size:16px');
       }, 1000);
 
-      // 7. Detect DevTools via window size (dock mode changes size)
+      // 7. Detect DevTools via console timing
       (function() {
-        var threshold = 160;
-        function check() {
-          if (window.outerWidth - window.innerWidth > threshold || window.outerHeight - window.innerHeight > threshold) {
+        var devOpen = false;
+        var el = new Image();
+        Object.defineProperty(el, 'id', { get: function() { devOpen = true; } });
+        setInterval(function() {
+          devOpen = false;
+          console.dir(el);
+          if (devOpen) {
             document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#000;color:#D4AF37;font-size:24px;font-weight:bold;text-align:center;padding:20px;">ACESSO BLOQUEADO<br><br><span style="font-size:14px;color:#888;">Feche as ferramentas de desenvolvedor para continuar.</span></div>';
           }
-        }
-        setInterval(check, 500);
+        }, 2000);
       })();
     </script>
   </head>
