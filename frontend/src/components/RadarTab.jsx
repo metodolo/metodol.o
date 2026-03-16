@@ -320,17 +320,17 @@ const RadarTab = ({ viewMode = "vertical" }) => {
       <div className={`card-glass border-2 border-[#D4AF37] text-center ${compact ? "!p-2" : ""} ${fillSpace ? "flex-1 flex flex-col justify-center" : ""}`} data-testid="suggestion-card">
         {hasData ? (
           <>
-            <span className={`text-white font-bold ${compact ? "text-xs" : ""}`}>
+            <span className={`text-white font-bold ${compact ? "text-sm" : ""}`}>
               FAMÍLIA: <span data-testid="family-target">{alvoFinal}</span>
             </span>
-            <div className={`flex flex-wrap justify-center gap-1 mt-1`}>
+            <div className={`flex flex-wrap justify-center gap-2 mt-2`}>
               {terminalFamily.map((num) => {
                 const isGold = strongestRegion?.numbers.includes(num);
                 return (
                   <div
                     key={num}
                     className={`mini-ball ${isGold ? "gold-confluencia" : ""}`}
-                    style={{ background: getBgColor(num), minWidth: compact ? 28 : 40, height: compact ? 28 : 40, fontSize: compact ? '0.7rem' : '1rem' }}
+                    style={{ background: getBgColor(num), minWidth: compact ? 42 : 40, height: compact ? 42 : 40, fontSize: compact ? '1rem' : '1rem' }}
                   >
                     {num}
                   </div>
