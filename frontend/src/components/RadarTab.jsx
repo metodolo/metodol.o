@@ -49,6 +49,13 @@ const RadarTab = ({ viewMode = "vertical" }) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(giros));
   }, [giros]);
 
+  // Keep scroll at the beginning
+  useEffect(() => {
+    if (painelRef.current) {
+      painelRef.current.scrollLeft = 0;
+    }
+  }, [giros]);
+
   // Add number
   const addNumber = (n) => {
     setGiros((prev) => {
