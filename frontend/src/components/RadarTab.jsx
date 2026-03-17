@@ -49,13 +49,6 @@ const RadarTab = ({ viewMode = "vertical" }) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(giros));
   }, [giros]);
 
-  // Scroll to end when giros change
-  useEffect(() => {
-    if (painelRef.current) {
-      painelRef.current.scrollLeft = painelRef.current.scrollWidth;
-    }
-  }, [giros]);
-
   // Add number
   const addNumber = (n) => {
     setGiros((prev) => {
