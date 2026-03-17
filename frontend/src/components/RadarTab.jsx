@@ -49,13 +49,6 @@ const RadarTab = ({ viewMode = "vertical" }) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(giros));
   }, [giros]);
 
-  // Keep scroll at the beginning
-  useEffect(() => {
-    if (painelRef.current) {
-      painelRef.current.scrollLeft = 0;
-    }
-  }, [giros]);
-
   // Add number
   const addNumber = (n) => {
     setGiros((prev) => {
@@ -201,10 +194,10 @@ const RadarTab = ({ viewMode = "vertical" }) => {
       </div>
       <div
         ref={painelRef}
-        className={`flex gap-2 overflow-x-auto bg-[rgba(17,17,17,0.5)] border border-[#444] rounded-xl p-2 ${compact ? "min-h-[60px]" : "min-h-[100px]"}`}
+        className={`flex flex-row-reverse gap-2 overflow-x-auto bg-[rgba(17,17,17,0.5)] border border-[#444] rounded-xl p-2 ${compact ? "min-h-[60px]" : "min-h-[100px]"}`}
         data-testid="giros-panel"
       >
-        {giros.map((n, idx) => {
+        {[...giros].reverse().map((n, idx) => {
           const dozen = getDozen(n);
           const column = getColumn(n);
           const parity = getParity(n);
