@@ -72,7 +72,7 @@ export const AuthProvider = ({ children }) => {
     init();
   }, [checkAuth]);
 
-  // Session validation interval (every 3 seconds) - to detect login from another device quickly
+  // Session validation interval (every 15 seconds)
   useEffect(() => {
     if (!user) return;
 
@@ -81,36 +81,26 @@ export const AuthProvider = ({ children }) => {
       
       try {
         const result = await authApi.validateSession();
-        console.log("Session validation result:", result);
         
         if (!result.valid) {
-          console.log("Session invalid, reason:", result.reason);
           setError(result.message || "Sua conta foi conectada em outro dispositivo");
           setSessionKicked(true);
           forceLogout();
-          // Redirect to login
           window.location.href = "/login";
         }
       } catch (err) {
-        console.error("Session validation error:", err);
-        // Any error means session is invalid
-        setError("Sua sessão foi encerrada");
-        setSessionKicked(true);
-        forceLogout();
-        window.location.href = "/login";
+        // Network error - don't logout, just skip this check
+        console.warn("Session check failed, will retry");
       }
     };
 
-    // Check immediately
     validateSession();
-
-    // Then every 3 seconds for quick detection
-    const sessionInterval = setInterval(validateSession, 3000);
+    const sessionInterval = setInterval(validateSession, 15000);
 
     return () => clearInterval(sessionInterval);
   }, [user, forceLogout]);
 
-  // Heartbeat interval (30 seconds) - for usage tracking
+  // Heartbeat interval (60 seconds) - for usage tracking
   useEffect(() => {
     if (!user) return;
 
@@ -135,15 +125,12 @@ export const AuthProvider = ({ children }) => {
           });
         }
       } catch (err) {
-        console.error("Heartbeat error:", err);
+        // Network error - skip this heartbeat
       }
     };
 
-    // Send immediately
     sendHeartbeat();
-
-    // Then every 30 seconds
-    const interval = setInterval(sendHeartbeat, 30000);
+    const interval = setInterval(sendHeartbeat, 60000);
 
     return () => clearInterval(interval);
   }, [user, forceLogout]);
