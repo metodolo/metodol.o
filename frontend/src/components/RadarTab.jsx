@@ -260,7 +260,6 @@ const RadarTab = ({ viewMode = "vertical" }) => {
       <div
         ref={painelRef}
         className={`flex flex-row-reverse overflow-x-auto bg-[rgba(17,17,17,0.5)] border border-[#444] rounded-xl p-2 ${compact ? "min-h-[60px]" : "min-h-[100px]"}`}
-        style={{ gap: 0 }}
         data-testid="giros-panel"
       >
         {[...giros].reverse().map((n, idx) => {
@@ -268,9 +267,10 @@ const RadarTab = ({ viewMode = "vertical" }) => {
           const highLow = getHighLow(n);
           const info = NUMBER_INFO[n] || {};
           const shouldBlink = blinkIndices.has(idx);
+          const cardWidth = `calc(100% / ${limiteGiros})`;
           return (
-            <div key={idx} className="flex flex-col items-center gap-0.5" style={{ flex: '1 1 0', minWidth: 0, padding: compact ? '0 1px' : '0 2px' }}>
-              <div className={`mini-ball ${shouldBlink ? 'blink-gold' : ''}`} style={{ background: getBgColor(n), width: '100%', maxWidth: compact ? 32 : 42, height: compact ? 32 : 42, fontSize: compact ? '0.8rem' : '1rem', minWidth: 0 }}>
+            <div key={idx} className="flex flex-col items-center gap-0.5 shrink-0" style={{ width: cardWidth, padding: compact ? '0 1px' : '0 2px' }}>
+              <div className={`mini-ball ${shouldBlink ? 'blink-gold' : ''}`} style={{ background: getBgColor(n), minWidth: compact ? 30 : 40, height: compact ? 30 : 40, fontSize: compact ? '0.8rem' : '1rem' }}>
                 {n}
               </div>
               <span className={`tag ${parity.className}`} style={{ fontSize: compact ? '0.5rem' : '0.65rem' }}>{parity.text}</span>
