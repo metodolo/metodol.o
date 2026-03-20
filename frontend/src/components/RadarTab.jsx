@@ -267,9 +267,8 @@ const RadarTab = ({ viewMode = "vertical" }) => {
           const highLow = getHighLow(n);
           const info = NUMBER_INFO[n] || {};
           const shouldBlink = blinkIndices.has(idx);
-          const cardWidth = `calc(100% / ${limiteGiros})`;
           return (
-            <div key={idx} className="flex flex-col items-center gap-0.5 shrink-0" style={{ width: cardWidth, padding: compact ? '0 1px' : '0 2px' }}>
+            <div key={idx} className={`flex flex-col items-center gap-0.5 ${compact ? "shrink-0" : "shrink-0"}`} style={compact ? { width: `calc(100% / ${limiteGiros})`, padding: '0 1px' } : { minWidth: '75px', padding: '0 2px' }}>
               <div className={`mini-ball ${shouldBlink ? 'blink-gold' : ''}`} style={{ background: getBgColor(n), minWidth: compact ? 30 : 40, height: compact ? 30 : 40, fontSize: compact ? '0.8rem' : '1rem' }}>
                 {n}
               </div>
