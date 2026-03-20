@@ -243,19 +243,19 @@ const RadarTab = ({ viewMode = "vertical" }) => {
           const isRed = VERMELHOS.includes(n);
           const isZero = n === 0;
           return (
-            <div key={idx} className={`flex flex-col items-center shrink-0 rounded-lg ${compact ? "w-[calc(100%/14)] min-w-0 p-[2px] gap-[2px]" : "min-w-[75px] p-1 gap-1"}`}
-              style={{ background: 'rgba(30,30,30,0.9)', border: '1px solid #444' }}>
+            <div key={idx} className={`flex flex-col items-center shrink-0 rounded-lg ${compact ? "w-[calc(100%/14)] min-w-0 p-[2px] gap-[2px]" : "min-w-[90px] p-2 gap-[6px]"}`}
+              style={{ background: 'rgba(30,30,30,0.9)', border: '1px solid #D4AF37' }}>
               {/* Number ball with gold border */}
               <div style={{
-                width: compact ? 28 : 40,
-                height: compact ? 28 : 40,
+                width: compact ? 28 : 48,
+                height: compact ? 28 : 48,
                 borderRadius: '50%',
                 border: `2px solid #D4AF37`,
                 background: isZero ? '#00662a' : '#111',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: compact ? '0.7rem' : '1rem',
+                fontSize: compact ? '0.7rem' : '1.2rem',
                 fontWeight: 900,
                 color: isZero ? '#fff' : isRed ? '#ff3131' : '#fff',
                 flexShrink: 0,
@@ -267,13 +267,13 @@ const RadarTab = ({ viewMode = "vertical" }) => {
                 <div style={{
                   width: '100%',
                   textAlign: 'center',
-                  padding: compact ? '1px 0' : '2px 0',
+                  padding: compact ? '1px 2px' : '3px 4px',
                   borderRadius: 4,
-                  fontSize: compact ? '0.45rem' : '0.65rem',
+                  fontSize: compact ? '0.45rem' : '0.75rem',
                   fontWeight: 700,
                   color: '#fff',
-                  background: info.parity === 'PAR' ? 'linear-gradient(180deg, #D4AF37, #a08520)' : '#111',
-                  border: info.parity === 'ÍMPAR' ? '1px solid #444' : 'none',
+                  background: '#000',
+                  border: '1px solid #D4AF37',
                 }}>
                   {info.parity}
                 </div>
@@ -283,12 +283,13 @@ const RadarTab = ({ viewMode = "vertical" }) => {
                 <div style={{
                   width: '100%',
                   textAlign: 'center',
-                  padding: compact ? '1px 0' : '2px 0',
+                  padding: compact ? '1px 2px' : '3px 4px',
                   borderRadius: 4,
-                  fontSize: compact ? '0.45rem' : '0.65rem',
+                  fontSize: compact ? '0.45rem' : '0.75rem',
                   fontWeight: 700,
                   color: '#fff',
-                  background: 'linear-gradient(180deg, #D4AF37, #a08520)',
+                  background: '#000',
+                  border: '1px solid #D4AF37',
                 }}>
                   {info.highLow}
                 </div>
@@ -298,13 +299,13 @@ const RadarTab = ({ viewMode = "vertical" }) => {
                 <div style={{
                   width: '100%',
                   textAlign: 'center',
-                  padding: compact ? '1px 0' : '2px 0',
+                  padding: compact ? '1px 2px' : '3px 4px',
                   borderRadius: 4,
-                  fontSize: compact ? '0.4rem' : '0.6rem',
-                  fontWeight: 600,
-                  color: '#ccc',
-                  background: '#111',
-                  border: '1px solid #333',
+                  fontSize: compact ? '0.45rem' : '0.75rem',
+                  fontWeight: 700,
+                  color: '#fff',
+                  background: '#000',
+                  border: '1px solid #D4AF37',
                 }}>
                   {info.refs}
                 </div>
