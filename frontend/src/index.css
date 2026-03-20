@@ -224,6 +224,16 @@ body {
 .tag-par { color: #00d9ff; border: 1px solid #00d9ff; }
 .tag-impar { color: #ff9100; border: 1px solid #ff9100; }
 
+/* Blinking gold for repeated numbers */
+@keyframes gold-blink {
+  0%, 100% { box-shadow: 0 0 4px #D4AF37; border-color: #D4AF37; }
+  50% { box-shadow: 0 0 16px #D4AF37, 0 0 30px rgba(212,175,55,0.5); border-color: #fff; }
+}
+.blink-gold {
+  animation: gold-blink 1s ease-in-out infinite;
+  border: 2px solid #D4AF37 !important;
+}
+
 .d1 { color: #00d9ff; border: 1px solid #00d9ff; }
 .d2 { color: #ffff00; border: 1px solid #ffff00; }
 .d3 { color: #ff00ff; border: 1px solid #ff00ff; }

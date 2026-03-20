@@ -209,7 +209,31 @@ const RadarTab = ({ viewMode = "vertical" }) => {
     </div>
   );
 
-  const HistoryCard = ({ compact }) => (
+  // Find repeated numbers - mark the LAST occurrence of each repeated number
+  const getRepeatedIndices = () => {
+    const reversed = [...giros].reverse();
+    const seen = new Set();
+    const repeated = new Set();
+    // First pass: find which numbers are repeated
+    for (const n of reversed) {
+      if (seen.has(n)) repeated.add(n);
+      seen.add(n);
+    }
+    // Second pass: mark only the first occurrence (newest) of each repeated number
+    const markedNums = new Set();
+    const blinkSet = new Set();
+    reversed.forEach((n, idx) => {
+      if (repeated.has(n) && !markedNums.has(n)) {
+        blinkSet.add(idx);
+        markedNums.add(n);
+      }
+    });
+    return blinkSet;
+  };
+
+  const HistoryCard = ({ compact }) => {
+    const blinkIndices = getRepeatedIndices();
+    return (
     <div className={`card-glass ${compact ? "!p-2" : ""}`}>
       <div className="flex gap-2 mb-2">
         <button
@@ -235,22 +259,24 @@ const RadarTab = ({ viewMode = "vertical" }) => {
       </div>
       <div
         ref={painelRef}
-        className={`flex flex-row-reverse overflow-x-auto bg-[rgba(17,17,17,0.5)] border border-[#444] rounded-xl p-2 ${compact ? "min-h-[60px] gap-1" : "min-h-[100px] gap-2"}`}
+        className={`flex flex-row-reverse overflow-x-auto bg-[rgba(17,17,17,0.5)] border border-[#444] rounded-xl p-2 ${compact ? "min-h-[60px]" : "min-h-[100px]"}`}
+        style={{ gap: 0 }}
         data-testid="giros-panel"
       >
         {[...giros].reverse().map((n, idx) => {
           const parity = getParity(n);
           const highLow = getHighLow(n);
           const info = NUMBER_INFO[n] || {};
+          const shouldBlink = blinkIndices.has(idx);
           return (
-            <div key={idx} className={`flex flex-col items-center gap-0.5 shrink-0 ${compact ? "min-w-[55px]" : "min-w-[75px]"}`}>
-              <div className="mini-ball" style={{ background: getBgColor(n), minWidth: compact ? 30 : 40, height: compact ? 30 : 40, fontSize: compact ? '0.8rem' : '1rem' }}>
+            <div key={idx} className="flex flex-col items-center gap-0.5" style={{ flex: '1 1 0', minWidth: 0, padding: compact ? '0 1px' : '0 2px' }}>
+              <div className={`mini-ball ${shouldBlink ? 'blink-gold' : ''}`} style={{ background: getBgColor(n), width: '100%', maxWidth: compact ? 32 : 42, height: compact ? 32 : 42, fontSize: compact ? '0.8rem' : '1rem', minWidth: 0 }}>
                 {n}
               </div>
-              <span className={`tag ${parity.className}`} style={{ fontSize: compact ? '0.55rem' : undefined }}>{parity.text}</span>
-              <span className={`tag ${highLow.className}`} style={{ fontSize: compact ? '0.55rem' : undefined }}>{highLow.text}</span>
+              <span className={`tag ${parity.className}`} style={{ fontSize: compact ? '0.5rem' : '0.65rem' }}>{parity.text}</span>
+              <span className={`tag ${highLow.className}`} style={{ fontSize: compact ? '0.5rem' : '0.65rem' }}>{highLow.text}</span>
               {info.refs && (
-                <span className="tag" style={{ fontSize: compact ? '0.5rem' : '0.6rem', color: '#D4AF37', border: '1px solid #D4AF37' }}>{info.refs}</span>
+                <span className="tag" style={{ fontSize: compact ? '0.5rem' : '0.7rem', color: '#fff', border: '1px solid #D4AF37' }}>{info.refs}</span>
               )}
             </div>
           );
@@ -262,7 +288,8 @@ const RadarTab = ({ viewMode = "vertical" }) => {
         )}
       </div>
     </div>
-  );
+    );
+  };
 
   const RegionsCard = ({ compact }) => (
     <div className={`card-glass ${compact ? "!p-2" : ""}`}>
