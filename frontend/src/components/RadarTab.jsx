@@ -272,8 +272,8 @@ const RadarTab = ({ viewMode = "vertical" }) => {
               <div className={`mini-ball ${shouldBlink ? 'blink-gold' : ''}`} style={{ background: getBgColor(n), minWidth: compact ? 30 : 40, height: compact ? 30 : 40, fontSize: compact ? '0.8rem' : '1rem' }}>
                 {n}
               </div>
-              <span className={`tag ${parity.className}`} style={{ fontSize: compact ? '0.5rem' : '0.65rem', visibility: n === 0 ? 'hidden' : 'visible' }}>{parity.text}</span>
-              <span className={`tag ${highLow.className}`} style={{ fontSize: compact ? '0.5rem' : '0.65rem', visibility: n === 0 ? 'hidden' : 'visible' }}>{highLow.text}</span>
+              <span className={`tag ${parity.className}`} style={{ fontSize: compact ? '0.5rem' : '0.65rem' }}>{parity.text}</span>
+              <span className={`tag ${highLow.className}`} style={{ fontSize: compact ? '0.5rem' : '0.65rem' }}>{highLow.text}</span>
               {info.refs && (
                 <span className="tag" style={{ fontSize: compact ? '0.6rem' : '0.8rem', color: '#fff', border: '1px solid #D4AF37', fontWeight: 800 }}>{info.refs}</span>
               )}

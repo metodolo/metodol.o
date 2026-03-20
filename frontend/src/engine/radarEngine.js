@@ -109,7 +109,7 @@ export const getSector = (n) => {
  * Get parity info
  */
 export const getParity = (n) => {
-  if (n === 0) return { text: "ZERO", className: "" };
+  if (n === 0) return { text: "ZERO", className: "tag-zero" };
   return n % 2 === 0
     ? { text: "PAR", className: "tag-par" }
     : { text: "IMP", className: "tag-impar" };
@@ -119,7 +119,7 @@ export const getParity = (n) => {
  * Get high/low info
  */
 export const getHighLow = (n) => {
-  if (n === 0) return { text: "ZERO", className: "" };
+  if (n === 0) return { text: "ZERO", className: "tag-zero" };
   return n >= 19
     ? { text: "ALTO", className: "tag-alto" }
     : { text: "BAIXO", className: "tag-baixo" };
