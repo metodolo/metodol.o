@@ -276,7 +276,7 @@ const RadarTab = ({ viewMode = "vertical" }) => {
               <span className={`tag ${parity.className}`} style={{ fontSize: compact ? '0.5rem' : '0.65rem' }}>{parity.text}</span>
               <span className={`tag ${highLow.className}`} style={{ fontSize: compact ? '0.5rem' : '0.65rem' }}>{highLow.text}</span>
               {info.refs && (
-                <span className="tag" style={{ fontSize: compact ? '0.5rem' : '0.7rem', color: '#fff', border: '1px solid #D4AF37' }}>{info.refs}</span>
+                <span className="tag" style={{ fontSize: compact ? '0.6rem' : '0.8rem', color: '#fff', border: '1px solid #D4AF37', fontWeight: 800 }}>{info.refs}</span>
               )}
             </div>
           );
