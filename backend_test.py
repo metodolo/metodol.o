@@ -9,7 +9,7 @@ import json
 import uuid
 
 class RadarAPITester:
-    def __init__(self, base_url="https://metodo-lo.preview.emergentagent.com"):
+    def __init__(self, base_url="https://radar-blacklist-hub.preview.emergentagent.com"):
         self.base_url = base_url
         self.session_token = None
         self.user_id = None

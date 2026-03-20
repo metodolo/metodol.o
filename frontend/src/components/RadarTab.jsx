@@ -24,6 +24,47 @@ import {
 
 const STORAGE_KEY = "radar_giros";
 
+// Custom number data from user
+const NUMBER_INFO = {
+  0: { parity: '', highLow: '', refs: '5/1/4/8' },
+  1: { parity: 'ÍMPAR', highLow: 'BAIXO', refs: '2/6' },
+  2: { parity: 'PAR', highLow: 'BAIXO', refs: '1/3/7' },
+  3: { parity: 'ÍMPAR', highLow: 'BAIXO', refs: '2/4/8' },
+  4: { parity: 'PAR', highLow: 'BAIXO', refs: '1/3/8' },
+  5: { parity: 'ÍMPAR', highLow: 'BAIXO', refs: '1/2/6' },
+  6: { parity: 'PAR', highLow: 'BAIXO', refs: '1/5/7/9' },
+  7: { parity: 'ÍMPAR', highLow: 'BAIXO', refs: '1/2/6/7' },
+  8: { parity: 'PAR', highLow: 'BAIXO', refs: '1/3/5' },
+  9: { parity: 'ÍMPAR', highLow: 'BAIXO', refs: '4/2' },
+  10: { parity: 'PAR', highLow: 'BAIXO', refs: '5/1' },
+  11: { parity: 'ÍMPAR', highLow: 'BAIXO', refs: '3/9' },
+  12: { parity: 'PAR', highLow: 'BAIXO', refs: '1/2/6/8' },
+  13: { parity: 'ÍMPAR', highLow: 'BAIXO', refs: '3/5/9' },
+  14: { parity: 'PAR', highLow: 'BAIXO', refs: '4/2' },
+  15: { parity: 'ÍMPAR', highLow: 'BAIXO', refs: '1/5/8' },
+  16: { parity: 'PAR', highLow: 'BAIXO', refs: '6/2' },
+  17: { parity: 'ÍMPAR', highLow: 'BAIXO', refs: '1/3/7' },
+  18: { parity: 'PAR', highLow: 'BAIXO', refs: '2/4/7' },
+  19: { parity: 'ÍMPAR', highLow: 'ALTO', refs: '4/6' },
+  20: { parity: 'PAR', highLow: 'ALTO', refs: '1/3/5' },
+  21: { parity: 'ÍMPAR', highLow: 'ALTO', refs: '2/4' },
+  22: { parity: 'PAR', highLow: 'ALTO', refs: '7/9' },
+  23: { parity: 'ÍMPAR', highLow: 'ALTO', refs: '1/8' },
+  24: { parity: 'PAR', highLow: 'ALTO', refs: '5/7' },
+  25: { parity: 'ÍMPAR', highLow: 'ALTO', refs: '2/6/8' },
+  26: { parity: 'PAR', highLow: 'ALTO', refs: '3/0' },
+  27: { parity: 'ÍMPAR', highLow: 'ALTO', refs: '2/4/6' },
+  28: { parity: 'PAR', highLow: 'ALTO', refs: '1/3/7' },
+  29: { parity: 'ÍMPAR', highLow: 'ALTO', refs: '7/9' },
+  30: { parity: 'PAR', highLow: 'ALTO', refs: '2/8' },
+  31: { parity: 'ÍMPAR', highLow: 'ALTO', refs: '3/5/9' },
+  32: { parity: 'PAR', highLow: 'ALTO', refs: '4/6/0' },
+  33: { parity: 'ÍMPAR', highLow: 'ALTO', refs: '1/5/7' },
+  34: { parity: 'PAR', highLow: 'ALTO', refs: '6/8' },
+  35: { parity: 'ÍMPAR', highLow: 'ALTO', refs: '1/3' },
+  36: { parity: 'PAR', highLow: 'ALTO', refs: '2/4' },
+};
+
 // Initialize state from localStorage
 const getInitialGiros = () => {
   try {
@@ -194,25 +235,80 @@ const RadarTab = ({ viewMode = "vertical" }) => {
       </div>
       <div
         ref={painelRef}
-        className={`flex flex-row-reverse gap-2 overflow-x-auto bg-[rgba(17,17,17,0.5)] border border-[#444] rounded-xl p-2 ${compact ? "min-h-[60px]" : "min-h-[100px]"}`}
+        className={`flex flex-row-reverse overflow-x-auto bg-[rgba(17,17,17,0.5)] border border-[#444] rounded-xl ${compact ? "gap-[3px] p-1" : "gap-2 p-2"}`}
         data-testid="giros-panel"
       >
         {[...giros].reverse().map((n, idx) => {
-          const dozen = getDozen(n);
-          const column = getColumn(n);
-          const parity = getParity(n);
-          const highLow = getHighLow(n);
+          const info = NUMBER_INFO[n] || {};
+          const isRed = VERMELHOS.includes(n);
+          const isZero = n === 0;
           return (
-            <div key={idx} className={`flex flex-col items-center gap-0.5 ${compact ? "min-w-[55px]" : "min-w-[75px]"}`}>
-              <div className="mini-ball" style={{ background: getBgColor(n), minWidth: compact ? 30 : 40, height: compact ? 30 : 40, fontSize: compact ? '0.8rem' : '1rem' }}>
+            <div key={idx} className={`flex flex-col items-center shrink-0 rounded-lg ${compact ? "w-[calc(100%/14)] min-w-0 p-[2px] gap-[2px]" : "min-w-[75px] p-1 gap-1"}`}
+              style={{ background: 'rgba(30,30,30,0.9)', border: '1px solid #444' }}>
+              {/* Number ball with gold border */}
+              <div style={{
+                width: compact ? 28 : 40,
+                height: compact ? 28 : 40,
+                borderRadius: '50%',
+                border: `2px solid #D4AF37`,
+                background: isZero ? '#00662a' : '#111',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: compact ? '0.7rem' : '1rem',
+                fontWeight: 900,
+                color: isZero ? '#fff' : isRed ? '#ff3131' : '#fff',
+                flexShrink: 0,
+              }}>
                 {n}
               </div>
-              <div className="flex w-full gap-0.5">
-                <span className={`tag ${dozen.className}`} style={{ fontSize: compact ? '0.55rem' : undefined }}>{dozen.text}</span>
-                <span className={`tag ${column.className}`} style={{ fontSize: compact ? '0.55rem' : undefined }}>{column.text}</span>
-              </div>
-              <span className={`tag ${parity.className}`} style={{ fontSize: compact ? '0.55rem' : undefined }}>{parity.text}</span>
-              <span className={`tag ${highLow.className}`} style={{ fontSize: compact ? '0.55rem' : undefined }}>{highLow.text}</span>
+              {/* ÍMPAR/PAR tag */}
+              {info.parity && (
+                <div style={{
+                  width: '100%',
+                  textAlign: 'center',
+                  padding: compact ? '1px 0' : '2px 0',
+                  borderRadius: 4,
+                  fontSize: compact ? '0.45rem' : '0.65rem',
+                  fontWeight: 700,
+                  color: '#fff',
+                  background: info.parity === 'PAR' ? 'linear-gradient(180deg, #D4AF37, #a08520)' : '#111',
+                  border: info.parity === 'ÍMPAR' ? '1px solid #444' : 'none',
+                }}>
+                  {info.parity}
+                </div>
+              )}
+              {/* ALTO/BAIXO tag */}
+              {info.highLow && (
+                <div style={{
+                  width: '100%',
+                  textAlign: 'center',
+                  padding: compact ? '1px 0' : '2px 0',
+                  borderRadius: 4,
+                  fontSize: compact ? '0.45rem' : '0.65rem',
+                  fontWeight: 700,
+                  color: '#fff',
+                  background: 'linear-gradient(180deg, #D4AF37, #a08520)',
+                }}>
+                  {info.highLow}
+                </div>
+              )}
+              {/* Reference numbers */}
+              {info.refs && (
+                <div style={{
+                  width: '100%',
+                  textAlign: 'center',
+                  padding: compact ? '1px 0' : '2px 0',
+                  borderRadius: 4,
+                  fontSize: compact ? '0.4rem' : '0.6rem',
+                  fontWeight: 600,
+                  color: '#ccc',
+                  background: '#111',
+                  border: '1px solid #333',
+                }}>
+                  {info.refs}
+                </div>
+              )}
             </div>
           );
         })}

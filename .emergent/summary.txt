@@ -1,278 +1,71 @@
-<analysis>**original_problem_statement**: The user wants to convert a provided HTML file, containing the logic for a RADAR V22 and Método L.O application, into a modern, full-stack web app.
+<analysis>**original_problem_statement**: The user wants to convert a provided HTML file, containing the logic for a RADAR V22 and Método L.O application, into a modern, full-stack web app. This has since evolved to include a black and gold theme, an admin panel, a pre-registration/blacklist system, Mercado Pago integration, performance optimizations for 50+ concurrent users, and advanced UI/UX enhancements like a responsive horizontal view and code protection.
 
 **PRODUCT REQUIREMENTS:**
--   **Stack**: React+Vite for the frontend; FastAPI for the backend; Supabase for Auth/DB.
+-   **Stack**: React+Vite (Frontend), FastAPI (Backend), Supabase (Auth/DB).
 -   **Core Logic**: Replicate the layout and rules from the original HTML file.
 -   **Functionalities**:
-    -   Authentication: Google OAuth and CPF/Password.
+    -   Authentication: Google OAuth and CPF/Password. Now restricted to a pre-approved list of users.
     -   Session Control: Limit users to one active device at a time.
-    -   Manual Mode: A dashboard for manual number input and analysis.
-    -   Admin Panel: User management, subscription control, usage limits.
-    -   Usage Tracking: Heartbeat system to track active user time.
+    -   Admin Panel: User management, subscription control, pre-registration, blacklist. Optimized for performance.
+    -   Payment Integration: Fully automated subscription activation via Mercado Pago (PIX).
+    -   UI/UX: A black and gold theme, with a toggle for a responsive horizontal layout that adapts to any screen size (PC, notebook, tablet).
+    -   Code Protection: Heavy obfuscation and anti-inspection measures to protect the frontend source code.
 -   **Recent User Requests**:
-    -   Theming the entire application to a black and gold aesthetic.
-    -   Implementing a subscription management system (Trial, Monthly, Annual, Lifetime).
-    -   Implementing a pre-registration system where the admin can assign plans to users before they sign up.
-    -   Implementing a blacklist to block specific users by CPF or email.
-    -   Implementing a real payment integration with Mercado Pago, including PIX.
-    -   Implementing email notifications for new user registrations.
-    -   Forcing a password change for the admin on their first login.
+    -   Redesign the number history cards to a new custom layout, removing 'D/C' columns and adding custom reference numbers.
+    -   Ensure the new horizontal layout fills the entire width of the history cards area.
 
 **User's preferred language**: Portuguese. The next agent MUST respond in Portuguese.
 
 **what currently exists?**
-The application is a functional full-stack app with a FastAPI backend and a React+Vite frontend. The UI has the requested black and gold theme. The Admin Panel is feature-rich, allowing management of users, subscriptions, a new pre-registration system, and a new blacklist system. Integration with Mercado Pago for payments (including PIX) and Resend for email notifications is complete on the backend. The single-device session control has been made more robust, and a mandatory password change flow for the admin is in place.
+The application is a mature full-stack app with a FastAPI backend and a React+Vite frontend using Supabase. The key features are: a feature-rich Admin Panel (user management, pre-registration, blacklist), automated payments via Mercado Pago (PIX), and robust session control.
+
+Recent work focused heavily on UI/UX and production readiness. A sophisticated horizontal/vertical view toggle was created and iteratively refined to be fully responsive across PC, notebook, and tablet screens without overflow or layout issues. Extensive code protection measures, including obfuscation and anti-dev-tools scripts, were implemented. Critical performance bottlenecks were solved, drastically improving admin panel load times (from ~1 min to <1s) and reducing server load for concurrent users by over 80%. The history card scroll behavior was also fixed.
 
 **Last working item**:
--   **Last item agent was working**: The agent was verifying the end-to-end payment flow with Mercado Pago. After resolving issues with test vs. production credentials to enable PIX, the user successfully initiated and paid for a transaction via PIX. The agent was waiting to confirm the reception of the  webhook from Mercado Pago to finalize the automated subscription activation.
+-   **Last item agent was working**: The user requested a complete redesign of the number history cards. This involved removing the D/C (Dozen/Column) info, keeping Parity (Ímpar/Par) and High/Low (Alto/Baixo), and adding a new set of custom reference numbers below each main number, based on a list provided by the user. The agent implemented this visual change.
 -   **Status**: IN PROGRESS
--   **Agent Testing Done**: Y (Agent was actively monitoring logs for the webhook).
--   **Which testing method agent to use?**: Manual testing by curl/logs. The agent should  the backend logs to confirm the  payment webhook is received and processed correctly.
--   **User Testing Done**: Y (The user has confirmed they paid the PIX transaction).
+-   **Agent Testing Done**: Y (Agent took a screenshot to show the new card design).
+-   **Which testing method agent to use?**: screenshot tool. Take a screenshot of the Dashboard in horizontal mode after inputting a few numbers to verify the new history card design matches the user's latest request and that the layout remains correct.
+-   **User Testing Done**: N
 
 **All Pending/In progress Issue list**:
--   **Issue 1**: Confirm Mercado Pago End-to-End Payment Flow (Priority: P0)
--   **Issue 2**: User Verification of Reiniciar Tudo Button (Priority: P2)
--   **Issue 3**: End-to-End Verification of Session & Usage Limits (Priority: P1)
+-   **Issue 1**: Final user verification of the new History Card design. (Priority: P0)
+-   **Issue 2**: End-to-End Verification of Session & Usage Limits. (Priority: P1)
+-   **Issue 3**: User Verification of Reiniciar Tudo Button. (Priority: P2)
 
 **Issues Detail**:
--   **Issue 1: Confirm Mercado Pago End-to-End Payment Flow**
-    -   **Attempted fixes**: The agent correctly identified that test credentials were being used, which prevented PIX from showing up. The agent guided the user to get Production credentials, updated them in the environment, and successfully generated a payment link with PIX. The user has paid.
+-   **Issue 1: Final user verification of the new History Card design**
+    -   **Attempted fixes**: The agent has created a new constant with the user's custom data and redesigned the  component to match the visual layout from the user's photo. The D/C columns were removed.
     -   **Next debug checklist**:
-        1.  Run ==> /var/log/supervisor/backend.err.log <==
-2026-03-12 14:30:47,373 - httpx - INFO - HTTP Request: GET https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/active_sessions?select=%2A&session_token=eq.YKJzj09vnH1BwgCpeOcR_kaabutsI4p65_40LLMS3nc "HTTP/2 200 OK"
-2026-03-12 14:31:48,595 - httpx - INFO - HTTP Request: GET https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/active_sessions?select=%2A&session_token=eq.YKJzj09vnH1BwgCpeOcR_kaabutsI4p65_40LLMS3nc "HTTP/2 200 OK"
-2026-03-12 14:31:48,754 - httpx - INFO - HTTP Request: GET https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/active_sessions?select=%2A&session_token=eq.YKJzj09vnH1BwgCpeOcR_kaabutsI4p65_40LLMS3nc "HTTP/2 200 OK"
-2026-03-12 14:32:49,290 - httpx - INFO - HTTP Request: GET https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/active_sessions?select=%2A&session_token=eq.YKJzj09vnH1BwgCpeOcR_kaabutsI4p65_40LLMS3nc "HTTP/2 200 OK"
-2026-03-12 14:32:49,473 - httpx - INFO - HTTP Request: GET https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/active_sessions?select=%2A&session_token=eq.YKJzj09vnH1BwgCpeOcR_kaabutsI4p65_40LLMS3nc "HTTP/2 200 OK"
-2026-03-12 14:33:50,321 - httpx - INFO - HTTP Request: GET https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/active_sessions?select=%2A&session_token=eq.YKJzj09vnH1BwgCpeOcR_kaabutsI4p65_40LLMS3nc "HTTP/2 200 OK"
-2026-03-12 14:33:50,479 - httpx - INFO - HTTP Request: GET https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/active_sessions?select=%2A&session_token=eq.YKJzj09vnH1BwgCpeOcR_kaabutsI4p65_40LLMS3nc "HTTP/2 200 OK"
-2026-03-12 14:34:51,039 - httpx - INFO - HTTP Request: GET https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/active_sessions?select=%2A&session_token=eq.YKJzj09vnH1BwgCpeOcR_kaabutsI4p65_40LLMS3nc "HTTP/2 200 OK"
-2026-03-12 14:34:51,193 - httpx - INFO - HTTP Request: GET https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/active_sessions?select=%2A&session_token=eq.YKJzj09vnH1BwgCpeOcR_kaabutsI4p65_40LLMS3nc "HTTP/2 200 OK"
-2026-03-12 14:35:51,823 - httpx - INFO - HTTP Request: GET https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/active_sessions?select=%2A&session_token=eq.YKJzj09vnH1BwgCpeOcR_kaabutsI4p65_40LLMS3nc "HTTP/2 200 OK"
-2026-03-12 14:35:51,977 - httpx - INFO - HTTP Request: GET https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/active_sessions?select=%2A&session_token=eq.YKJzj09vnH1BwgCpeOcR_kaabutsI4p65_40LLMS3nc "HTTP/2 200 OK"
-2026-03-12 14:36:52,977 - httpx - INFO - HTTP Request: GET https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/active_sessions?select=%2A&session_token=eq.YKJzj09vnH1BwgCpeOcR_kaabutsI4p65_40LLMS3nc "HTTP/2 200 OK"
-2026-03-12 14:36:53,121 - httpx - INFO - HTTP Request: GET https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/active_sessions?select=%2A&session_token=eq.YKJzj09vnH1BwgCpeOcR_kaabutsI4p65_40LLMS3nc "HTTP/2 200 OK"
-2026-03-12 14:37:53,791 - httpx - INFO - HTTP Request: GET https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/active_sessions?select=%2A&session_token=eq.YKJzj09vnH1BwgCpeOcR_kaabutsI4p65_40LLMS3nc "HTTP/2 200 OK"
-2026-03-12 14:37:53,940 - httpx - INFO - HTTP Request: GET https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/active_sessions?select=%2A&session_token=eq.YKJzj09vnH1BwgCpeOcR_kaabutsI4p65_40LLMS3nc "HTTP/2 200 OK"
-2026-03-12 14:38:55,939 - httpx - INFO - HTTP Request: GET https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/active_sessions?select=%2A&session_token=eq.YKJzj09vnH1BwgCpeOcR_kaabutsI4p65_40LLMS3nc "HTTP/2 200 OK"
-2026-03-12 14:38:56,062 - httpx - INFO - HTTP Request: GET https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/active_sessions?select=%2A&session_token=eq.YKJzj09vnH1BwgCpeOcR_kaabutsI4p65_40LLMS3nc "HTTP/2 200 OK"
-2026-03-12 14:39:56,111 - httpx - INFO - HTTP Request: GET https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/active_sessions?select=%2A&session_token=eq.YKJzj09vnH1BwgCpeOcR_kaabutsI4p65_40LLMS3nc "HTTP/2 200 OK"
-2026-03-12 14:39:56,260 - httpx - INFO - HTTP Request: GET https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/active_sessions?select=%2A&session_token=eq.YKJzj09vnH1BwgCpeOcR_kaabutsI4p65_40LLMS3nc "HTTP/2 200 OK"
-INFO:     Will watch for changes in these directories: ['/app/backend']
-INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
-INFO:     Started reloader process [43] using WatchFiles
-INFO:     Started server process [87]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-2026-03-13 18:37:02,806 - server - INFO - Webhook received: {'type': 'test'}
-INFO:     Will watch for changes in these directories: ['/app/backend']
-INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
-INFO:     Started reloader process [43] using WatchFiles
-INFO:     Started server process [87]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-INFO:     Will watch for changes in these directories: ['/app/backend']
-INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
-INFO:     Started reloader process [46] using WatchFiles
-INFO:     Started server process [87]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-2026-03-13 20:42:03,291 - httpx - INFO - HTTP Request: GET https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/blacklist?select=id&type=eq.cpf&value=eq.15483199707 "HTTP/2 200 OK"
-2026-03-13 20:42:03,352 - httpx - INFO - HTTP Request: GET https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/users?select=%2A&cpf=eq.154.831.997-07 "HTTP/2 200 OK"
-2026-03-13 20:42:03,414 - httpx - INFO - HTTP Request: GET https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/blacklist?select=id&type=eq.email&value=eq.admin%40metodo-lo.com "HTTP/2 200 OK"
-2026-03-13 20:42:03,755 - httpx - INFO - HTTP Request: DELETE https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/active_sessions?user_id=eq.dea43c88-3766-42ee-865a-b97726f2f587 "HTTP/2 200 OK"
-2026-03-13 20:42:03,814 - httpx - INFO - HTTP Request: POST https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/active_sessions "HTTP/2 201 Created"
-2026-03-13 20:42:03,912 - httpx - INFO - HTTP Request: GET https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/subscriptions?select=%2A&user_id=eq.dea43c88-3766-42ee-865a-b97726f2f587 "HTTP/2 200 OK"
-2026-03-13 20:42:04,144 - httpx - INFO - HTTP Request: GET https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/active_sessions?select=%2A&session_token=eq.sdyqK-kSAoBrogJPLO_7Xg8--YSNCSvIhnFgj043PjM "HTTP/2 200 OK"
-2026-03-13 20:42:04,216 - httpx - INFO - HTTP Request: GET https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/users?select=%2A&id=eq.dea43c88-3766-42ee-865a-b97726f2f587 "HTTP/2 200 OK"
-2026-03-13 20:42:04,727 - httpx - INFO - HTTP Request: POST https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/payment_attempts "HTTP/2 201 Created"
-INFO:     Shutting down
-INFO:     Waiting for application shutdown.
-INFO:     Application shutdown complete.
-INFO:     Finished server process [87]
-INFO:     Stopping reloader process [46]
-INFO:     Will watch for changes in these directories: ['/app/backend']
-INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
-INFO:     Started reloader process [325] using WatchFiles
-INFO:     Started server process [327]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-2026-03-13 21:03:30,932 - httpx - INFO - HTTP Request: GET https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/blacklist?select=id&type=eq.cpf&value=eq.15483199707 "HTTP/2 200 OK"
-2026-03-13 21:03:31,013 - httpx - INFO - HTTP Request: GET https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/users?select=%2A&cpf=eq.154.831.997-07 "HTTP/2 200 OK"
-2026-03-13 21:03:31,074 - httpx - INFO - HTTP Request: GET https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/blacklist?select=id&type=eq.email&value=eq.admin%40metodo-lo.com "HTTP/2 200 OK"
-2026-03-13 21:03:31,414 - httpx - INFO - HTTP Request: DELETE https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/active_sessions?user_id=eq.dea43c88-3766-42ee-865a-b97726f2f587 "HTTP/2 200 OK"
-2026-03-13 21:03:31,479 - httpx - INFO - HTTP Request: POST https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/active_sessions "HTTP/2 201 Created"
-2026-03-13 21:03:31,539 - httpx - INFO - HTTP Request: GET https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/subscriptions?select=%2A&user_id=eq.dea43c88-3766-42ee-865a-b97726f2f587 "HTTP/2 200 OK"
-2026-03-13 21:03:31,822 - httpx - INFO - HTTP Request: GET https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/active_sessions?select=%2A&session_token=eq.8RNKAOtts42FfUVv6ir_cmyv54jWm3XxHy12wr-Eflk "HTTP/2 200 OK"
-2026-03-13 21:03:31,880 - httpx - INFO - HTTP Request: GET https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/users?select=%2A&id=eq.dea43c88-3766-42ee-865a-b97726f2f587 "HTTP/2 200 OK"
-2026-03-13 21:03:32,311 - httpx - INFO - HTTP Request: POST https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/payment_attempts "HTTP/2 201 Created"
-2026-03-13 21:05:56,361 - server - INFO - Webhook received: {'resource': 'https://api.mercadolibre.com/merchant_orders/39008496189', 'topic': 'merchant_order'}
-2026-03-13 21:06:06,791 - server - INFO - Webhook received: {'resource': '150238055796', 'topic': 'payment'}
-2026-03-13 21:06:06,808 - server - INFO - Webhook received: {'resource': 'https://api.mercadolibre.com/merchant_orders/39008496189', 'topic': 'merchant_order'}
-2026-03-13 21:06:06,821 - server - INFO - Webhook received: {'action': 'payment.created', 'api_version': 'v1', 'data': {'id': '150238055796'}, 'date_created': '2026-03-13T21:06:06Z', 'id': 129922706042, 'live_mode': True, 'type': 'payment', 'user_id': '3252719508'}
-2026-03-13 21:06:07,046 - server - INFO - Payment 150238055796 status: pending, ref: dea43c88-3766-42ee-865a-b97726f2f587_monthly_20260313210331
-2026-03-13 21:13:41,763 - server - INFO - Webhook received: {'resource': 'https://api.mercadolibre.com/merchant_orders/39008805857', 'topic': 'merchant_order'}
-2026-03-13 21:13:42,339 - server - INFO - Webhook received: {'action': 'payment.created', 'api_version': 'v1', 'data': {'id': '149517550973'}, 'date_created': '2026-03-13T21:13:41Z', 'id': 129922817206, 'live_mode': True, 'type': 'payment', 'user_id': '3252719508'}
-2026-03-13 21:13:42,582 - server - INFO - Payment 149517550973 status: pending, ref: dea43c88-3766-42ee-865a-b97726f2f587_monthly_20260313210331
-2026-03-13 21:13:42,583 - server - INFO - Webhook received: {'resource': '149517550973', 'topic': 'payment'}
-2026-03-13 21:13:42,583 - server - INFO - Webhook received: {'resource': 'https://api.mercadolibre.com/merchant_orders/39008805857', 'topic': 'merchant_order'}
-INFO:     Will watch for changes in these directories: ['/app/backend']
-INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
-INFO:     Started reloader process [48] using WatchFiles
-INFO:     Started server process [76]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-2026-03-13 22:05:28,765 - server - INFO - Webhook received: {'resource': 'https://api.mercadolibre.com/merchant_orders/39010790407', 'topic': 'merchant_order'}
-2026-03-13 22:06:01,416 - server - INFO - Webhook received: {'resource': 'https://api.mercadolibre.com/merchant_orders/39038321450', 'topic': 'merchant_order'}
-2026-03-13 22:06:06,162 - server - INFO - Webhook received: {'action': 'payment.created', 'api_version': 'v1', 'data': {'id': '149526443875'}, 'date_created': '2026-03-13T22:06:05Z', 'id': 129802914389, 'live_mode': True, 'type': 'payment', 'user_id': '3252719508'}
-2026-03-13 22:06:06,401 - server - INFO - Payment 149526443875 status: approved, ref: dea43c88-3766-42ee-865a-b97726f2f587_monthly_20260313210331
-2026-03-13 22:06:06,578 - httpx - INFO - HTTP Request: POST https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/subscriptions?on_conflict=user_id "HTTP/2 200 OK"
-2026-03-13 22:06:06,651 - httpx - INFO - HTTP Request: PATCH https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/payment_attempts?external_reference=eq.dea43c88-3766-42ee-865a-b97726f2f587_monthly_20260313210331 "HTTP/2 200 OK"
-2026-03-13 22:06:06,651 - server - INFO - Subscription activated for user dea43c88-3766-42ee-865a-b97726f2f587, plan monthly
-2026-03-13 22:06:06,709 - httpx - INFO - HTTP Request: GET https://qbsusnyqkqanhsthhgvq.supabase.co/rest/v1/users?select=email%2Cname&id=eq.dea43c88-3766-42ee-865a-b97726f2f587 "HTTP/2 200 OK"
-2026-03-13 22:06:06,711 - server - INFO - Webhook received: {'resource': '149526443875', 'topic': 'payment'}
-2026-03-13 22:06:06,712 - server - INFO - Webhook received: {'resource': 'https://api.mercadolibre.com/merchant_orders/39038321450', 'topic': 'merchant_order'}
-2026-03-13 22:06:06,995 - server - INFO - Payment notification email sent for admin@metodo-lo.com
-INFO:     Will watch for changes in these directories: ['/app/backend']
-INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
-INFO:     Started reloader process [46] using WatchFiles
-INFO:     Started server process [87]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-
-==> /var/log/supervisor/backend.out.log <==
-INFO:     10.208.138.75:35458 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.76:52930 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.76:47708 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.75:41432 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.76:50012 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.75:59826 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.76:50012 - "POST /api/auth/login/cpf HTTP/1.1" 200 OK
-INFO:     10.208.138.75:59826 - "POST /api/payments/create-preference HTTP/1.1" 200 OK
-INFO:     10.208.138.75:50938 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.76:54154 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.75:51138 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.75:51138 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.76:54472 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.75:39848 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.75:42818 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.76:54292 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.75:40158 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.75:40158 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.76:55356 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.75:42610 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.75:50602 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.75:50602 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.75:36212 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.76:48224 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.75:59130 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.75:59130 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.76:46354 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.75:41362 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.75:55734 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.75:55734 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.75:43804 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.76:55052 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.75:37184 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.76:33912 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.75:48774 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.75:48774 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.75:41402 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.76:44424 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-[Supabase] Connected to https://qbsusnyqkqanhsthhgvq.supabase.co
-[Supabase] Admin client connected
-INFO:     10.208.138.76:35630 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.76:35630 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-[Supabase] Connected to https://qbsusnyqkqanhsthhgvq.supabase.co
-[Supabase] Admin client connected
-INFO:     10.208.138.75:35356 - "POST /api/auth/login/cpf HTTP/1.1" 200 OK
-INFO:     10.208.138.75:35356 - "POST /api/payments/create-preference HTTP/1.1" 200 OK
-INFO:     10.208.138.75:38538 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.75:38538 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.76:45394 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.76:45394 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.75:41246 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.76:54722 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.75:38302 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.76:44252 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.75:47058 - "GET /api/payments/webhook HTTP/1.1" 405 Method Not Allowed
-INFO:     10.208.138.76:43568 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.76:43568 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.76:41470 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.75:54062 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.76:40890 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.75:45888 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.76:47956 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.76:47956 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.75:48382 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.75:48382 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.75:46178 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.75:46178 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.75:43864 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.75:43864 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.76:33692 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-INFO:     10.208.138.76:33692 - "GET /api/auth/me HTTP/1.1" 401 Unauthorized
-[Supabase] Connected to https://qbsusnyqkqanhsthhgvq.supabase.co
-[Supabase] Admin client connected
-INFO:     10.208.138.75:55936 - "POST /api/payments/webhook HTTP/1.1" 200 OK
-[Supabase] Connected to https://qbsusnyqkqanhsthhgvq.supabase.co
-[Supabase] Admin client connected
-INFO:     10.208.138.75:46878 - "GET /api/payments/webhook HTTP/1.1" 405 Method Not Allowed
-[Supabase] Connected to https://qbsusnyqkqanhsthhgvq.supabase.co
-[Supabase] Admin client connected
-INFO:     10.208.138.75:33590 - "POST /api/auth/login/cpf HTTP/1.1" 200 OK
-INFO:     10.208.138.76:44538 - "POST /api/payments/create-preference HTTP/1.1" 200 OK
-[Supabase] Connected to https://qbsusnyqkqanhsthhgvq.supabase.co
-[Supabase] Admin client connected
-INFO:     10.208.138.76:51556 - "POST /api/auth/login/cpf HTTP/1.1" 200 OK
-INFO:     10.208.138.75:37508 - "POST /api/payments/create-preference HTTP/1.1" 200 OK
-INFO:     10.208.138.75:40558 - "POST /api/payments/webhook?id=39008496189&topic=merchant_order HTTP/1.1" 200 OK
-INFO:     10.208.138.75:49126 - "POST /api/payments/webhook?id=150238055796&topic=payment HTTP/1.1" 200 OK
-INFO:     10.208.138.75:49126 - "POST /api/payments/webhook?id=39008496189&topic=merchant_order HTTP/1.1" 200 OK
-INFO:     10.208.138.75:49126 - "POST /api/payments/webhook?data.id=150238055796&type=payment HTTP/1.1" 200 OK
-INFO:     10.208.138.76:39422 - "POST /api/payments/webhook?id=39008805857&topic=merchant_order HTTP/1.1" 200 OK
-INFO:     10.208.138.76:39422 - "POST /api/payments/webhook?data.id=149517550973&type=payment HTTP/1.1" 200 OK
-INFO:     10.208.138.75:36408 - "POST /api/payments/webhook?id=149517550973&topic=payment HTTP/1.1" 200 OK
-INFO:     10.208.138.75:36422 - "POST /api/payments/webhook?id=39008805857&topic=merchant_order HTTP/1.1" 200 OK
-[Supabase] Connected to https://qbsusnyqkqanhsthhgvq.supabase.co
-[Supabase] Admin client connected
-INFO:     10.208.138.75:42944 - "POST /api/payments/webhook?id=39010790407&topic=merchant_order HTTP/1.1" 200 OK
-INFO:     10.208.138.76:37622 - "POST /api/payments/webhook?id=39038321450&topic=merchant_order HTTP/1.1" 200 OK
-INFO:     10.208.138.76:37622 - "POST /api/payments/webhook?data.id=149526443875&type=payment HTTP/1.1" 200 OK
-INFO:     10.208.138.75:36206 - "POST /api/payments/webhook?id=149526443875&topic=payment HTTP/1.1" 200 OK
-INFO:     10.208.138.75:36214 - "POST /api/payments/webhook?id=39038321450&topic=merchant_order HTTP/1.1" 200 OK to watch for the incoming Mercado Pago webhook.
-        2.  Look for a request to  with  and status .
-        3.  Verify that the  function in  logs the successful processing of the payment.
-        4.  Confirm with the user that their test account's subscription was automatically activated after payment.
-    -   **Why fix this issue and what will be achieved with the fix?**: This is the final step to validate the entire automated payment and subscription activation workflow, a critical business feature.
+        1.  Ask the user for feedback on the last screenshot.
+        2.  The user's request mentioned filling the width with 14 cards. The agent should verify if the current layout achieves this or if further adjustments to card width/spacing are needed.
+        3.  Check .
+    -   **Why fix this issue and what will be achieved with the fix?**: This is the last requested UI change to finalize the app's core functionality look and feel.
     -   **Status**: IN PROGRESS
-    -   **Is recurring issue?**: Y (There have been multiple attempts to get the payment flow working correctly).
-    -   **Should Test frontend/backend/both after fix?**: Backend.
-
--   **Issue 2: User Verification of Reiniciar Tudo Button**
-    -   **Description**: A lingering bug from a previous session where the Reiniciar Tudo button in the Gestão de Banca tab was reported as not working. This has not been re-verified by the user.
-    -   **Next debug checklist**: After the current high-priority tasks are complete, ask the user to test this button's functionality on the deployed application.
-    -   **Why fix this issue and what will be achieved with the fix?**: To close out an old bug report and ensure all UI components are functional.
-    -   **Status**: USER VERIFICATION PENDING
-    -   **Is recurring issue?**: Y
+    -   **Is recurring issue?**: Y (The layout has been iteratively refined multiple times).
     -   **Should Test frontend/backend/both after fix?**: Frontend.
 
--   **Issue 3: End-to-End Verification of Session & Usage Limits**
-    -   **Description**: While the logic for a one-device session limit has been made more robust (checking every 5 seconds), it hasn't been formally tested and confirmed by the user.
-    -   **Next debug checklist**: Guide the user on how to test this: log in on a primary browser, then log in with the same account on a secondary browser or device, and confirm the first session is immediately logged out.
-    -   **Why fix this issue and what will be achieved with the fix?**: To confirm a core product requirement is fully met.
+-   **Issue 2: End-to-End Verification of Session & Usage Limits**
+    -   **Description**: From previous handoff. The logic for a one-device session limit, while optimized, hasn't been formally tested by the user.
+    -   **Next debug checklist**: Guide the user on how to test this: log in on one browser, then log in on a second browser/device, and confirm the first session is logged out.
     -   **Status**: NOT STARTED
     -   **Is recurring issue?**: N
     -   **Should Test frontend/backend/both after fix?**: Both.
 
+-   **Issue 3: User Verification of Reiniciar Tudo Button**
+    -   **Description**: Lingering bug from a previous session. The Reiniciar Tudo button in the Gestão de Banca tab may not be working.
+    -   **Next debug checklist**: Ask the user to test this button's functionality.
+    -   **Status**: USER VERIFICATION PENDING
+    -   **Is recurring issue?**: Y
+    -   **Should Test frontend/backend/both after fix?**: Frontend.
+
 **In progress Task List**:
--   **Task 1: Complete and Verify Mercado Pago Integration**
-    -   **Where to resume**: Monitor backend logs for the  webhook from Mercado Pago.
-    -   **What will be achieved with this?**: A fully automated, production-ready payment system where users can pay and have their subscriptions activated without manual admin intervention.
+-   **Task 1: Finalize and get approval for the History Card Redesign**
+    -   **Where to resume**: Awaiting user feedback on the last implementation.
+    -   **What will be achieved with this?**: The user's vision for the number history display will be complete.
     -   **Status**: IN PROGRESS
-    -   **Should Test frontend/backend/both after fix?**: Backend.
-    -   **Blocked on something**: Waiting for Mercado Pago to send the webhook notification for the completed PIX payment.
+    -   **Should Test frontend/backend/both after fix?**: Frontend.
+    -   **Blocked on something**: User feedback.
 
 **Upcoming and Future Tasks**
 -   **Upcoming Tasks**:
@@ -281,115 +74,102 @@ INFO:     10.208.138.75:36214 - "POST /api/payments/webhook?id=39038321450&topic
 -   **Future Tasks**:
     -   P2: Implement Automatic mode with an external API.
     -   P2: Implement database persistence for daily runs, numbers, and metrics for historical analysis.
-    -   P3: Assist the user in purchasing and configuring a custom domain for the production application (as per User Message 472).
-    -   P3: Create a user-facing payment/plans page for a full self-service experience (User deferred this but it's a logical next step).
+    -   P3: Assist the user in purchasing and configuring a custom domain.
+    -   P3: Create a user-facing payment/plans page.
 
 **Completed work in this session**
--   **UI Fix**: Styled the CORRIGIR and LIMPAR buttons with the black and gold theme.
--   **Feature: Pre-registration System**: Implemented a system for admins to assign subscription plans to users via email before they register.
--   **Feature: Mandatory Password Change**: Created a flow forcing the admin to change their password on the first login.
--   **Feature: Blacklist System**: Built a system for the admin to block users by email or CPF, preventing login and registration. Two specific users were blocked as requested.
--   **Bug Fix & Enhancement: Single-Device Session**: Made the session validation more aggressive, checking every 5 seconds to ensure near-instant logout of the old device.
--   **Integration: Resend**: Integrated Resend to send email notifications to the admin for new user registrations.
--   **Integration: Mercado Pago**: Fully integrated the Mercado Pago backend, including switching to **Production credentials** to enable the **PIX** payment option and configuring plans, payment preference creation, and a webhook for automatic subscription activation. The price of the monthly plan was updated to R00.
--   **Admin User Update**: Changed the admin user's CPF to .
--   **Bug Fix: Bcrypt Compatibility**: Downgraded  to  to resolve a compatibility issue with  that was causing login failures.
-
-**Earlier issues found/mentioned but not fixed**
--   **Issue 1: Reiniciar Tudo button bug**
-    -   **Debug checklist**: Ask user to test the button on the deployed application.
-    -   **Why to solve this issue and what will be achieved with this?**: Resolve a lingering bug from a previous session.
-    -   **Should Test frontend/backend/both after fix**: Frontend
-    -   **Is recurring issue?**: Y
-
-**Known issue recurrence from previous fork**
--   **Issue recurrence in previous fork**: Frontend Deployment Failure.
--   **Recurrence count**: High.
--   **Status**: **RESOLVED** (by migrating to Vite).
+-   **Production Readiness & Payment Finalization**:
+    -   Completed Mercado Pago integration by configuring the production webhook URL.
+    -   Fixed production deployment failures on Railway by cleaning  from 155 to ~15 essential packages.
+    -   Guided the user on setting all required environment variables in Railway for backend services (Mercado Pago, Resend, etc.).
+-   **Performance Optimization**:
+    -   **Admin Panel**: Optimized the  endpoint from ~5 queries *per user* to 6 queries total, reducing load time from ~1 minute to **under 1 second**.
+    -   **Concurrent Users**: Reduced server load by over 80% by changing session validation from 3s to 15s and heartbeat from 30s to 60s. Prevented users from being logged out due to server timeouts.
+-   **Security & Access Control**:
+    -   **Whitelist Feature**: Implemented a system where only pre-registered or existing users can log in, blocking unauthorized access.
+    -   **Code Protection**: Added multiple layers of frontend protection: blocking right-click and dev shortcuts (F12, etc.), disabling text selection/copying, and a debugger trap that freezes the inspector.
+    -   **Code Obfuscation**: Configured the Vite build to obfuscate and minify the production JavaScript, making it unreadable. File names are also randomized.
+-   **UI/UX Enhancements & Bug Fixes**:
+    -   **Responsive Horizontal Layout**: Iteratively developed and perfected a responsive horizontal mode that fills the screen on any device (PC, notebook, tablet) without overflow or black bars. This was a major focus.
+    -   **History Scroll Fix**: Fixed a bug where the history scrollbar would behave incorrectly, ensuring the newest number is always visible on the right.
+    -   **History Card Simplification**: Removed 'orp/zero/voi/tier' tags from the history cards.
+-   **Bug Fix**: Corrected an Acesso Bloqueado error that was incorrectly triggered in the preview environment.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Frontend**: React (Vite), Tailwind CSS, .
+-   **Frontend**: React (Vite), Tailwind CSS (, , ).
 -   **Backend**: FastAPI (Python).
--   **Database/Auth**: Supabase ( SDK).
--   **Deployment**: Backend on Railway, Frontend on Vercel.
--   **Integrations**: Mercado Pago (Payments), Resend (Email).
+-   **Database**: Supabase ( SDK).
+-   **Performance Tuning**: Backend query optimization (bulk fetching), frontend timer throttling.
+-   **Code Protection**: JavaScript Obfuscation (, ), anti-debugging scripts.
+-   **Responsive Design**: Advanced CSS and JS to handle different view modes and screen sizes.
 
 **key DB schema**
--   **users**: Added  (BOOLEAN).
--   **pending_subscriptions**: (New) Stores pre-assigned subscriptions for unregistered users by email.
--   **payment_attempts**: (New) Logs all payment creation attempts and their status from Mercado Pago.
--   **blacklist**: (New) Stores emails and CPFs that are permanently blocked from accessing the application.
+-   No changes to the DB schema in this session.
 
 **changes in tech stack**
--   **Backend Dependencies**: Added  and . Downgraded  to  for compatibility with .
+-   **Frontend**: Added  and  for the production build process.
+-   **Backend**:  was drastically reduced to only essential packages, fixing build issues.
 
 **All files of reference**
--   : Heavily modified with endpoints and logic for pre-registration, password change, Mercado Pago, blacklist, and email notifications.
--   : Updated with new dependencies and the bcrypt version fix.
--   : Reworked with tabs for Users, Pre-cadastros, and Lista Negra.
--   : Updated to handle forced password change and the 5-second session validation interval.
--   : New component for the password change flow.
--   : Updated with API functions for blacklist and pre-registration management.
--   All new SQL files in .
+-   : The  endpoint was completely rewritten for performance.
+-   : Session validation and heartbeat intervals were increased to reduce server load.
+-   : Logic added to manage the horizontal/vertical view mode state.
+-   : Major refactoring to implement the side-by-side horizontal layout, fix scroll behavior, and implement the new history card design.
+-   : Heavily modified to support the responsive horizontal layout and fix overflow issues.
+-   : Contains multiple layers of anti-inspection/anti-copy JavaScript.
+-   : Configured to use  and  for build-time code protection.
+-   : Cleaned to ensure stable production builds on Railway.
 
 **Areas that need refactoring**:
--    has grown to over 1000 lines and urgently needs to be refactored into modular routers (e.g., , , ).
--    is also large; the logic for each admin tab could be extracted into its own component for better organization.
+-    remains a large monolithic file that would benefit from being broken into smaller, feature-specific routers (e.g., , , ).
 
 **key api endpoints**
--   : For the mandatory password change flow.
--   : , ,  for managing pre-registrations.
--   : , ,  for managing the blacklist.
--   :  available payment plans.
--   :  to create a Mercado Pago payment link.
--   :  to receive webhook notifications from Mercado Pago.
+-   : This endpoint was heavily optimized to reduce database queries and improve performance from ~60s to <1s.
 
 **Critical Info for New Agent**
--   **Mercado Pago is using PRODUCTION credentials.** Do not change them. The immediate task is to confirm the  webhook is received after the user's PIX payment.
--   **Remind User about Preview vs. Production**: The user sometimes forgets that your changes are in the preview environment and tests the production URL. Remind them that changes only go live after they click Save to GitHub.
--   **Manual Control**: The user has explicitly chosen to manage payments and subscriptions manually via the Admin Panel for now, rather than having a user-facing payment page.
--   **The  file is a monolith.** While functional, it is becoming difficult to maintain. Proposing a refactor into smaller routers should be a priority after the current tasks are stable.
+-   The user is highly focused on the visual perfection of the UI, especially the horizontal layout. Be prepared for iterative feedback on spacing, alignment, and sizing.
+-   The responsive horizontal layout is now the most complex part of the UI. The key files are  (toggles the mode),  (contains the two layouts), and  (contains the flexbox and sizing logic for ).
+-   The app has aggressive anti-dev-tools protection in . If you encounter ACESSO BLOQUEADO during testing, it may be a false positive, although the most common cause was already fixed.
+-   Production deployment on Railway is sensitive to the  file. Do not add unnecessary packages.
 
 **documents and test reports created in this job**
--   
--   
--   
--   
--    (Updated)
+-    (Updated several times)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **User**: PIX isn't showing up in the payment link.
-2.  **Agent**: Identifies the issue is using test credentials, asks for production credentials.
-3.  **User**: Provides production .
-4.  **Agent**: Configures production keys, generates a new link.
-5.  **User**: apareseu agora (It appeared now).
-6.  **User**: ja fiz o pagamento (I already made the payment).
-7.  **Agent**: Checks logs, sees pending status, asks user if they actually paid the PIX QR code.
-8.  **User**: pera nao paguei vo paga ainda um momento (Wait, I haven't paid, I'm going to pay now, one moment).
-9.  **User**: paguei agora (I paid now).
-10. **Agent**: Acknowledges payment and prepares to check logs again. (The agent's work was interrupted here).
+1.  **User**: Fixes the admin panel slowness. (COMPLETED)
+2.  **User**: Asks to redesign the history cards based on a photo and a list of numbers, removing D/C columns and making the card area fill the screen horizontally. (IN PROGRESS)
+3.  **Agent**: Implements the new history card design. (COMPLETED)
+4.  **User**: Reports that after an update, the history scrollbar automatically jumps to the end, wants it to stay put. (COMPLETED)
+5.  **Agent**: Removes the auto-scroll. (COMPLETED)
+6.  **User**: Clarifies the scrollbar should stay at the *end* (right side), showing the newest number. (COMPLETED)
+7.  **Agent**: Re-implements the history to show the newest number on the right, with scroll to the left for older numbers. (COMPLETED)
+8.  **User**: Reports app is slow and randomly logs out with 50 concurrent users. (COMPLETED)
+9.  **Agent**: Diagnoses and fixes performance by throttling session validation and heartbeat timers. (COMPLETED)
+10. **User**: Reports admin panel is still very slow to load. (COMPLETED)
 
 **Project Health Check:**
 -   **Broken**: None.
--   **Mocked**: The Automatic mode with an external API is not implemented.
+-   **Mocked**: Automatic mode is not implemented.
 
 **3rd Party Integrations**
--   **Supabase**: Used for database and authentication.
--   **Mercado Pago**: v2.0.9 SDK integrated for payments using production credentials.
--   **Resend**: v0.8.0 SDK integrated for email notifications.
+-   **Supabase**: For database and authentication.
+-   **Mercado Pago**: v2.0.9 SDK for payments.
+-   **Resend**: v0.8.0 SDK for email notifications.
+-   **vite-plugin-string-obfuscator, terser**: For frontend code protection during the build process.
 
 **Testing status**
 -   **Testing agent used after significant changes**: NO
 -   **Troubleshoot agent used after agent stuck in loop**: NO
 -   **Test files created**: None
--   **Known regressions**: None
+-   **Known regressions**: None.
 
 **Credentials to test flow:**
 -   **Admin CPF**: 
--   **Admin Password**:  (will trigger the mandatory password change on first login).
+-   **Admin Password**:  (or whatever it was changed to during the mandatory password change flow).
 
 **What agent forgot to execute**
--   The agent has not circled back to ask the user to re-verify the Reiniciar Tudo button bug, as it has been focused on higher-priority feature requests from the user.</analysis>
+-   The agent has not addressed the pending user verification for the Reiniciar Tudo button.
+-   The formal end-to-end test of the single-device session limit has not been conducted with the user.</analysis>
