@@ -235,80 +235,22 @@ const RadarTab = ({ viewMode = "vertical" }) => {
       </div>
       <div
         ref={painelRef}
-        className={`flex flex-row-reverse overflow-x-auto bg-[rgba(17,17,17,0.5)] border border-[#444] rounded-xl ${compact ? "gap-[3px] p-1" : "gap-2 p-2"}`}
+        className={`flex flex-row-reverse overflow-x-auto bg-[rgba(17,17,17,0.5)] border border-[#444] rounded-xl p-2 ${compact ? "min-h-[60px] gap-1" : "min-h-[100px] gap-2"}`}
         data-testid="giros-panel"
       >
         {[...giros].reverse().map((n, idx) => {
+          const parity = getParity(n);
+          const highLow = getHighLow(n);
           const info = NUMBER_INFO[n] || {};
-          const isRed = VERMELHOS.includes(n);
-          const isZero = n === 0;
           return (
-            <div key={idx} className={`flex flex-col items-center shrink-0 rounded-lg ${compact ? "w-[calc(100%/14)] min-w-0 p-[2px] gap-[2px]" : "min-w-[90px] p-2 gap-[6px]"}`}
-              style={{ background: 'rgba(30,30,30,0.9)', border: '1px solid #D4AF37' }}>
-              {/* Number ball with gold border */}
-              <div style={{
-                width: compact ? 28 : 48,
-                height: compact ? 28 : 48,
-                borderRadius: '50%',
-                border: `2px solid #D4AF37`,
-                background: isZero ? '#00662a' : '#111',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: compact ? '0.7rem' : '1.2rem',
-                fontWeight: 900,
-                color: isZero ? '#fff' : isRed ? '#ff3131' : '#fff',
-                flexShrink: 0,
-              }}>
+            <div key={idx} className={`flex flex-col items-center gap-0.5 shrink-0 ${compact ? "min-w-[55px]" : "min-w-[75px]"}`}>
+              <div className="mini-ball" style={{ background: getBgColor(n), minWidth: compact ? 30 : 40, height: compact ? 30 : 40, fontSize: compact ? '0.8rem' : '1rem' }}>
                 {n}
               </div>
-              {/* ÍMPAR/PAR tag */}
-              {info.parity && (
-                <div style={{
-                  width: '100%',
-                  textAlign: 'center',
-                  padding: compact ? '1px 2px' : '3px 4px',
-                  borderRadius: 4,
-                  fontSize: compact ? '0.45rem' : '0.75rem',
-                  fontWeight: 700,
-                  color: '#fff',
-                  background: '#000',
-                  border: '1px solid #D4AF37',
-                }}>
-                  {info.parity}
-                </div>
-              )}
-              {/* ALTO/BAIXO tag */}
-              {info.highLow && (
-                <div style={{
-                  width: '100%',
-                  textAlign: 'center',
-                  padding: compact ? '1px 2px' : '3px 4px',
-                  borderRadius: 4,
-                  fontSize: compact ? '0.45rem' : '0.75rem',
-                  fontWeight: 700,
-                  color: '#fff',
-                  background: '#000',
-                  border: '1px solid #D4AF37',
-                }}>
-                  {info.highLow}
-                </div>
-              )}
-              {/* Reference numbers */}
+              <span className={`tag ${parity.className}`} style={{ fontSize: compact ? '0.55rem' : undefined }}>{parity.text}</span>
+              <span className={`tag ${highLow.className}`} style={{ fontSize: compact ? '0.55rem' : undefined }}>{highLow.text}</span>
               {info.refs && (
-                <div style={{
-                  width: '100%',
-                  textAlign: 'center',
-                  padding: compact ? '1px 2px' : '3px 4px',
-                  borderRadius: 4,
-                  fontSize: compact ? '0.45rem' : '0.75rem',
-                  fontWeight: 700,
-                  color: '#fff',
-                  background: '#000',
-                  border: '1px solid #D4AF37',
-                }}>
-                  {info.refs}
-                </div>
+                <span className="tag" style={{ fontSize: compact ? '0.5rem' : '0.6rem', color: '#D4AF37', border: '1px solid #D4AF37' }}>{info.refs}</span>
               )}
             </div>
           );
