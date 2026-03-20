@@ -851,45 +851,46 @@ async def admin_list_users(request: Request):
     sb = get_supabase_admin()
     today = get_today_date_br()
     
+    # Bulk fetch all data in 6 queries instead of 5 per user
     users_result = sb.table('users').select('*').order('created_at', desc=True).execute()
+    subs_result = sb.table('subscriptions').select('*').execute()
+    limits_result = sb.table('usage_limits').select('user_id,daily_seconds_limit').execute()
+    heartbeats_result = sb.table('usage_heartbeats').select('user_id,seconds').eq('day_date', today).execute()
+    flags_result = sb.table('feature_flags').select('user_id,api_enabled').execute()
+    sessions_result = sb.table('active_sessions').select('*').execute()
+    
+    # Index by user_id for fast lookup
+    subs_map = {s['user_id']: s for s in subs_result.data}
+    limits_map = {l['user_id']: l['daily_seconds_limit'] for l in limits_result.data}
+    flags_map = {f['user_id']: f['api_enabled'] for f in flags_result.data}
+    sessions_map = {s['user_id']: s for s in sessions_result.data}
+    
+    # Sum heartbeats per user
+    heartbeats_map = {}
+    for h in heartbeats_result.data:
+        uid = h['user_id']
+        heartbeats_map[uid] = heartbeats_map.get(uid, 0) + h['seconds']
     
     user_list = []
     for u in users_result.data:
-        # Get subscription
-        sub_result = sb.table('subscriptions').select('*').eq('user_id', u['id']).execute()
-        sub = sub_result.data[0] if sub_result.data else None
-        sub_status = sub['status'] if sub else 'none'
-        
-        # Get usage limit
-        limit = sb.table('usage_limits').select('daily_seconds_limit').eq('user_id', u['id']).execute()
-        daily_limit = limit.data[0]['daily_seconds_limit'] if limit.data else 7200
-        
-        # Get today's usage
-        heartbeats = sb.table('usage_heartbeats').select('seconds').eq('user_id', u['id']).eq('day_date', today).execute()
-        seconds_used = sum(h['seconds'] for h in heartbeats.data) if heartbeats.data else 0
-        
-        # Get feature flags
-        flags = sb.table('feature_flags').select('api_enabled').eq('user_id', u['id']).execute()
-        api_enabled = flags.data[0]['api_enabled'] if flags.data else False
-        
-        # Get active session
-        session = sb.table('active_sessions').select('*').eq('user_id', u['id']).execute()
-        active_session = session.data[0] if session.data else None
+        uid = u['id']
+        sub = subs_map.get(uid)
+        session = sessions_map.get(uid)
         
         user_list.append({
-            "id": u['id'],
+            "id": uid,
             "cpf": u.get('cpf'),
             "email": u['email'],
             "name": u.get('name'),
             "role": u.get('role', 'user'),
             "is_active": u.get('is_active', True),
-            "subscription_status": sub_status,
+            "subscription_status": sub['status'] if sub else 'none',
             "subscription_end": sub.get('current_period_end') if sub else None,
-            "daily_seconds_limit": daily_limit,
-            "seconds_used_today": seconds_used,
-            "api_enabled": api_enabled,
-            "last_activity": active_session['last_seen_at'] if active_session else None,
-            "device_label": active_session['device_label'] if active_session else None,
+            "daily_seconds_limit": limits_map.get(uid, 7200),
+            "seconds_used_today": heartbeats_map.get(uid, 0),
+            "api_enabled": flags_map.get(uid, False),
+            "last_activity": session['last_seen_at'] if session else None,
+            "device_label": session['device_label'] if session else None,
             "created_at": u.get('created_at')
         })
     
