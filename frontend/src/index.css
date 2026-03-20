@@ -217,6 +217,8 @@ body {
     width: 100%;
     text-align: center;
     display: block;
+    border: 1px solid transparent;
+    box-sizing: border-box;
 }
 
 .tag-alto { background: #ff00ff !important; color: #fff !important; }
