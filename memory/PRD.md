@@ -34,19 +34,26 @@
 - Família de números
 - Histórico de giros (14 ou 50)
 - Botões CORRIGIR/LIMPAR com tema preto e dourado
-- **Números repetidos piscam em dourado**
-- **Números de referência customizados abaixo de cada número**
+- Números repetidos piscam em dourado
+- Números de referência customizados abaixo de cada número
 
 ### Cards de Histórico (Redesign)
 - Removidos D/C (Dúzia/Coluna)
 - Mantidos PAR/IMP com cores originais (cyan/laranja)
 - Mantidos ALTO/BAIXO com cores originais (magenta/cyan)
 - Número 0: tag ZERO com caixa e borda verde, alinhado com outros
-- Números de referência em branco com borda dourada
-- Horizontal: cards preenchem largura total (calc 100%/14)
+- Números de referência em branco com borda dourada, fonte bold
+- Horizontal: cards preenchem largura total (calc 100%/limiteGiros)
 - Vertical: cards com largura fixa (75px min) com scroll lateral
-- Alinhamento vertical perfeito entre todos os tags (border normalizada)
-- Números repetidos destacam piscando em dourado (blink-gold animation)
+- Alinhamento vertical perfeito (border transparent normalizada no .tag)
+
+### Tabela Junção dos Números (NOVO)
+- Tabela exibida ao lado da Família (horizontal) ou abaixo (vertical)
+- Mostra dados de junção quando números se repetem no histórico
+- Números em formato de bola (mini-ball) igual à Família
+- Números da região mais forte destacados com borda dourada brilhante
+- Scrollbar dourada visível para navegar múltiplos repetidos
+- Dados completos de junção para todos os 37 números (0-36)
 
 ### Gestão de Banca
 - Banca inicial, Meta %, Stop %
@@ -66,40 +73,15 @@
 - Suporte a PIX, cartão de crédito, boleto
 - Webhook automático para ativação de assinatura
 - Planos: Mensal (R$200), Anual (R$970), Vitalício (R$1.997)
-- Notificação por email ao admin quando pagamento é confirmado
 
-### Notificações (Resend)
-- Email ao admin quando novo usuário se registra
-- Email ao admin quando pagamento é confirmado
+### Regiões do Radar
+- Região 6/5 corrigida: agora inclui números 0 e 5
 
 ### Design
-- Tema preto e dourado em toda a aplicação
-- Logo da roleta como fundo
-- Escrita "Método L.O" em dourado (estilo premium)
+- Tema preto e dourado
 - Layout horizontal responsivo para PC/notebook/tablet
 - Layout vertical para mobile
-
-### Segurança
-- Código obfuscado no build de produção
-- Anti-dev-tools (bloqueio F12, right-click, etc.)
-- Anti-seleção de texto e cópia
-
----
-
-## Configuração de Produção
-
-### Variáveis de Ambiente (Railway)
-```
-SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_KEY, JWT_SECRET
-MERCADO_PAGO_ACCESS_TOKEN (PRODUÇÃO)
-MERCADO_PAGO_PUBLIC_KEY (PRODUÇÃO)
-BACKEND_URL=https://metodolo-production-19fc.up.railway.app
-FRONTEND_URL=https://metodol-o.vercel.app
-RESEND_API_KEY, ADMIN_NOTIFICATION_EMAIL, SENDER_EMAIL
-```
-
-### Webhook Mercado Pago
-- URL: `https://metodolo-production-19fc.up.railway.app/api/payments/webhook`
+- Proteção de código (obfuscação, anti-dev-tools)
 
 ---
 
@@ -123,32 +105,32 @@ RESEND_API_KEY, ADMIN_NOTIFICATION_EMAIL, SENDER_EMAIL
 
 ## Changelog
 
-### 2026-03-20 (Sessão atual)
+### 2026-03-22 (Sessão atual)
 - Redesign dos cards de histórico: removido D/C, mantido PAR/IMP e ALTO/BAIXO
 - Número 0 agora tem caixas ZERO com borda verde alinhadas
 - Números de referência customizados em branco com borda dourada
 - Cards preenchem largura total no horizontal, tamanho fixo no vertical
 - Alinhamento vertical corrigido (border transparent normalizada no .tag)
 - Números repetidos piscam em dourado (animação blink-gold)
+- **NOVA tabela "Junção dos Números"** com bolas coloridas e scroll dourado
+- Números da junção na região forte destacados em dourado
+- Região 6/5 corrigida: adicionados números 0 e 5
+- Família + Junção preenchem a tela sem espaço preto
 - Verificado: admin carrega 49 usuários em <1s
 - Verificado: session validation 15s, heartbeat 60s (otimizações intactas)
 - Testes: 100% passou (testing agent iteration 3)
 
-### 2026-03-13
-- Pagamento PIX via Mercado Pago confirmado e processado
-- Configurada URL de webhook de produção (Railway)
-- requirements.txt limpo (155 → 13 pacotes essenciais)
-- Implementado modo Whitelist
+### 2026-03-20
 - Otimização admin panel: ~1min → <1s
 - Otimização concurrent users: redução de 80% carga servidor
 - Layout horizontal responsivo
 - Proteção de código (obfuscação, anti-dev-tools)
+- Modo Whitelist implementado
+- requirements.txt limpo para Railway
 
 ### Sessões anteriores
 - Sistema de Pré-Cadastros e Lista Negra
-- Troca obrigatória de senha do admin
-- Integração Resend para notificações
-- Integração Mercado Pago com credenciais de produção
+- Integração Mercado Pago e Resend
 - Sessão única por dispositivo
 - Tema preto e dourado completo
 - Migração para Vite
