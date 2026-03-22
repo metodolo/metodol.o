@@ -463,28 +463,37 @@ const RadarTab = ({ viewMode = "vertical" }) => {
     const repeatedNums = getRepeatedNumbers();
     const regionNums = strongestRegion?.numbers || [];
     return (
-      <div className={`card-glass ${compact ? "!p-2 flex-1" : ""}`} data-testid="juncao-card">
+      <div className={`card-glass ${compact ? "!p-2 flex-1 flex flex-col" : ""}`} data-testid="juncao-card">
         <span className="label-accent" style={{ color: '#fff', borderColor: '#D4AF37', fontSize: compact ? '0.7rem' : '0.9rem' }}>JUNÇÃO DOS NÚMEROS</span>
-        <div className={`overflow-y-auto ${compact ? "max-h-[120px]" : "max-h-[200px]"}`} style={{ scrollbarWidth: 'thin', scrollbarColor: '#D4AF37 #111' }}>
+        <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'auto', scrollbarColor: '#D4AF37 #222' }}>
           {repeatedNums.length > 0 ? repeatedNums.map((num) => {
             const juncao = JUNCAO_DATA[num] || [];
             return (
-              <div key={num} className={`flex flex-wrap items-center gap-1 ${compact ? "py-1" : "py-2"} border-b border-[#333]`}>
-                <span className="font-bold text-[#D4AF37]" style={{ fontSize: compact ? '0.7rem' : '0.85rem', minWidth: compact ? 60 : 75 }}>
+              <div key={num} className={`${compact ? "py-1" : "py-2"} border-b border-[#333]`}>
+                <span className="font-bold text-[#D4AF37] block" style={{ fontSize: compact ? '0.65rem' : '0.85rem', marginBottom: compact ? 2 : 4 }}>
                   {num} Junção:
                 </span>
-                {juncao.map((jn, i) => {
-                  const isInRegion = regionNums.includes(jn);
-                  return (
-                    <span key={i} className="font-bold" style={{
-                      fontSize: compact ? '0.65rem' : '0.8rem',
-                      color: isInRegion ? '#D4AF37' : '#fff',
-                      textShadow: isInRegion ? '0 0 6px rgba(212,175,55,0.8)' : 'none',
-                    }}>
-                      {jn}{i < juncao.length - 1 ? ' / ' : ''}
-                    </span>
-                  );
-                })}
+                <div className="flex flex-wrap gap-1">
+                  {juncao.map((jn, i) => {
+                    const isInRegion = regionNums.includes(jn);
+                    return (
+                      <div
+                        key={i}
+                        className={`mini-ball ${isInRegion ? "gold-confluencia" : ""}`}
+                        style={{
+                          background: getBgColor(jn),
+                          minWidth: compact ? 26 : 34,
+                          height: compact ? 26 : 34,
+                          fontSize: compact ? '0.6rem' : '0.75rem',
+                          border: isInRegion ? '2px solid #D4AF37' : '2px solid #fff',
+                          boxShadow: isInRegion ? '0 0 8px rgba(212,175,55,0.6)' : 'none',
+                        }}
+                      >
+                        {jn}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             );
           }) : (
@@ -524,12 +533,12 @@ const RadarTab = ({ viewMode = "vertical" }) => {
         </div>
 
         {/* Right Column */}
-        <div className="flex flex-col gap-1 min-h-0 overflow-y-auto hide-scrollbar" style={{ flex: 1, minWidth: 0 }}>
-          <HistoryCard compact />
-          <RegionsCard compact />
-          <OcultosCard compact />
-          {/* Family + Juncao side by side */}
-          <div className="flex gap-1 min-h-0">
+        <div className="flex flex-col gap-1 min-h-0" style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+          <div className="shrink-0"><HistoryCard compact /></div>
+          <div className="shrink min-h-0 overflow-hidden"><RegionsCard compact /></div>
+          <div className="shrink min-h-0 overflow-hidden"><OcultosCard compact /></div>
+          {/* Family + Juncao side by side - fills remaining space */}
+          <div className="flex gap-1 flex-1 min-h-[100px]">
             <FamilyCard compact fillSpace />
             <JuncaoCard compact />
           </div>

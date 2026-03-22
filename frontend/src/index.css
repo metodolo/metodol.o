@@ -237,6 +237,22 @@ body {
   border: 2px solid #D4AF37 !important;
 }
 
+/* Juncao scrollbar styling */
+[data-testid="juncao-card"] .overflow-y-auto::-webkit-scrollbar {
+  width: 6px;
+}
+[data-testid="juncao-card"] .overflow-y-auto::-webkit-scrollbar-track {
+  background: #222;
+  border-radius: 3px;
+}
+[data-testid="juncao-card"] .overflow-y-auto::-webkit-scrollbar-thumb {
+  background: #D4AF37;
+  border-radius: 3px;
+}
+[data-testid="juncao-card"] .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: #e5c44a;
+}
+
 .d1 { color: #00d9ff; border: 1px solid #00d9ff; }
 .d2 { color: #ffff00; border: 1px solid #ffff00; }
 .d3 { color: #ff00ff; border: 1px solid #ff00ff; }
