@@ -65,6 +65,47 @@ const NUMBER_INFO = {
   36: { parity: 'PAR', highLow: 'ALTO', refs: '2/4' },
 };
 
+// Junction data from user's table
+const JUNCAO_DATA = {
+  0: [23, 32, 19, 26, 22, 5, 1, 8, 4],
+  1: [33, 24, 20, 11, 6, 2],
+  2: [25, 21, 12, 34, 30, 7, 3, 1, 10],
+  3: [26, 35, 13, 31, 8, 2, 4, 22, 20, 11],
+  4: [21, 12, 19, 10, 30, 3, 1, 8],
+  5: [10, 1, 24, 33, 20, 28, 6, 2],
+  6: [7, 1, 34, 27, 18, 16, 23, 32, 9, 5, 10],
+  7: [11, 2, 29, 28, 24, 34, 7, 1, 6],
+  8: [3, 30, 21, 12, 23, 32, 3, 5, 1, 14, 10],
+  9: [4, 2, 22, 13, 31, 20, 11],
+  10: [1, 5, 23, 32, 10],
+  11: [3, 30, 36, 9],
+  12: [35, 8, 2, 11, 20, 1, 10, 28, 24, 19, 17],
+  13: [9, 3, 5, 27, 36, 30, 14],
+  14: [2, 4, 20, 11, 22, 13, 31],
+  15: [1, 5, 8, 10, 19, 23, 32],
+  16: [6, 2, 24, 33, 20, 11],
+  17: [1, 7, 3, 34, 25, 21, 12, 30, 10],
+  18: [4, 2, 7, 22, 31, 13, 29, 20, 11],
+  19: [6, 4, 15, 33, 22],
+  20: [1, 5, 3, 10, 21, 12, 23, 32, 14],
+  21: [2, 4, 11, 20, 31, 13, 22],
+  22: [7, 9, 18, 29],
+  23: [8, 1, 10, 19],
+  24: [5, 7, 16],
+  25: [2, 8, 6, 17, 24, 35, 20, 11, 33],
+  26: [0, 3, 30],
+  27: [6, 4, 2, 24, 33, 31, 13, 22, 15, 20, 11],
+  28: [7, 3, 1, 34, 21, 12, 30, 10, 25],
+  29: [7, 9, 18, 29],
+  30: [8, 2, 11, 35, 20],
+  31: [9, 5, 3, 14, 27, 36, 30],
+  32: [0, 6, 4, 15, 33, 22],
+  33: [1, 7, 5, 34, 23, 32, 16, 10],
+  34: [8, 6, 17, 33],
+  35: [3, 1, 30, 12, 21, 10],
+  36: [4, 2, 22, 20, 11, 13, 31],
+};
+
 // Initialize state from localStorage
 const getInitialGiros = () => {
   try {
@@ -229,6 +270,21 @@ const RadarTab = ({ viewMode = "vertical" }) => {
       }
     });
     return blinkSet;
+  };
+
+  // Get list of repeated numbers (unique, in order of first repeat)
+  const getRepeatedNumbers = () => {
+    const seen = new Set();
+    const repeated = [];
+    const added = new Set();
+    for (const n of giros) {
+      if (seen.has(n) && !added.has(n)) {
+        repeated.push(n);
+        added.add(n);
+      }
+      seen.add(n);
+    }
+    return repeated;
   };
 
   const HistoryCard = ({ compact }) => {
@@ -403,6 +459,44 @@ const RadarTab = ({ viewMode = "vertical" }) => {
     );
   };
 
+  const JuncaoCard = ({ compact }) => {
+    const repeatedNums = getRepeatedNumbers();
+    const regionNums = strongestRegion?.numbers || [];
+    return (
+      <div className={`card-glass ${compact ? "!p-2 flex-1" : ""}`} data-testid="juncao-card">
+        <span className="label-accent" style={{ color: '#fff', borderColor: '#D4AF37', fontSize: compact ? '0.7rem' : '0.9rem' }}>JUNÇÃO DOS NÚMEROS</span>
+        <div className={`overflow-y-auto ${compact ? "max-h-[120px]" : "max-h-[200px]"}`} style={{ scrollbarWidth: 'thin', scrollbarColor: '#D4AF37 #111' }}>
+          {repeatedNums.length > 0 ? repeatedNums.map((num) => {
+            const juncao = JUNCAO_DATA[num] || [];
+            return (
+              <div key={num} className={`flex flex-wrap items-center gap-1 ${compact ? "py-1" : "py-2"} border-b border-[#333]`}>
+                <span className="font-bold text-[#D4AF37]" style={{ fontSize: compact ? '0.7rem' : '0.85rem', minWidth: compact ? 60 : 75 }}>
+                  {num} Junção:
+                </span>
+                {juncao.map((jn, i) => {
+                  const isInRegion = regionNums.includes(jn);
+                  return (
+                    <span key={i} className="font-bold" style={{
+                      fontSize: compact ? '0.65rem' : '0.8rem',
+                      color: isInRegion ? '#D4AF37' : '#fff',
+                      textShadow: isInRegion ? '0 0 6px rgba(212,175,55,0.8)' : 'none',
+                    }}>
+                      {jn}{i < juncao.length - 1 ? ' / ' : ''}
+                    </span>
+                  );
+                })}
+              </div>
+            );
+          }) : (
+            <div className={`text-center text-gray-600 ${compact ? "py-2 text-xs" : "py-4 text-sm"}`}>
+              Números repetidos aparecerão aqui
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   // --- HORIZONTAL LAYOUT ---
   if (isHorizontal) {
     return (
@@ -434,7 +528,11 @@ const RadarTab = ({ viewMode = "vertical" }) => {
           <HistoryCard compact />
           <RegionsCard compact />
           <OcultosCard compact />
-          <FamilyCard compact fillSpace />
+          {/* Family + Juncao side by side */}
+          <div className="flex gap-1 min-h-0">
+            <FamilyCard compact fillSpace />
+            <JuncaoCard compact />
+          </div>
         </div>
       </div>
     );
@@ -449,6 +547,7 @@ const RadarTab = ({ viewMode = "vertical" }) => {
       <RegionsCard compact={false} />
       <OcultosCard compact={false} />
       <FamilyCard compact={false} />
+      <JuncaoCard compact={false} />
       <ActionButtons compact={false} />
     </div>
   );
