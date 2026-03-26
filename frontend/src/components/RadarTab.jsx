@@ -293,6 +293,13 @@ const RadarTab = ({ viewMode = "vertical" }) => {
     <div className={`card-glass ${compact ? "!p-2" : ""}`}>
       <div className="flex gap-2 mb-2">
         <button
+          className={`ciclo-btn ${limiteGiros === 12 ? "active" : ""} ${compact ? "!py-1 !text-xs" : ""}`}
+          onClick={() => setLimite(12)}
+          data-testid="btn-12-giros"
+        >
+          12 GIROS
+        </button>
+        <button
           className={`ciclo-btn ${limiteGiros === 14 ? "active" : ""} ${compact ? "!py-1 !text-xs" : ""}`}
           onClick={() => setLimite(14)}
           data-testid="btn-14-giros"
@@ -315,7 +322,7 @@ const RadarTab = ({ viewMode = "vertical" }) => {
       </div>
       <div
         ref={painelRef}
-        className={`flex flex-row-reverse overflow-x-auto bg-[rgba(17,17,17,0.5)] border border-[#444] rounded-xl p-2 ${compact ? "min-h-[60px]" : "min-h-[100px]"}`}
+        className={`flex flex-row overflow-x-auto bg-[rgba(17,17,17,0.5)] border border-[#444] rounded-xl p-2 ${compact ? "min-h-[60px]" : "min-h-[100px]"}`}
         data-testid="giros-panel"
       >
         {[...giros].reverse().map((n, idx) => {
