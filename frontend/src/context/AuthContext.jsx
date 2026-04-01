@@ -23,6 +23,7 @@ export const AuthProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const [mustChangePassword, setMustChangePassword] = useState(false);
   const [sessionKicked, setSessionKicked] = useState(false);
+  const [accountBlocked, setAccountBlocked] = useState(false);
   
   // Ref to track if we're logged in (for intervals)
   const isLoggedInRef = useRef(false);
@@ -50,6 +51,9 @@ export const AuthProvider = ({ children }) => {
       isLoggedInRef.current = true;
       return true;
     } catch (err) {
+      if (err?.response?.status === 403 || err?.message?.includes("desativada") || err?.message?.includes("bloqueado")) {
+        setAccountBlocked(true);
+      }
       forceLogout();
       return false;
     }
@@ -161,6 +165,10 @@ export const AuthProvider = ({ children }) => {
     }
   }, [user]);
 
+  const clearAccountBlocked = useCallback(() => {
+    setAccountBlocked(false);
+  }, []);
+
   const value = {
     user,
     subscription,
@@ -172,11 +180,13 @@ export const AuthProvider = ({ children }) => {
     isAdmin: user?.role === "admin",
     mustChangePassword,
     sessionKicked,
+    accountBlocked,
     login,
     logout,
     checkAuth,
     setError,
     clearMustChangePassword,
+    clearAccountBlocked,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

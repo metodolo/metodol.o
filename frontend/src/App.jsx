@@ -5,6 +5,7 @@ import React from "react";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { Loader2 } from "lucide-react";
+import BlockedScreen from "./components/BlockedScreen";
 
 // Pages
 import LoginPage from "./pages/LoginPage";
@@ -15,10 +16,9 @@ import AutomaticPage from "./pages/AutomaticPage";
 
 // Protected Route wrapper
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, accountBlocked, clearAccountBlocked } = useAuth();
   const location = useLocation();
 
-  // If still checking auth, show loading
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -31,7 +31,10 @@ const ProtectedRoute = ({ children }) => {
     );
   }
 
-  // If not authenticated, redirect to login
+  if (accountBlocked) {
+    return <BlockedScreen onRetry={clearAccountBlocked} />;
+  }
+
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }

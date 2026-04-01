@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { authApi, getGoogleAuthUrl } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { Eye, EyeOff, User, Lock, Mail, Loader2 } from "lucide-react";
+import BlockedScreen from "../components/BlockedScreen";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -14,6 +15,7 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [accountBlocked, setAccountBlocked] = useState(false);
 
   // Form fields
   const [cpf, setCpf] = useState("");
@@ -54,6 +56,9 @@ const LoginPage = () => {
         navigate("/");
       }
     } catch (err) {
+      if (err.message?.includes("desativada") || err.message?.includes("bloqueado")) {
+        setAccountBlocked(true);
+      }
       setError(err.message);
     } finally {
       setLoading(false);
@@ -64,6 +69,10 @@ const LoginPage = () => {
     // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
     window.location.href = getGoogleAuthUrl();
   };
+
+  if (accountBlocked) {
+    return <BlockedScreen onRetry={() => setAccountBlocked(false)} />;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
