@@ -26,7 +26,7 @@ const BlockedScreen = ({ onRetry }) => {
 
         <div className="space-y-3">
           <a
-            href="https://t.me/MetodoLO"
+            href="https://www.mercadopago.com.br/checkout/v1/redirect?pref_id=3252719508-94745be3-e4b3-4681-8e52-6992ffe37c94"
             target="_blank"
             rel="noopener noreferrer"
             className="block w-full py-3 px-6 rounded-lg font-bold text-black text-sm transition-all"
