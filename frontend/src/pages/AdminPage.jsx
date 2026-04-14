@@ -47,6 +47,9 @@ const AdminPage = () => {
   const [blacklistReason, setBlacklistReason] = useState("");
   const [blacklistLoading, setBlacklistLoading] = useState(false);
 
+  // Search state
+  const [searchQuery, setSearchQuery] = useState("");
+
   // Redirect if not admin
   useEffect(() => {
     if (!isAdmin) {
@@ -659,7 +662,26 @@ const AdminPage = () => {
         ) : (
           /* Users list */
           <div className="space-y-4" data-testid="users-list">
-            {users.map((u) => (
+            {/* Search bar */}
+            <div className="relative">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Pesquisar por nome ou email..."
+                className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-4 py-3 pl-10 text-white focus:border-[#D4AF37] focus:outline-none text-sm"
+                data-testid="search-users"
+              />
+              <Users className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
+            </div>
+            {[...users]
+              .sort((a, b) => (a.name || "").localeCompare(b.name || "", "pt-BR", { sensitivity: "base" }))
+              .filter((u) => {
+                if (!searchQuery.trim()) return true;
+                const q = searchQuery.toLowerCase();
+                return (u.name || "").toLowerCase().includes(q) || (u.email || "").toLowerCase().includes(q);
+              })
+              .map((u) => (
               <div
                 key={u.id}
                 className={`card-glass p-4 ${u.id === user?.id ? "border-[#ccff00]" : ""}`}
