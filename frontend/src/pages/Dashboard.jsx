@@ -152,7 +152,7 @@ const Dashboard = () => {
         {/* Tab content */}
         <div className={viewMode === "horizontal" ? "flex-1 min-h-0 overflow-hidden" : ""}>
           {activeTab === "radar" && <RadarTab viewMode={viewMode} />}
-          {activeTab === "gestao" && <GestaoTab />}
+          {activeTab === "gestao" && <GestaoTab viewMode={viewMode} />}
         </div>
       </div>
     </div>

@@ -1,0 +1,32 @@
+{
+  "summary": "Frontend-only testing for RADAR V22 Gestão de Banca — validated REINICIAR TUDO reset bug fix and new horizontal 2-column layout. All 6 test scenarios PASSED.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "tests_executed": [
+    {"name": "T1 GANHEI increases banca + metas count", "result": "PASS", "details": "2x GANHEI: metas=2, banca=500→550→605 as expected."},
+    {"name": "T2 PERDI decreases banca + increases stops count", "result": "PASS", "details": "1x PERDI after 2x GANHEI: stops=1, banca=605→514.25 (15% of 605 = 90.75)."},
+    {"name": "T3 REINICIAR TUDO resets state (metas=0, stops=0, banca=R$500,00, table=D1)", "result": "PASS", "details": "window.confirm auto-accepted; counters and table reset to initial state."},
+    {"name": "T4 REINICIAR TUDO persists across reload (no race condition)", "result": "PASS", "details": "localStorage immediately contains clean state {metas:0, stops:0, diaAtual:1, bancaAtual:500}; after full page reload values remain reset."},
+    {"name": "T5 Vertical layout — REINICIAR TUDO visible with red border", "result": "PASS", "details": "data-testid=btn-reset visible, class contains 'border-red-800'."},
+    {"name": "T6 Horizontal layout — 2-column (controls left ~40%, chart+table right ~60%)", "result": "PASS", "details": "gestao-tab root is flex-row with 2 children at 1920px viewport: left=765px, right=1139px. Ratio ≈ 40/60. REINICIAR TUDO visible with red border. Reset also works in horizontal layout."}
+  ],
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "GestaoTab.jsx zerarTudo (lines 123-152) correctly removes STORAGE_KEY then writes clean cleanData synchronously — eliminates the previous race with the auto-save useEffect. Good fix.",
+    "Auto-save useEffect (lines 46-59) writes on every state change; after zerarTudo setState batch, the effect will overwrite with identical clean data, so the explicit setItem on line 150 is defensive but harmless.",
+    "GestaoTab.jsx is 482 lines with heavy JSX duplication between horizontal and vertical branches (same inputs, banca display, buttons, chart, table). Recommend extracting ControlsPanel / ChartPanel / ProjectionTable sub-components to remove ~200 lines of duplication.",
+    "Horizontal layout left column uses fixed width:40% while right uses flex:1 — ratio verified as 40/60 at 1920px. On narrower viewports (<1024px) the 40% left column may be cramped for 3-column inputs; consider a min-width or switching breakpoint."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "N/A (skipped)", "frontend": "100%" },
+  "test_credentials": "Admin CPF 154.831.997-07 / admin123 — works.",
+  "seed_data_creation": "None — used in-session button clicks and REINICIAR TUDO between scenarios.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Gestão de Banca: REINICIAR TUDO bug (race between setState and auto-save useEffect) fixed by writing clean state directly to localStorage inside zerarTudo (GestaoTab.jsx lines 123-152). Horizontal layout is 2-column flex (40% controls / 60% chart+table) when viewMode='horizontal' (lines 211-321); vertical is the original stacked layout (lines 324-479). Both layouts have data-testid=btn-reset with border-red-800 styling. viewMode is persisted in localStorage key 'viewMode' and toggled via [data-testid=view-mode-toggle] in Dashboard.jsx line 134."
+}

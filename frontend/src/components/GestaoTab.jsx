@@ -8,7 +8,7 @@ import { LineChart, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts"
 
 const STORAGE_KEY = "dadosGestaoFH_AutoV1";
 
-const GestaoTab = () => {
+const GestaoTab = ({ viewMode = "vertical" }) => {
   const [bancaInicial, setBancaInicial] = useState(500);
   const [metaPercent, setMetaPercent] = useState(10);
   const [stopPercent, setStopPercent] = useState(15);
@@ -20,9 +20,6 @@ const GestaoTab = () => {
   const [stops, setStops] = useState(0);
   const [historicoBanca, setHistoricoBanca] = useState([500]);
   const [historicoValores, setHistoricoValores] = useState([]);
-  
-  // Flag to prevent auto-save after reset
-  const [isResetting, setIsResetting] = useState(false);
 
   // Load saved data
   useEffect(() => {
@@ -45,27 +42,21 @@ const GestaoTab = () => {
     }
   }, []);
 
-  // Auto-save when config inputs change
+  // Auto-save when state changes
   useEffect(() => {
-    // Don't save during reset or if no existing data
-    if (isResetting) return;
-    
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      const dataToSave = {
-        bancaAtual,
-        diaAtual,
-        metas,
-        stops,
-        historicoBanca,
-        historicoValores,
-        inpBanca: String(bancaInicial),
-        inpMeta: String(metaPercent),
-        inpStop: String(stopPercent),
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
-    }
-  }, [bancaInicial, metaPercent, stopPercent, bancaAtual, diaAtual, metas, stops, historicoBanca, historicoValores, isResetting]);
+    const dataToSave = {
+      bancaAtual,
+      diaAtual,
+      metas,
+      stops,
+      historicoBanca,
+      historicoValores,
+      inpBanca: String(bancaInicial),
+      inpMeta: String(metaPercent),
+      inpStop: String(stopPercent),
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+  }, [bancaInicial, metaPercent, stopPercent, bancaAtual, diaAtual, metas, stops, historicoBanca, historicoValores]);
 
   // Save data
   const saveData = (newData) => {
@@ -131,10 +122,7 @@ const GestaoTab = () => {
   // Reset everything
   const zerarTudo = () => {
     if (window.confirm("Zerar tudo?")) {
-      // Set flag to prevent auto-save from restoring data
-      setIsResetting(true);
-      
-      // Clear localStorage
+      // Clear localStorage first
       localStorage.removeItem(STORAGE_KEY);
       
       // Reset all states
@@ -145,11 +133,21 @@ const GestaoTab = () => {
       setStops(0);
       setHistoricoBanca([valorInicial]);
       setHistoricoValores([]);
+      setValorRealInput("");
       
-      // Re-enable auto-save after a short delay
-      setTimeout(() => {
-        setIsResetting(false);
-      }, 100);
+      // Save clean state immediately
+      const cleanData = {
+        bancaAtual: valorInicial,
+        diaAtual: 1,
+        metas: 0,
+        stops: 0,
+        historicoBanca: [valorInicial],
+        historicoValores: [],
+        inpBanca: String(bancaInicial),
+        inpMeta: String(metaPercent),
+        inpStop: String(stopPercent),
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanData));
     }
   };
 
@@ -209,6 +207,119 @@ const GestaoTab = () => {
     dia: idx,
     banca: val,
   }));
+
+  const isHorizontal = viewMode === "horizontal";
+
+  if (isHorizontal) {
+    return (
+      <div className="flex gap-2 h-full min-h-0 overflow-hidden" data-testid="gestao-tab">
+        {/* Left Column: Controls */}
+        <div className="flex flex-col gap-1 overflow-y-auto" style={{ width: "40%", scrollbarWidth: 'thin', scrollbarColor: '#D4AF37 #111' }}>
+          {/* Score */}
+          <div className="grid grid-cols-2 gap-1">
+            <div className="p-2 rounded-lg text-center bg-black border-2 border-[#D4AF37]">
+              <small className="text-white font-bold text-xs">DIAS META</small>
+              <br />
+              <span className="text-xl font-bold text-white" data-testid="count-meta">{metas}</span>
+            </div>
+            <div className="p-2 rounded-lg text-center bg-black border-2 border-[#D4AF37]">
+              <small className="text-white font-bold text-xs">DIAS STOP</small>
+              <br />
+              <span className="text-xl font-bold text-white" data-testid="count-stop">{stops}</span>
+            </div>
+          </div>
+
+          <div className="card-glass !p-2">
+            {/* Inputs */}
+            <div className="grid grid-cols-3 gap-1 mb-2">
+              <div>
+                <label className="text-[8px] text-white">INICIAL</label>
+                <input type="number" value={bancaInicial} onChange={(e) => setBancaInicial(parseFloat(e.target.value) || 0)}
+                  className="w-full p-2 bg-black border-2 border-[#D4AF37] rounded-lg text-white text-center text-sm" data-testid="input-inicial" />
+              </div>
+              <div>
+                <label className="text-[8px] text-white">META %</label>
+                <input type="number" value={metaPercent} onChange={(e) => setMetaPercent(parseFloat(e.target.value) || 0)}
+                  className="w-full p-2 bg-black border-2 border-[#D4AF37] rounded-lg text-white text-center text-sm" data-testid="input-meta" />
+              </div>
+              <div>
+                <label className="text-[8px] text-white">STOP %</label>
+                <input type="number" value={stopPercent} onChange={(e) => setStopPercent(parseFloat(e.target.value) || 0)}
+                  className="w-full p-2 bg-black border-2 border-[#D4AF37] rounded-lg text-white text-center text-sm" data-testid="input-stop" />
+              </div>
+            </div>
+
+            {/* Balance */}
+            <div className="text-center mb-2">
+              <small className="text-white text-xs">BANCA ATUAL</small>
+              <br />
+              <span className="text-lg font-bold text-white" data-testid="banca-atual">
+                R$ {bancaAtual.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+
+            {/* Optional value */}
+            <div className="bg-black p-1 rounded-lg text-center mb-2 border-2 border-[#D4AF37]">
+              <small className="text-white text-[8px]">VALOR DIFERENTE? (OPCIONAL)</small>
+              <input type="number" placeholder="Vazio = Automático" value={valorRealInput} onChange={(e) => setValorRealInput(e.target.value)}
+                className="w-full mt-1 p-2 bg-black border border-[#D4AF37] rounded-lg text-white text-center text-sm" data-testid="input-valor-real" />
+            </div>
+
+            {/* Action buttons */}
+            <div className="grid grid-cols-2 gap-1">
+              <button onClick={() => registrarAcao("meta")}
+                className="py-2 rounded-lg font-bold text-sm bg-black border-2 border-[#D4AF37] text-white hover:bg-gray-900" data-testid="btn-ganhei">
+                GANHEI
+              </button>
+              <button onClick={() => registrarAcao("stop")}
+                className="py-2 rounded-lg font-bold text-sm bg-black border-2 border-[#D4AF37] text-white hover:bg-gray-900" data-testid="btn-perdi">
+                PERDI
+              </button>
+            </div>
+
+            {/* Reset */}
+            <button onClick={zerarTudo}
+              className="w-full mt-2 py-2 text-xs text-white font-bold bg-black border-2 border-red-800 rounded-lg cursor-pointer hover:bg-red-900 transition-colors" data-testid="btn-reset">
+              REINICIAR TUDO
+            </button>
+          </div>
+        </div>
+
+        {/* Right Column: Chart + Table */}
+        <div className="flex flex-col gap-1 min-h-0 overflow-hidden" style={{ flex: 1 }}>
+          {/* Chart */}
+          <div className="card-glass !p-2 shrink-0" style={{ height: '180px' }} data-testid="chart-container">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData}>
+                <XAxis dataKey="dia" hide />
+                <YAxis hide />
+                <Tooltip contentStyle={{ background: "#111", border: "1px solid #333", borderRadius: "8px" }} labelStyle={{ color: "#888" }} />
+                <Line type="monotone" dataKey="banca" stroke="#D4AF37" strokeWidth={2} dot={false} fill="rgba(212, 175, 55, 0.1)" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Table */}
+          <div className="card-glass !p-2 flex-1 min-h-0 flex flex-col overflow-hidden">
+            <div className="day-row day-header text-white text-xs">
+              <div>DIA</div><div>INÍCIO</div><div>META(+)</div><div>STOP(-)</div><div>BANCA F.</div>
+            </div>
+            <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: '#D4AF37 #111' }} data-testid="projection-table">
+              {rows.map((row, idx) => (
+                <div key={idx} className={`day-row ${row.cls} text-xs`}>
+                  <div className="text-white">{row.dia}</div>
+                  <div className="text-white">{row.inicio}</div>
+                  <div className="text-white">{row.meta}</div>
+                  <div className="text-white">{row.stop}</div>
+                  <div className="text-white">{row.final}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3" data-testid="gestao-tab">
@@ -358,7 +469,7 @@ const GestaoTab = () => {
         {/* Reset button */}
         <button
           onClick={zerarTudo}
-          className="w-full mt-5 text-[10px] text-gray-500 bg-transparent border-none cursor-pointer"
+          className="w-full mt-5 py-3 text-sm text-white font-bold bg-black border-2 border-red-800 rounded-lg cursor-pointer hover:bg-red-900 transition-colors"
           data-testid="btn-reset"
         >
           REINICIAR TUDO
