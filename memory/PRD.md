@@ -65,13 +65,13 @@
 
 ### Estratégia FB (NOVO)
 - Detecção de padrões baseada na raiz digital dos números
-- Regra: quando 2 números mais recentes (b,c) compartilham mesma raiz e o mais antigo (a) difere → padrão formado
-- Alvo = número mais antigo (a), Entrada = grupo de números associado ao alvo
+- Regra: QUALQUER par dos 3 últimos números que compartilhe raiz digital forma padrão (a-b, b-c, ou a-c)
+- Alvo = número que NÃO combina (o "sobrante"), Entrada = grupo associado ao alvo
+- Formada exibida na mesma ordem do histórico (mais recente primeiro)
 - Grupos de exceção: n=1→[1,12,21,23,32,34], n=10/19/28→[10,19,28], n=11/29→[11,29], n=2/20→[2,11,20,29]
-- 3 tentativas por padrão (countdown automático)
-- Múltiplos padrões simultâneos suportados
-- Detecção de acerto (hit): padrão removido quando número novo está na entrada
-- Card com borda dourada, texto "tentativas" legível, números grandes
+- 3 tentativas por padrão (countdown automático, sem remoção por acerto)
+- Múltiplos padrões simultâneos com contagens independentes
+- Card com borda dourada, texto "tentativas" legível, números grandes, barra de rolagem
 - Funciona em layout vertical e horizontal (compact)
 
 ### Bloqueio de Usuários Desativados (NOVO)
@@ -122,6 +122,16 @@
 ---
 
 ## Changelog
+
+### 2026-04-22
+- **Estratégia FB completa**: detecção de padrões por raiz digital
+- TODAS as combinações de pares: a-b, b-c, a-c (qualquer par que compartilhe raiz)
+- Alvo = número que não combina, exibição na ordem do histórico (mais recente primeiro)
+- Múltiplos padrões simultâneos com countdown independente de 3 tentativas
+- Sem remoção por acerto - padrão só sai quando countdown chega a 0
+- UI: borda dourada, texto "tentativas" legível, números maiores, barra de rolagem
+- Testes: 100% (iteration 4 + iteration 5)
+
 
 ### 2026-03-22 (Sessão atual)
 - Redesign dos cards de histórico: removido D/C, mantido PAR/IMP e ALTO/BAIXO
