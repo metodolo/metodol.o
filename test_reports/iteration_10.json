@@ -1,0 +1,32 @@
+{
+  "summary": "Frontend-only retest of RADAR V22 Gestão de Banca after fixes: (1) window.confirm() removed from REINICIAR TUDO, (2) horizontal layout fills full height with no bottom gaps. All 5 scenarios PASSED.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "tests_executed": [
+    {"name": "T1 REINICIAR TUDO resets without confirm dialog (vertical)", "result": "PASS", "details": "Clicked GANHEI 3x → metas=3, banca=R$665,50. Clicked btn-reset: no dialog captured via page.on('dialog'). metas=0, stops=0, banca=R$500,00."},
+    {"name": "T2 Reset persists across full page reload", "result": "PASS", "details": "After reload + navigating to Gestão: metas=0, stops=0, banca=R$500,00."},
+    {"name": "T3 Vertical layout — REINICIAR TUDO visible with red border", "result": "PASS", "details": "btn-reset is_visible=True, class contains 'border-red-800'."},
+    {"name": "T4 Horizontal layout — no bottom gap on either column", "result": "PASS", "details": "At 1920x1080: root.bottom=1076, left.bottom=1076 (gap 0px), right.bottom=1076 (gap 0px). Left width=764.8 (~40%), right width=1139.2 (~60%). REINICIAR at y=1030..1066 (10px above left-col bottom = card padding). Chart=180px, projection-table fills from 357 to 1066."},
+    {"name": "T5 REINICIAR TUDO in horizontal — no confirm, resets state", "result": "PASS", "details": "3x GANHEI → metas=3; reset → metas=0, banca=R$500,00, no dialog triggered."}
+  ],
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "GestaoTab.jsx zerarTudo (lines 123-150) no longer uses window.confirm — resets immediately. Good fix matching requirement.",
+    "Horizontal layout (lines 211-321): outer flex h-full, left column uses fixed width:40% + flex-col + flex-1 spacer div (line 279) to push REINICIAR to bottom, right column uses flex:1 + height:100% with chart shrink-0 (180px) + table card flex-1. Gap to root bottom = 0px on both columns — black gap issue is fully resolved.",
+    "GestaoTab.jsx is 482 lines with significant JSX duplication between horizontal and vertical branches (inputs/banca/buttons/chart/table). Recommend extracting ControlsPanel / ChartPanel / ProjectionTable sub-components to reduce duplication (~200 lines). Previously flagged — still outstanding but non-blocking.",
+    "Auto-save useEffect (lines 46-59) runs on every state change; the explicit setItem(cleanData) in zerarTudo (line 149) remains defensive but harmless (effect will rewrite identical clean data)."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "N/A (skipped)", "frontend": "100%" },
+  "test_credentials": "Admin CPF 154.831.997-07 / admin123 — works.",
+  "seed_data_creation": "None — used in-session button clicks; each scenario starts by clicking REINICIAR TUDO.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Gestão de Banca fully validated at iteration_10. (1) REINICIAR TUDO works without browser confirm dialog in both vertical and horizontal layouts — the dialog handler page.on('dialog') captured zero events during reset. (2) Horizontal layout (viewMode='horizontal', toggled via data-testid=view-mode-toggle) is 2-column flex at root (gestao-tab): left fixed 40% width with controls + flex-1 spacer + REINICIAR at bottom, right flex:1 with chart (180px) + projection-table (flex-1, overflow-y-auto). Both columns fill full card height (gap to root bottom = 0px at 1920x1080). Vertical layout remains stacked. All data-testids stable: tab-gestao, btn-reset, btn-ganhei, btn-perdi, count-meta, count-stop, banca-atual, input-inicial, input-meta, input-stop, input-valor-real, chart-container, projection-table, view-mode-toggle.",
+  "rca of the issue": "N/A — no bugs found. Previously fixed in iteration_9 (confirm removal race condition) and iteration_10 scope (height fill) both verified working."
+}

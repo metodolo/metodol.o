@@ -121,34 +121,32 @@ const GestaoTab = ({ viewMode = "vertical" }) => {
 
   // Reset everything
   const zerarTudo = () => {
-    if (window.confirm("Zerar tudo?")) {
-      // Clear localStorage first
-      localStorage.removeItem(STORAGE_KEY);
-      
-      // Reset all states
-      const valorInicial = bancaInicial || 500;
-      setBancaAtual(valorInicial);
-      setDiaAtual(1);
-      setMetas(0);
-      setStops(0);
-      setHistoricoBanca([valorInicial]);
-      setHistoricoValores([]);
-      setValorRealInput("");
-      
-      // Save clean state immediately
-      const cleanData = {
-        bancaAtual: valorInicial,
-        diaAtual: 1,
-        metas: 0,
-        stops: 0,
-        historicoBanca: [valorInicial],
-        historicoValores: [],
-        inpBanca: String(bancaInicial),
-        inpMeta: String(metaPercent),
-        inpStop: String(stopPercent),
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanData));
-    }
+    // Clear localStorage first
+    localStorage.removeItem(STORAGE_KEY);
+    
+    // Reset all states
+    const valorInicial = bancaInicial || 500;
+    setBancaAtual(valorInicial);
+    setDiaAtual(1);
+    setMetas(0);
+    setStops(0);
+    setHistoricoBanca([valorInicial]);
+    setHistoricoValores([]);
+    setValorRealInput("");
+    
+    // Save clean state immediately
+    const cleanData = {
+      bancaAtual: valorInicial,
+      diaAtual: 1,
+      metas: 0,
+      stops: 0,
+      historicoBanca: [valorInicial],
+      historicoValores: [],
+      inpBanca: String(bancaInicial),
+      inpMeta: String(metaPercent),
+      inpStop: String(stopPercent),
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanData));
   };
 
   // Generate projection rows
@@ -214,9 +212,9 @@ const GestaoTab = ({ viewMode = "vertical" }) => {
     return (
       <div className="flex gap-2 h-full min-h-0 overflow-hidden" data-testid="gestao-tab">
         {/* Left Column: Controls */}
-        <div className="flex flex-col gap-1 overflow-y-auto" style={{ width: "40%", scrollbarWidth: 'thin', scrollbarColor: '#D4AF37 #111' }}>
+        <div className="flex flex-col gap-1 h-full" style={{ width: "40%" }}>
           {/* Score */}
-          <div className="grid grid-cols-2 gap-1">
+          <div className="grid grid-cols-2 gap-1 shrink-0">
             <div className="p-2 rounded-lg text-center bg-black border-2 border-[#D4AF37]">
               <small className="text-white font-bold text-xs">DIAS META</small>
               <br />
@@ -229,7 +227,7 @@ const GestaoTab = ({ viewMode = "vertical" }) => {
             </div>
           </div>
 
-          <div className="card-glass !p-2">
+          <div className="card-glass !p-2 flex-1 flex flex-col">
             {/* Inputs */}
             <div className="grid grid-cols-3 gap-1 mb-2">
               <div>
@@ -277,6 +275,9 @@ const GestaoTab = ({ viewMode = "vertical" }) => {
               </button>
             </div>
 
+            {/* Spacer */}
+            <div className="flex-1"></div>
+
             {/* Reset */}
             <button onClick={zerarTudo}
               className="w-full mt-2 py-2 text-xs text-white font-bold bg-black border-2 border-red-800 rounded-lg cursor-pointer hover:bg-red-900 transition-colors" data-testid="btn-reset">
@@ -285,8 +286,8 @@ const GestaoTab = ({ viewMode = "vertical" }) => {
           </div>
         </div>
 
-        {/* Right Column: Chart + Table */}
-        <div className="flex flex-col gap-1 min-h-0 overflow-hidden" style={{ flex: 1 }}>
+        {/* Right Column: Chart + Table - fills full height */}
+        <div className="flex flex-col gap-1 min-h-0" style={{ flex: 1, height: '100%' }}>
           {/* Chart */}
           <div className="card-glass !p-2 shrink-0" style={{ height: '180px' }} data-testid="chart-container">
             <ResponsiveContainer width="100%" height="100%">
@@ -299,9 +300,9 @@ const GestaoTab = ({ viewMode = "vertical" }) => {
             </ResponsiveContainer>
           </div>
 
-          {/* Table */}
-          <div className="card-glass !p-2 flex-1 min-h-0 flex flex-col overflow-hidden">
-            <div className="day-row day-header text-white text-xs">
+          {/* Table - fills all remaining space */}
+          <div className="card-glass !p-2 flex-1 min-h-0 flex flex-col">
+            <div className="day-row day-header text-white text-xs shrink-0">
               <div>DIA</div><div>INÍCIO</div><div>META(+)</div><div>STOP(-)</div><div>BANCA F.</div>
             </div>
             <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: '#D4AF37 #111' }} data-testid="projection-table">
