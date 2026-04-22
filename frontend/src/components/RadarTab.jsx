@@ -140,10 +140,12 @@ const digitalRoot = (n) => {
   return n % 9 === 0 ? 9 : n % 9;
 };
 
-// Detection root: 11 and 29 form an exclusive pair (root 11),
-// they do NOT match with 2 or 20 for pattern detection.
+// Detection root: special groups don't mix with regular digital roots.
+// 11/29 form exclusive pair (root 11), don't match with 2/20.
+// 10/19/28 form exclusive trio (root 10), don't match with 1.
 const detectionRoot = (n) => {
   if (n === 11 || n === 29) return 11;
+  if (n === 10 || n === 19 || n === 28) return 10;
   return digitalRoot(n);
 };
 
