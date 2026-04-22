@@ -65,12 +65,16 @@
 
 ### Estratégia FB (NOVO)
 - Detecção de padrões baseada na raiz digital dos números
-- Regra: QUALQUER par dos 3 últimos números que compartilhe raiz digital forma padrão (a-b, b-c, ou a-c)
+- Regra: par que compartilha raiz digital forma padrão, MAS o número mais novo (último digitado) NÃO pode ser o alvo
+- Casos válidos: b,c match (alvo=a mais antigo) e a,c match (alvo=b do meio)
+- Caso inválido: a,b match (alvo seria c mais novo) → NÃO forma padrão
 - Alvo = número que NÃO combina (o "sobrante"), Entrada = grupo associado ao alvo
 - Formada exibida na ordem do histórico (mais recente primeiro)
 - TODOS os números da entrada com borda dourada brilhante
 - Grupos de exceção: n=1→[1,12,21,23,32,34], n=10/19/28→[10,19,28], n=11/29→[11,29], n=2/20→[2,11,20,29]
-- 3 tentativas por padrão (countdown automático, sem remoção por acerto)
+- 3 tentativas por padrão (countdown automático)
+- Hit detection: se número novo está na entrada, padrão some (acertou)
+- Padrão some após 3 tentativas sem acerto OU quando acerta
 - Múltiplos padrões simultâneos com contagens independentes
 - Card com borda dourada, texto "tentativas" legível, números grandes, barra de rolagem
 - Funciona em layout vertical e horizontal (compact)
