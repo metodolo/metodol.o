@@ -120,9 +120,9 @@ export const getParity = (n) => {
  */
 export const getHighLow = (n) => {
   if (n === 0) return { text: "ZERO", className: "tag-zero" };
-  return n >= 19
-    ? { text: "ALTO", className: "tag-alto" }
-    : { text: "BAIXO", className: "tag-baixo" };
+  if (n >= 25) return { text: "ALTO", className: "tag-alto" };
+  if (n >= 13) return { text: "MÉDIO", className: "tag-medio" };
+  return { text: "BAIXO", className: "tag-baixo" };
 };
 
 /**

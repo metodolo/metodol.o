@@ -223,6 +223,7 @@ body {
 
 .tag-alto { background: #ff00ff !important; color: #fff !important; }
 .tag-baixo { background: #00ffff !important; color: #000 !important; }
+.tag-medio { background: #1a3a6b !important; color: #fff !important; }
 .tag-par { color: #00d9ff; border: 1px solid #00d9ff; }
 .tag-impar { color: #ff9100; border: 1px solid #ff9100; }
 .tag-zero { color: #00ff41; border: 1px solid #00ff41; }

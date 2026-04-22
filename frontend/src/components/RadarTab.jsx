@@ -152,17 +152,17 @@ const getFBEntry = (n) => {
 
 // Detect FB pattern: ANY pair of the 3 numbers sharing a digital root forms the pattern.
 // The odd one out (different root) is the target/remaining.
-// Returns formed as: matching pair (in history order, newer first) + target last.
+// Returns formed in history display order (newest first: [c, b, a]).
 const detectFBPattern = (a, b, c) => {
   const da = digitalRoot(a);
   const db = digitalRoot(b);
   const dc = digitalRoot(c);
-  // b and c share root, a is different → target = a. Pair: c,b (newer first). Target last.
+  // b and c share root, a is different → target = a
   if (db === dc && da !== dc) return { formed: [c, b, a], remaining: a, entry: getFBEntry(a) };
-  // a and c share root, b is different → target = b. Pair: c,a (newer first). Target last.
-  if (da === dc && db !== dc) return { formed: [c, a, b], remaining: b, entry: getFBEntry(b) };
-  // a and b share root, c is different → target = c. Pair: b,a (newer first). Target last.
-  if (da === db && dc !== da) return { formed: [b, a, c], remaining: c, entry: getFBEntry(c) };
+  // a and c share root, b is different → target = b
+  if (da === dc && db !== dc) return { formed: [c, b, a], remaining: b, entry: getFBEntry(b) };
+  // a and b share root, c is different → target = c
+  if (da === db && dc !== da) return { formed: [c, b, a], remaining: c, entry: getFBEntry(c) };
   return null;
 };
 
@@ -653,14 +653,14 @@ const RadarTab = ({ viewMode = "vertical" }) => {
         </div>
 
         {/* Right Column */}
-        <div className="flex flex-col gap-1 min-h-0" style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+        <div className="flex flex-col gap-1 min-h-0 overflow-y-auto" style={{ flex: 1, minWidth: 0, scrollbarWidth: 'thin', scrollbarColor: '#D4AF37 #111' }}>
           <div className="shrink-0"><HistoryCard compact /></div>
-          <div className="shrink min-h-0 overflow-hidden"><RegionsCard compact /></div>
-          <div className="shrink min-h-0 overflow-hidden"><OcultosCard compact /></div>
-          {/* Family + FB | Juncao - fills remaining space */}
-          <div className="flex gap-1 flex-1 min-h-[100px]">
+          <div className="shrink-0"><RegionsCard compact /></div>
+          <div className="shrink-0"><OcultosCard compact /></div>
+          {/* Family + FB | Juncao */}
+          <div className="flex gap-1 shrink-0" style={{ minHeight: '200px' }}>
             <div className="flex-1 flex flex-col gap-1 min-h-0">
-              <div className="flex-1 min-h-0"><FamilyCard compact fillSpace /></div>
+              <div className="shrink-0"><FamilyCard compact fillSpace /></div>
               <div className="flex-1 min-h-0"><EstrategiaFBCard compact /></div>
             </div>
             <JuncaoCard compact />

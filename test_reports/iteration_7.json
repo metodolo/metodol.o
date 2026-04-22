@@ -1,0 +1,45 @@
+{
+  "summary": "Frontend-only testing for RADAR V22 three changes: (1) FB Formada display in history order [c,b,a], (2) Horizontal layout FB card showing 2+ patterns without scrolling, (3) BAIXO(1-12)/MÉDIO(13-24)/ALTO(25-36) tags with MÉDIO having dark blue background + white text. ALL 4 test scenarios PASSED.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "tests_executed": [
+    {
+      "name": "Tag ranges (0=ZERO, 1-12=BAIXO, 13-24=MÉDIO, 25-36=ALTO)",
+      "result": "PASS",
+      "details": "All 8 tested numbers (0,3,12,13,15,24,25,30) show correct tag text, class and colors. BAIXO bg=rgb(0,255,255) text black. MÉDIO bg=rgb(26,58,107) text white. ALTO bg=rgb(255,0,255) text white. ZERO green text."
+    },
+    {
+      "name": "FB Formada order for [5,3,12]",
+      "result": "PASS",
+      "details": "Formada displayed as [12,3,5] matching expected history order [c,b,a]. Entrada row has 4 gold-confluencia (golden border) balls."
+    },
+    {
+      "name": "FB Formada order for [5,3,12,4]",
+      "result": "PASS",
+      "details": "Latest pattern (from last 3 = [3,12,4]) shows Formada=[4,12,3]. Previous pattern [12,3,5] also retained (tentativas countdown). Incorrect order [12,3,4] NOT present."
+    },
+    {
+      "name": "Horizontal layout - FB card with 2+ patterns visible",
+      "result": "PASS",
+      "details": "After switching to horizontal mode with 4 numbers giving 2 patterns, both Formada rows [12,3,5] and [4,12,3] rendered inside viewport (top 877-1023px, viewport 1080). patternCount=2, visible=2, all entry balls have golden gold-confluencia border."
+    }
+  ],
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "RadarTab.jsx is 690 lines. Consider splitting sub-components (HistoryCard, JuncaoCard, EstrategiaFBCard etc.) into separate files for maintainability (>700-line threshold close).",
+    "detectFBPattern returns same formed=[c,b,a] in all 3 branches; the 3 branches could be simplified to single return after determining remaining.",
+    "localStorage writes every render via useEffect on giros - fine, but consider debounce if performance matters."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "N/A (skipped)", "frontend": "100%" },
+  "test_credentials": "Admin CPF 154.831.997-07 / admin123 - works",
+  "seed_data_creation": "None - used btn-N to add numbers in-session",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All 3 requested changes verified passing. MÉDIO color verified rgb(26,58,107) with white text. Horizontal FB card shows 2 patterns in viewport at 1920x1080. FB Formada always renders in [c,b,a] = newest-first-of-last-3 order regardless of which pair matched the digital root. getHighLow() in radarEngine.js lines 121-126 correctly implements BAIXO(1-12)/MÉDIO(13-24)/ALTO(25-36)."
+}
