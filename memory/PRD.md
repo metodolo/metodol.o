@@ -67,7 +67,7 @@
 - Detecção de padrões baseada na raiz digital dos números
 - Regra: QUALQUER par dos 3 últimos números que compartilhe raiz digital forma padrão (a-b, b-c, ou a-c)
 - Alvo = número que NÃO combina (o "sobrante"), Entrada = grupo associado ao alvo
-- Formada exibida com par primeiro (mais recente do par primeiro), alvo por último
+- Formada exibida na ordem do histórico (mais recente primeiro)
 - TODOS os números da entrada com borda dourada brilhante
 - Grupos de exceção: n=1→[1,12,21,23,32,34], n=10/19/28→[10,19,28], n=11/29→[11,29], n=2/20→[2,11,20,29]
 - 3 tentativas por padrão (countdown automático, sem remoção por acerto)
@@ -131,7 +131,13 @@
 - Múltiplos padrões simultâneos com countdown independente de 3 tentativas
 - Sem remoção por acerto - padrão só sai quando countdown chega a 0
 - UI: borda dourada, texto "tentativas" legível, números maiores, barra de rolagem
-- Testes: 100% (iteration 4 + iteration 5 + iteration 6)
+- Testes: 100% (iteration 4 + iteration 5 + iteration 6 + iteration 7)
+
+### Tags Baixo/Médio/Alto
+- 1-12: BAIXO (cyan #00ffff, texto preto)
+- 13-24: MÉDIO (azul escuro #1a3a6b, texto branco)
+- 25-36: ALTO (magenta #ff00ff, texto branco)
+- 0: ZERO (verde)
 
 
 ### 2026-03-22 (Sessão atual)
