@@ -122,7 +122,7 @@ const getInitialGiros = () => {
 // FB Strategy: digit sum groups (digital root)
 const FB_OCULTOS = {
   0: [0, 10, 20, 30, 28],
-  1: [1, 10, 19, 28],
+  1: [1, 12, 21, 23, 32, 34],
   2: [2, 11, 20, 29],
   3: [3, 12, 21, 30],
   4: [4, 13, 22, 31],
@@ -131,6 +131,8 @@ const FB_OCULTOS = {
   7: [7, 16, 25, 34],
   8: [8, 17, 26, 35],
   9: [9, 18, 27, 36],
+  10: [10, 19, 28],
+  11: [11, 29],
 };
 
 const digitalRoot = (n) => {
@@ -138,13 +140,24 @@ const digitalRoot = (n) => {
   return n % 9 === 0 ? 9 : n % 9;
 };
 
+// Get the FB entry group for a specific remaining number
+const getFBEntry = (n) => {
+  if (n === 0) return FB_OCULTOS[0];
+  if (n === 1) return FB_OCULTOS[1];
+  if (n === 10 || n === 19 || n === 28) return FB_OCULTOS[10];
+  if (n === 11 || n === 29) return FB_OCULTOS[11];
+  const root = digitalRoot(n);
+  return FB_OCULTOS[root] || [];
+};
+
+// Detect FB pattern: the two NEWER numbers (b,c) must share a digital root,
+// making the OLDEST number (a) always the target/remaining.
 const detectFBPattern = (a, b, c) => {
   const da = digitalRoot(a);
   const db = digitalRoot(b);
   const dc = digitalRoot(c);
-  if (da === db && da !== dc) return { formed: [a, b, c], remainingRoot: dc, entry: FB_OCULTOS[dc] || [] };
-  if (da === dc && da !== db) return { formed: [a, b, c], remainingRoot: db, entry: FB_OCULTOS[db] || [] };
-  if (db === dc && db !== da) return { formed: [a, b, c], remainingRoot: da, entry: FB_OCULTOS[da] || [] };
+  // b and c share the same root, a is different → target is a (oldest)
+  if (db === dc && da !== dc) return { formed: [a, b, c], remaining: a, entry: getFBEntry(a) };
   return null;
 };
 
@@ -579,27 +592,27 @@ const RadarTab = ({ viewMode = "vertical" }) => {
   const EstrategiaFBCard = ({ compact }) => {
     const regionNums = strongestRegion?.numbers || [];
     return (
-      <div className={`card-glass ${compact ? "!p-2 flex-1 flex flex-col" : ""}`} data-testid="fb-card">
+      <div className={`card-glass border-2 border-[#D4AF37] ${compact ? "!p-2 flex-1 flex flex-col" : ""}`} data-testid="fb-card">
         <span className="label-accent" style={{ color: '#fff', borderColor: '#D4AF37', fontSize: compact ? '0.7rem' : '0.9rem' }}>ESTRATÉGIA FB</span>
         <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'auto', scrollbarColor: '#D4AF37 #222' }}>
           {fbPatterns.length > 0 ? fbPatterns.map((p, idx) => (
-            <div key={p.key || idx} className={`${compact ? "py-1" : "py-2"} border-b border-[#333]`}>
-              <div className="flex items-center gap-1 mb-1">
-                <span className="font-bold text-[#D4AF37]" style={{ fontSize: compact ? '0.6rem' : '0.8rem' }}>Formada:</span>
+            <div key={p.key || idx} className={`${compact ? "py-1.5" : "py-2"} border-b border-[#333]`}>
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="font-bold text-[#D4AF37]" style={{ fontSize: compact ? '0.7rem' : '0.85rem' }}>Formada:</span>
                 {p.formed.map((n, i) => (
-                  <div key={i} className="mini-ball" style={{ background: getBgColor(n), minWidth: compact ? 24 : 30, height: compact ? 24 : 30, fontSize: compact ? '0.55rem' : '0.7rem' }}>{n}</div>
+                  <div key={i} className="mini-ball" style={{ background: getBgColor(n), minWidth: compact ? 28 : 34, height: compact ? 28 : 34, fontSize: compact ? '0.65rem' : '0.8rem' }}>{n}</div>
                 ))}
-                <span className="text-gray-500 ml-auto" style={{ fontSize: compact ? '0.5rem' : '0.65rem' }}>({p.attemptsLeft} tent.)</span>
+                <span className="font-bold text-[#D4AF37] ml-auto" style={{ fontSize: compact ? '0.65rem' : '0.8rem' }}>({p.attemptsLeft} {p.attemptsLeft === 1 ? 'tentativa' : 'tentativas'})</span>
               </div>
-              <div className="flex items-center gap-1 flex-wrap">
-                <span className="font-bold text-white" style={{ fontSize: compact ? '0.55rem' : '0.75rem' }}>Entrada:</span>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="font-bold text-white" style={{ fontSize: compact ? '0.7rem' : '0.85rem' }}>Entrada:</span>
                 {p.entry.map((jn, i) => {
                   const isInRegion = regionNums.includes(jn);
                   return (
                     <div key={i} className={`mini-ball ${isInRegion ? "gold-confluencia" : ""}`} style={{
                       background: getBgColor(jn),
-                      minWidth: compact ? 24 : 30, height: compact ? 24 : 30,
-                      fontSize: compact ? '0.55rem' : '0.7rem',
+                      minWidth: compact ? 28 : 34, height: compact ? 28 : 34,
+                      fontSize: compact ? '0.65rem' : '0.8rem',
                       border: isInRegion ? '2px solid #D4AF37' : '2px solid #fff',
                       boxShadow: isInRegion ? '0 0 8px rgba(212,175,55,0.6)' : 'none',
                     }}>{jn}</div>
