@@ -119,16 +119,79 @@ const getInitialGiros = () => {
   return [];
 };
 
+// FB Strategy: digit sum groups (digital root)
+const FB_OCULTOS = {
+  0: [0, 10, 20, 30, 28],
+  1: [1, 10, 19, 28],
+  2: [2, 11, 20, 29],
+  3: [3, 12, 21, 30],
+  4: [4, 13, 22, 31],
+  5: [5, 14, 23, 32],
+  6: [6, 15, 24, 33],
+  7: [7, 16, 25, 34],
+  8: [8, 17, 26, 35],
+  9: [9, 18, 27, 36],
+};
+
+const digitalRoot = (n) => {
+  if (n === 0) return 0;
+  return n % 9 === 0 ? 9 : n % 9;
+};
+
+const detectFBPattern = (a, b, c) => {
+  const da = digitalRoot(a);
+  const db = digitalRoot(b);
+  const dc = digitalRoot(c);
+  if (da === db && da !== dc) return { formed: [a, b, c], remainingRoot: dc, entry: FB_OCULTOS[dc] || [] };
+  if (da === dc && da !== db) return { formed: [a, b, c], remainingRoot: db, entry: FB_OCULTOS[db] || [] };
+  if (db === dc && db !== da) return { formed: [a, b, c], remainingRoot: da, entry: FB_OCULTOS[da] || [] };
+  return null;
+};
+
 const RadarTab = ({ viewMode = "vertical" }) => {
   const [giros, setGiros] = useState(getInitialGiros);
   const [limiteGiros, setLimiteGiros] = useState(14);
   const [terminalSelecionado, setTerminalSelecionado] = useState(null);
   const painelRef = useRef(null);
   const isHorizontal = viewMode === "horizontal";
+  const [fbPatterns, setFbPatterns] = useState([]);
+  const prevGirosLen = useRef(0);
 
   // Save giros to localStorage when changed
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(giros));
+  }, [giros]);
+
+  // FB Strategy: detect and track patterns
+  useEffect(() => {
+    if (giros.length === 0) { setFbPatterns([]); prevGirosLen.current = 0; return; }
+    if (giros.length < prevGirosLen.current) { prevGirosLen.current = giros.length; return; }
+    if (giros.length === prevGirosLen.current) return;
+    prevGirosLen.current = giros.length;
+
+    const newNum = giros[giros.length - 1];
+
+    setFbPatterns(prev => {
+      // Update existing: decrement attempts, check hit
+      let updated = prev.map(p => ({
+        ...p,
+        attemptsLeft: p.attemptsLeft - 1,
+        hit: p.entry.includes(newNum),
+      })).filter(p => p.attemptsLeft > 0 && !p.hit);
+
+      // Detect new pattern from last 3 numbers
+      if (giros.length >= 3) {
+        const [a, b, c] = giros.slice(-3);
+        const pattern = detectFBPattern(a, b, c);
+        if (pattern) {
+          const key = `${a}-${b}-${c}`;
+          if (!updated.some(p => p.key === key)) {
+            updated.push({ ...pattern, attemptsLeft: 3, key });
+          }
+        }
+      }
+      return updated;
+    });
   }, [giros]);
 
   // Add number
@@ -513,6 +576,47 @@ const RadarTab = ({ viewMode = "vertical" }) => {
     );
   };
 
+  const EstrategiaFBCard = ({ compact }) => {
+    const regionNums = strongestRegion?.numbers || [];
+    return (
+      <div className={`card-glass ${compact ? "!p-2 flex-1 flex flex-col" : ""}`} data-testid="fb-card">
+        <span className="label-accent" style={{ color: '#fff', borderColor: '#D4AF37', fontSize: compact ? '0.7rem' : '0.9rem' }}>ESTRATÉGIA FB</span>
+        <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'auto', scrollbarColor: '#D4AF37 #222' }}>
+          {fbPatterns.length > 0 ? fbPatterns.map((p, idx) => (
+            <div key={p.key || idx} className={`${compact ? "py-1" : "py-2"} border-b border-[#333]`}>
+              <div className="flex items-center gap-1 mb-1">
+                <span className="font-bold text-[#D4AF37]" style={{ fontSize: compact ? '0.6rem' : '0.8rem' }}>Formada:</span>
+                {p.formed.map((n, i) => (
+                  <div key={i} className="mini-ball" style={{ background: getBgColor(n), minWidth: compact ? 24 : 30, height: compact ? 24 : 30, fontSize: compact ? '0.55rem' : '0.7rem' }}>{n}</div>
+                ))}
+                <span className="text-gray-500 ml-auto" style={{ fontSize: compact ? '0.5rem' : '0.65rem' }}>({p.attemptsLeft} tent.)</span>
+              </div>
+              <div className="flex items-center gap-1 flex-wrap">
+                <span className="font-bold text-white" style={{ fontSize: compact ? '0.55rem' : '0.75rem' }}>Entrada:</span>
+                {p.entry.map((jn, i) => {
+                  const isInRegion = regionNums.includes(jn);
+                  return (
+                    <div key={i} className={`mini-ball ${isInRegion ? "gold-confluencia" : ""}`} style={{
+                      background: getBgColor(jn),
+                      minWidth: compact ? 24 : 30, height: compact ? 24 : 30,
+                      fontSize: compact ? '0.55rem' : '0.7rem',
+                      border: isInRegion ? '2px solid #D4AF37' : '2px solid #fff',
+                      boxShadow: isInRegion ? '0 0 8px rgba(212,175,55,0.6)' : 'none',
+                    }}>{jn}</div>
+                  );
+                })}
+              </div>
+            </div>
+          )) : (
+            <div className={`text-center text-gray-600 ${compact ? "py-2 text-xs" : "py-4 text-sm"}`}>
+              Padrões FB aparecerão aqui
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   // --- HORIZONTAL LAYOUT ---
   if (isHorizontal) {
     return (
@@ -544,9 +648,12 @@ const RadarTab = ({ viewMode = "vertical" }) => {
           <div className="shrink-0"><HistoryCard compact /></div>
           <div className="shrink min-h-0 overflow-hidden"><RegionsCard compact /></div>
           <div className="shrink min-h-0 overflow-hidden"><OcultosCard compact /></div>
-          {/* Family + Juncao side by side - fills remaining space */}
+          {/* Family + FB | Juncao - fills remaining space */}
           <div className="flex gap-1 flex-1 min-h-[100px]">
-            <FamilyCard compact fillSpace />
+            <div className="flex-1 flex flex-col gap-1 min-h-0">
+              <div className="flex-1 min-h-0"><FamilyCard compact fillSpace /></div>
+              <div className="flex-1 min-h-0"><EstrategiaFBCard compact /></div>
+            </div>
             <JuncaoCard compact />
           </div>
         </div>
@@ -564,6 +671,7 @@ const RadarTab = ({ viewMode = "vertical" }) => {
       <OcultosCard compact={false} />
       <FamilyCard compact={false} />
       <JuncaoCard compact={false} />
+      <EstrategiaFBCard compact={false} />
       <ActionButtons compact={false} />
     </div>
   );
