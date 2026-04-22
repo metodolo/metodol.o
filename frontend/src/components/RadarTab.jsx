@@ -548,7 +548,7 @@ const RadarTab = ({ viewMode = "vertical" }) => {
     const repeatedNums = getRepeatedNumbers();
     const regionNums = strongestRegion?.numbers || [];
     return (
-      <div className={`card-glass ${compact ? "!p-2 flex-1 flex flex-col" : ""}`} data-testid="juncao-card">
+      <div className={`card-glass ${compact ? "!p-2 h-full flex flex-col" : ""}`} data-testid="juncao-card">
         <span className="label-accent" style={{ color: '#fff', borderColor: '#D4AF37', fontSize: compact ? '0.7rem' : '0.9rem' }}>JUNÇÃO DOS NÚMEROS</span>
         <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'auto', scrollbarColor: '#D4AF37 #222' }}>
           {repeatedNums.length > 0 ? repeatedNums.map((num) => {
@@ -593,7 +593,7 @@ const RadarTab = ({ viewMode = "vertical" }) => {
 
   const EstrategiaFBCard = ({ compact }) => {
     return (
-      <div className={`card-glass border-2 border-[#D4AF37] ${compact ? "!p-2 flex-1 flex flex-col" : ""}`} data-testid="fb-card">
+      <div className={`card-glass border-2 border-[#D4AF37] ${compact ? "!p-2 h-full flex flex-col" : ""}`} data-testid="fb-card">
         <span className="label-accent" style={{ color: '#fff', borderColor: '#D4AF37', fontSize: compact ? '0.7rem' : '0.9rem' }}>ESTRATÉGIA FB</span>
         <div className="overflow-y-auto" style={{ maxHeight: compact ? '200px' : '300px', scrollbarWidth: 'auto', scrollbarColor: '#D4AF37 #222' }}>
           {fbPatterns.length > 0 ? fbPatterns.map((p, idx) => (
@@ -659,13 +659,15 @@ const RadarTab = ({ viewMode = "vertical" }) => {
           <div className="shrink-0"><HistoryCard compact /></div>
           <div className="shrink-0"><RegionsCard compact /></div>
           <div className="shrink-0"><OcultosCard compact /></div>
-          {/* Family + FB | Juncao */}
-          <div className="flex gap-1 shrink-0" style={{ minHeight: '200px' }}>
-            <div className="flex-1 flex flex-col gap-1 min-h-0">
+          {/* Family + FB | Juncao - same height aligned */}
+          <div className="flex gap-1 shrink-0 items-stretch" style={{ minHeight: '200px' }}>
+            <div className="flex-1 flex flex-col gap-1">
               <div className="shrink-0"><FamilyCard compact fillSpace /></div>
-              <div className="flex-1 min-h-0"><EstrategiaFBCard compact /></div>
+              <div className="flex-1"><EstrategiaFBCard compact /></div>
             </div>
-            <JuncaoCard compact />
+            <div className="flex-1">
+              <JuncaoCard compact />
+            </div>
           </div>
         </div>
       </div>
