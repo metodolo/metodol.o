@@ -32,10 +32,11 @@
 - Análise de regiões (múltiplas destacadas)
 - Radar de Ocultos (terminais)
 - Família de números
-- Histórico de giros (14 ou 50)
+- Histórico de giros (12, 14 ou 50)
 - Botões CORRIGIR/LIMPAR com tema preto e dourado
 - Números repetidos piscam em dourado
 - Números de referência customizados abaixo de cada número
+- Ordem do histórico invertida (mais recente à esquerda)
 
 ### Cards de Histórico (Redesign)
 - Removidos D/C (Dúzia/Coluna)
@@ -62,11 +63,28 @@
 - Gráfico de evolução
 - Persistência em localStorage
 
-### Painel Admin
+### Estratégia FB (NOVO)
+- Detecção de padrões baseada na raiz digital dos números
+- Regra: quando 2 números mais recentes (b,c) compartilham mesma raiz e o mais antigo (a) difere → padrão formado
+- Alvo = número mais antigo (a), Entrada = grupo de números associado ao alvo
+- Grupos de exceção: n=1→[1,12,21,23,32,34], n=10/19/28→[10,19,28], n=11/29→[11,29], n=2/20→[2,11,20,29]
+- 3 tentativas por padrão (countdown automático)
+- Múltiplos padrões simultâneos suportados
+- Detecção de acerto (hit): padrão removido quando número novo está na entrada
+- Card com borda dourada, texto "tentativas" legível, números grandes
+- Funciona em layout vertical e horizontal (compact)
+
+### Bloqueio de Usuários Desativados (NOVO)
+- Tela BlockedScreen para usuários com status desativado
+- Interceptação de erro 403 no AuthContext
+- Link de renovação via LastLink/Telegram
+
+### Painel Admin (Atualizado)
 - **Aba Usuários:** Lista, ativar/desativar, derrubar sessões, configurar limite de tempo, gerenciar assinaturas
 - **Aba Pré-Cadastros:** Adicionar email + plano antes do usuário se registrar (funciona como whitelist)
 - **Aba Lista Negra:** Bloquear usuários por email ou CPF
 - **Performance:** 49 usuários carregados em <1s (6 queries bulk com maps indexados)
+- **Busca e ordenação:** Pesquisa por nome/email, ordenação alfabética
 
 ### Pagamentos (Mercado Pago)
 - Integração completa com credenciais de PRODUÇÃO
