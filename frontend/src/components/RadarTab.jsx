@@ -150,14 +150,19 @@ const getFBEntry = (n) => {
   return FB_OCULTOS[root] || [];
 };
 
-// Detect FB pattern: the two NEWER numbers (b,c) must share a digital root,
-// making the OLDEST number (a) always the target/remaining.
+// Detect FB pattern: ANY pair of the 3 numbers sharing a digital root forms the pattern.
+// The odd one out (different root) is the target/remaining.
+// Returns formed in HISTORY display order (newest first: [c, b, a]).
 const detectFBPattern = (a, b, c) => {
   const da = digitalRoot(a);
   const db = digitalRoot(b);
   const dc = digitalRoot(c);
-  // b and c share the same root, a is different → target is a (oldest)
-  if (db === dc && da !== dc) return { formed: [a, b, c], remaining: a, entry: getFBEntry(a) };
+  // b and c share root, a is different → target = a
+  if (db === dc && da !== dc) return { formed: [c, b, a], remaining: a, entry: getFBEntry(a) };
+  // a and c share root, b is different → target = b
+  if (da === dc && db !== dc) return { formed: [c, b, a], remaining: b, entry: getFBEntry(b) };
+  // a and b share root, c is different → target = c
+  if (da === db && dc !== da) return { formed: [c, b, a], remaining: c, entry: getFBEntry(c) };
   return null;
 };
 
@@ -182,25 +187,20 @@ const RadarTab = ({ viewMode = "vertical" }) => {
     if (giros.length === prevGirosLen.current) return;
     prevGirosLen.current = giros.length;
 
-    const newNum = giros[giros.length - 1];
-
     setFbPatterns(prev => {
-      // Update existing: decrement attempts, check hit
+      // Decrement attempts on existing patterns, remove only when countdown reaches 0
       let updated = prev.map(p => ({
         ...p,
         attemptsLeft: p.attemptsLeft - 1,
-        hit: p.entry.includes(newNum),
-      })).filter(p => p.attemptsLeft > 0 && !p.hit);
+      })).filter(p => p.attemptsLeft > 0);
 
       // Detect new pattern from last 3 numbers
       if (giros.length >= 3) {
         const [a, b, c] = giros.slice(-3);
         const pattern = detectFBPattern(a, b, c);
         if (pattern) {
-          const key = `${a}-${b}-${c}`;
-          if (!updated.some(p => p.key === key)) {
-            updated.push({ ...pattern, attemptsLeft: 3, key });
-          }
+          const key = `${a}-${b}-${c}-${giros.length}`;
+          updated.push({ ...pattern, attemptsLeft: 3, key });
         }
       }
       return updated;
