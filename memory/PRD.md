@@ -62,6 +62,8 @@
 - Projeção de 30 dias
 - Gráfico de evolução
 - Persistência em localStorage
+- Botão REINICIAR TUDO funcional (com confirmação e reset completo)
+- Layout horizontal: controles à esquerda (40%), gráfico+tabela à direita (60%)
 
 ### Estratégia FB (NOVO)
 - Detecção de padrões baseada na raiz digital dos números
@@ -112,7 +114,6 @@
 
 ### P1 - Verificação Pendente
 - Teste E2E do limite de sessão (1 dispositivo ativo)
-- Verificação do botão "Reiniciar Tudo" na Gestão de Banca
 
 ### P2 - Futuro
 - Modo "Automático" com API externa
