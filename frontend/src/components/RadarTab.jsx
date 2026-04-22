@@ -152,17 +152,17 @@ const getFBEntry = (n) => {
 
 // Detect FB pattern: ANY pair of the 3 numbers sharing a digital root forms the pattern.
 // The odd one out (different root) is the target/remaining.
-// Returns formed in HISTORY display order (newest first: [c, b, a]).
+// Returns formed as: matching pair (in history order, newer first) + target last.
 const detectFBPattern = (a, b, c) => {
   const da = digitalRoot(a);
   const db = digitalRoot(b);
   const dc = digitalRoot(c);
-  // b and c share root, a is different → target = a
+  // b and c share root, a is different → target = a. Pair: c,b (newer first). Target last.
   if (db === dc && da !== dc) return { formed: [c, b, a], remaining: a, entry: getFBEntry(a) };
-  // a and c share root, b is different → target = b
-  if (da === dc && db !== dc) return { formed: [c, b, a], remaining: b, entry: getFBEntry(b) };
-  // a and b share root, c is different → target = c
-  if (da === db && dc !== da) return { formed: [c, b, a], remaining: c, entry: getFBEntry(c) };
+  // a and c share root, b is different → target = b. Pair: c,a (newer first). Target last.
+  if (da === dc && db !== dc) return { formed: [c, a, b], remaining: b, entry: getFBEntry(b) };
+  // a and b share root, c is different → target = c. Pair: b,a (newer first). Target last.
+  if (da === db && dc !== da) return { formed: [b, a, c], remaining: c, entry: getFBEntry(c) };
   return null;
 };
 
@@ -590,11 +590,10 @@ const RadarTab = ({ viewMode = "vertical" }) => {
   };
 
   const EstrategiaFBCard = ({ compact }) => {
-    const regionNums = strongestRegion?.numbers || [];
     return (
       <div className={`card-glass border-2 border-[#D4AF37] ${compact ? "!p-2 flex-1 flex flex-col" : ""}`} data-testid="fb-card">
         <span className="label-accent" style={{ color: '#fff', borderColor: '#D4AF37', fontSize: compact ? '0.7rem' : '0.9rem' }}>ESTRATÉGIA FB</span>
-        <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'auto', scrollbarColor: '#D4AF37 #222' }}>
+        <div className="overflow-y-auto" style={{ maxHeight: compact ? '200px' : '300px', scrollbarWidth: 'auto', scrollbarColor: '#D4AF37 #222' }}>
           {fbPatterns.length > 0 ? fbPatterns.map((p, idx) => (
             <div key={p.key || idx} className={`${compact ? "py-1.5" : "py-2"} border-b border-[#333]`}>
               <div className="flex items-center gap-1.5 mb-1">
@@ -606,18 +605,15 @@ const RadarTab = ({ viewMode = "vertical" }) => {
               </div>
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="font-bold text-white" style={{ fontSize: compact ? '0.7rem' : '0.85rem' }}>Entrada:</span>
-                {p.entry.map((jn, i) => {
-                  const isInRegion = regionNums.includes(jn);
-                  return (
-                    <div key={i} className={`mini-ball ${isInRegion ? "gold-confluencia" : ""}`} style={{
-                      background: getBgColor(jn),
-                      minWidth: compact ? 28 : 34, height: compact ? 28 : 34,
-                      fontSize: compact ? '0.65rem' : '0.8rem',
-                      border: isInRegion ? '2px solid #D4AF37' : '2px solid #fff',
-                      boxShadow: isInRegion ? '0 0 8px rgba(212,175,55,0.6)' : 'none',
-                    }}>{jn}</div>
-                  );
-                })}
+                {p.entry.map((jn, i) => (
+                  <div key={i} className="mini-ball gold-confluencia" style={{
+                    background: getBgColor(jn),
+                    minWidth: compact ? 28 : 34, height: compact ? 28 : 34,
+                    fontSize: compact ? '0.65rem' : '0.8rem',
+                    border: '2px solid #D4AF37',
+                    boxShadow: '0 0 8px rgba(212,175,55,0.6)',
+                  }}>{jn}</div>
+                ))}
               </div>
             </div>
           )) : (

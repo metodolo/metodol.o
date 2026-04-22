@@ -1,0 +1,44 @@
+{
+  "summary": "Frontend-only verification of CORRECTED FB display order (pair first, target last) and golden-border enforcement on ALL entry numbers. Tested all 3 pair-match cases, multi-pattern coexistence, countdown-only removal, LIMPAR, and horizontal compact layout. 9/9 feature requirements from review_request verified passing.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "passed_tests": [
+    "FEAT 1 - Display order (pair b,c match, target=a): giros [5,3,12] -> Formada=[12,3,5], Entrada=[5,14,23,32] with golden borders, (3 tentativas) -- VERIFIED",
+    "FEAT 2 - Display order (pair a,b match, target=c): giros [5,3,12,4] -> P2 Formada=[12,3,4] (NOT [4,12,3]), Entrada=[4,13,22,31] with golden borders -- VERIFIED",
+    "FEAT 3 - Display order (pair a,c match, target=b): giros [5,15,23] -> Formada=[23,5,15], Entrada=[6,15,24,33] with golden borders -- VERIFIED",
+    "FEAT 4 - ALL entry balls have border '2px solid #D4AF37' unconditionally (verified via inline style inspection across all tests, including entry numbers NOT in strongest region) -- VERIFIED",
+    "FEAT 5 - Multiple concurrent patterns: giros [5,3,12,4] shows both P1=[12,3,5]@2tentativas AND P2=[12,3,4]@3tentativas simultaneously -- VERIFIED",
+    "FEAT 6 - Countdown-only removal: adding target hit (5 after [5,3,12]) decrements attempts 3->2 WITHOUT removing pattern. Pattern removed only when attempts reach 0 -- VERIFIED",
+    "FEAT 7 - Scrollbar CSS verified in code: maxHeight 300px (vertical) / 200px (compact) with overflow-y-auto, custom #D4AF37 scrollbar -- VERIFIED IN CODE (line 596)",
+    "FEAT 8 - LIMPAR button clears all fb patterns and giros state -- VERIFIED",
+    "FEAT 9 - Horizontal compact mode: 2 concurrent patterns render correctly with gold-bordered entry balls, Formada in correct order, attempts displayed -- VERIFIED"
+  ],
+  "test_report_links": [
+    "/app/.screenshots/fb_horizontal_verified.png"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "RadarTab.jsx is 689 lines - at the 700-line soft threshold. Recommend extracting FB-related utilities (detectFBPattern, FB_OCULTOS, digitalRoot, getFBEntry) and/or NUMBER_INFO + JUNCAO_DATA into separate modules (e.g. /app/frontend/src/engine/fbEngine.js and /app/frontend/src/data/numberData.js) for maintainability and unit testability.",
+    "detectFBPattern logic correctly implements the corrected spec: case (b,c)->[c,b,a], (a,c)->[c,a,b], (a,b)->[b,a,c]. Pair always first (newer-first), target last. Verified.",
+    "Entry ball rendering (line 609-615) applies 'border: 2px solid #D4AF37' unconditionally on every entry number (no longer gated by strongestRegion.includes). Matches spec.",
+    "Pattern dedup: keys use `${a}-${b}-${c}-${giros.length}` so identical formed displays from different sequence positions remain independent entries -- expected behavior per 'multiple patterns coexist' spec."
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "N/A - frontend-only per request",
+    "frontend": "100%"
+  },
+  "test_credentials": {
+    "cpf": "154.831.997-07",
+    "password": "admin123",
+    "source": "/app/memory/test_credentials.md"
+  },
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "FB feature fully working with CORRECTED display order (pair-first / target-last) and unconditional golden borders on ALL entry numbers. detectFBPattern (lines 153-167) returns formed=[newer-of-pair, older-of-pair, target]. EstrategiaFBCard (lines 592-627) renders entry balls with hardcoded '2px solid #D4AF37' border + scrollable container (maxHeight 300px/200px). Multi-pattern coexistence and countdown-only removal confirmed. All 9 scenarios from review_request pass. Note: when target hits, a new pattern may form from the new last-3 triplet (by design); test logic should use unique pattern keys or attempts values, not just formed-array matching, when asserting pattern expiry."
+}
