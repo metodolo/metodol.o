@@ -140,6 +140,13 @@ const digitalRoot = (n) => {
   return n % 9 === 0 ? 9 : n % 9;
 };
 
+// Detection root: 11 and 29 form an exclusive pair (root 11),
+// they do NOT match with 2 or 20 for pattern detection.
+const detectionRoot = (n) => {
+  if (n === 11 || n === 29) return 11;
+  return digitalRoot(n);
+};
+
 // Get the FB entry group for a specific remaining number
 const getFBEntry = (n) => {
   if (n === 0) return FB_OCULTOS[0];
@@ -154,9 +161,9 @@ const getFBEntry = (n) => {
 // Only valid when b,c match (target=a oldest) or a,c match (target=b middle).
 // Returns formed in history display order (newest first: [c, b, a]).
 const detectFBPattern = (a, b, c) => {
-  const da = digitalRoot(a);
-  const db = digitalRoot(b);
-  const dc = digitalRoot(c);
+  const da = detectionRoot(a);
+  const db = detectionRoot(b);
+  const dc = detectionRoot(c);
   // b and c share root, a is different → target = a (oldest)
   if (db === dc && da !== dc) return { formed: [c, b, a], remaining: a, entry: getFBEntry(a) };
   // a and c share root, b is different → target = b (middle)
