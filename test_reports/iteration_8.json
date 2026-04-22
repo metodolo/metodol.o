@@ -1,0 +1,33 @@
+{
+  "summary": "Frontend-only testing for RADAR V22 FB Strategy final corrections: (1) target CANNOT be newest number c — only b,c-match (target=a oldest) and a,c-match (target=b middle) valid; (2) hit detection restored (pattern disappears when new number is in entry list); (3) countdown expiry after 3 attempts. ALL 8 test scenarios PASSED.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "tests_executed": [
+    {"name": "T1 VALID 8→3→3 (b,c match, target=a=8)", "result": "PASS", "details": "Pattern formed. Formada=[3,3,8], Entrada=[8,17,26,35], tentativas=3."},
+    {"name": "T2 INVALID 3→3→8 (a,b match, target=c=8 newest)", "result": "PASS", "details": "No pattern formed. Empty state 'Padrões FB aparecerão aqui' shown."},
+    {"name": "T3 VALID 33→5→15 (a,c match root6, target=b=5)", "result": "PASS", "details": "Pattern formed. Formada=[15,5,33], Entrada=[5,14,23,32], tentativas=3."},
+    {"name": "T4 INVALID 33→15→5 (a,b match root6, target=c=5 newest)", "result": "PASS", "details": "No pattern formed. Empty state shown."},
+    {"name": "T5 Hit 1st attempt — form [8,3,3], add 17", "result": "PASS", "details": "Pattern disappeared immediately after entering 17 (in entry list)."},
+    {"name": "T6 Hit 3rd attempt — [8,3,3] + 1 + 2 + 17", "result": "PASS", "details": "Tentativas decremented 3→2→1, then 17 (in entry) triggered hit, pattern removed."},
+    {"name": "T7 Countdown expiry — [8,3,3] + 1 + 2 + 4", "result": "PASS", "details": "Tentativas decremented 3→2→1 then 0 on 3rd non-entry number (4), pattern removed without hit."},
+    {"name": "T8 Multiple patterns coexist (until own expiry)", "result": "PASS", "details": "First [8,3,3] pattern retained while decrementing through 4,33,5; new [33,5,15] pattern correctly formed with target=5, Entrada=[5,14,23,32]. First pattern's attemptsLeft reached 0 exactly when it should have, so final state shows new pattern (expected)."}
+  ],
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "RadarTab.jsx is 692 lines. Past recommendation to split sub-components still applies (close to 700-line threshold).",
+    "detectFBPattern (lines 156-166) is clean with explicit branches for b,c-match and a,c-match and `null` fallback for a,b-match — logic matches spec exactly.",
+    "FB hit/countdown effect (lines 183-210) uses prevGirosLen ref to avoid double-running on rerender — correct pattern for this use case."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "N/A (skipped)", "frontend": "100%" },
+  "test_credentials": "Admin CPF 154.831.997-07 / admin123 — works.",
+  "seed_data_creation": "None — used in-session btn-N clicks and LIMPAR between each scenario.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "FB Strategy final logic verified: only b,c-match (target=a oldest) and a,c-match (target=b middle) valid; a,b-match (target=c newest) explicitly invalid. Hit detection works 1st/2nd/3rd attempt. Countdown expires after exactly 3 non-entry additions. Multi-pattern coexistence works — each pattern tracks its own attemptsLeft independently. detectFBPattern at lines 156-166 and hit/countdown useEffect at lines 183-210 are the key implementations."
+}

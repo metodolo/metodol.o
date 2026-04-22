@@ -150,19 +150,18 @@ const getFBEntry = (n) => {
   return FB_OCULTOS[root] || [];
 };
 
-// Detect FB pattern: ANY pair of the 3 numbers sharing a digital root forms the pattern.
-// The odd one out (different root) is the target/remaining.
+// Detect FB pattern: the target CANNOT be the newest number (c).
+// Only valid when b,c match (target=a oldest) or a,c match (target=b middle).
 // Returns formed in history display order (newest first: [c, b, a]).
 const detectFBPattern = (a, b, c) => {
   const da = digitalRoot(a);
   const db = digitalRoot(b);
   const dc = digitalRoot(c);
-  // b and c share root, a is different → target = a
+  // b and c share root, a is different → target = a (oldest)
   if (db === dc && da !== dc) return { formed: [c, b, a], remaining: a, entry: getFBEntry(a) };
-  // a and c share root, b is different → target = b
+  // a and c share root, b is different → target = b (middle)
   if (da === dc && db !== dc) return { formed: [c, b, a], remaining: b, entry: getFBEntry(b) };
-  // a and b share root, c is different → target = c
-  if (da === db && dc !== da) return { formed: [c, b, a], remaining: c, entry: getFBEntry(c) };
+  // a,b match → target would be c (newest) → INVALID, do not form
   return null;
 };
 
@@ -187,12 +186,15 @@ const RadarTab = ({ viewMode = "vertical" }) => {
     if (giros.length === prevGirosLen.current) return;
     prevGirosLen.current = giros.length;
 
+    const newNum = giros[giros.length - 1];
+
     setFbPatterns(prev => {
-      // Decrement attempts on existing patterns, remove only when countdown reaches 0
+      // Decrement attempts, check hit. Remove if countdown=0 OR hit.
       let updated = prev.map(p => ({
         ...p,
         attemptsLeft: p.attemptsLeft - 1,
-      })).filter(p => p.attemptsLeft > 0);
+        hit: p.entry.includes(newNum),
+      })).filter(p => p.attemptsLeft > 0 && !p.hit);
 
       // Detect new pattern from last 3 numbers
       if (giros.length >= 3) {
