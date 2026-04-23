@@ -181,19 +181,17 @@ const RadarTab = ({ viewMode = "vertical" }) => {
   const painelRef = useRef(null);
   const isHorizontal = viewMode === "horizontal";
   const [fbPatterns, setFbPatterns] = useState([]);
-  const prevGirosLen = useRef(0);
+  const [addCount, setAddCount] = useState(0);
 
   // Save giros to localStorage when changed
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(giros));
   }, [giros]);
 
-  // FB Strategy: detect and track patterns
+  // FB Strategy: detect and track patterns (fires on every new number added)
   useEffect(() => {
-    if (giros.length === 0) { setFbPatterns([]); prevGirosLen.current = 0; return; }
-    if (giros.length < prevGirosLen.current) { prevGirosLen.current = giros.length; return; }
-    if (giros.length === prevGirosLen.current) return;
-    prevGirosLen.current = giros.length;
+    if (addCount === 0) return;
+    if (giros.length === 0) { setFbPatterns([]); return; }
 
     const newNum = giros[giros.length - 1];
 
@@ -210,13 +208,14 @@ const RadarTab = ({ viewMode = "vertical" }) => {
         const [a, b, c] = giros.slice(-3);
         const pattern = detectFBPattern(a, b, c);
         if (pattern) {
-          const key = `${a}-${b}-${c}-${giros.length}`;
+          const key = `${a}-${b}-${c}-${addCount}`;
           updated.push({ ...pattern, attemptsLeft: 3, key });
         }
       }
       return updated;
     });
-  }, [giros]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [addCount, giros]);
 
   // Add number
   const addNumber = (n) => {
@@ -227,17 +226,20 @@ const RadarTab = ({ viewMode = "vertical" }) => {
       }
       return newGiros;
     });
+    setAddCount(c => c + 1);
   };
 
   // Undo last
   const undo = () => {
     setGiros((prev) => prev.slice(0, -1));
+    setFbPatterns([]);
   };
 
   // Clear all
   const limpar = () => {
     setGiros([]);
     setTerminalSelecionado(null);
+    setFbPatterns([]);
   };
 
   // Change limit
