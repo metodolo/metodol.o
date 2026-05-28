@@ -141,10 +141,9 @@ const digitalRoot = (n) => {
 };
 
 // Detection root: special groups don't mix with regular digital roots.
-// 11/29 form exclusive pair (root 11), don't match with 2/20.
 // 10/19/28 form exclusive trio (root 10), don't match with 1.
+// 2/11/20/29 all share root 2 for pattern detection.
 const detectionRoot = (n) => {
-  if (n === 11 || n === 29) return 11;
   if (n === 10 || n === 19 || n === 28) return 10;
   return digitalRoot(n);
 };
@@ -154,7 +153,6 @@ const getFBEntry = (n) => {
   if (n === 0) return FB_OCULTOS[0];
   if (n === 1) return FB_OCULTOS[1];
   if (n === 10 || n === 19 || n === 28) return FB_OCULTOS[10];
-  if (n === 11 || n === 29) return FB_OCULTOS[11];
   const root = digitalRoot(n);
   return FB_OCULTOS[root] || [];
 };

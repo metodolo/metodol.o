@@ -264,6 +264,10 @@ export const getTerminalFamily = (terminal) => {
       }
     }
   }
+  // 29 also belongs to terminal 2
+  if (terminal === 2 && !numbers.includes(29)) {
+    numbers.push(29);
+  }
   return numbers;
 };
 
