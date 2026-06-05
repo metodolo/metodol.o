@@ -290,6 +290,44 @@ async def get_current_user_from_request(request: Request):
 app = FastAPI(title="RADAR V22 API", version="1.0.0")
 api_router = APIRouter(prefix="/api")
 
+# Background task: auto-block expired subscriptions every 5 minutes
+async def check_expired_subscriptions():
+    """Periodically check and deactivate users with expired subscriptions"""
+    while True:
+        try:
+            await asyncio.sleep(300)  # 5 minutes
+            sb = get_supabase_admin()
+            now = datetime.now(timezone.utc).isoformat()
+            
+            # Get all active subscriptions that have expired
+            subs = sb.table('subscriptions').select('user_id,current_period_end,status').neq('status', 'expired').execute()
+            
+            for sub in (subs.data or []):
+                period_end = sub.get('current_period_end')
+                if not period_end:
+                    continue
+                try:
+                    end_date = datetime.fromisoformat(period_end.replace('Z', '+00:00'))
+                    if end_date < datetime.now(timezone.utc):
+                        user_id = sub['user_id']
+                        # Check if user is admin (don't block admins)
+                        user_result = sb.table('users').select('role').eq('id', user_id).execute()
+                        if user_result.data and user_result.data[0].get('role') == 'admin':
+                            continue
+                        # Deactivate user and mark subscription expired
+                        sb.table('users').update({'is_active': False}).eq('id', user_id).execute()
+                        sb.table('subscriptions').update({'status': 'expired'}).eq('user_id', user_id).execute()
+                        logger.info(f"[Auto-block] Expired subscription for user {user_id}")
+                except (ValueError, TypeError):
+                    continue
+        except Exception as e:
+            logger.error(f"[Auto-block] Error: {e}")
+            await asyncio.sleep(60)
+
+@app.on_event("startup")
+async def startup_event():
+    asyncio.create_task(check_expired_subscriptions())
+
 
 # ============== Pydantic Models ==============
 
