@@ -265,6 +265,23 @@ async def get_current_user_from_request(request: Request):
     if not user.get('is_active', True):
         raise HTTPException(status_code=403, detail="Conta desativada")
     
+    # Check subscription expiry (auto-block if expired)
+    if user.get('role') != 'admin':
+        sub_result = sb.table('subscriptions').select('current_period_end,status').eq('user_id', user['id']).execute()
+        if sub_result.data:
+            sub = sub_result.data[0]
+            period_end = sub.get('current_period_end')
+            if period_end:
+                try:
+                    end_date = datetime.fromisoformat(period_end.replace('Z', '+00:00'))
+                    if end_date < datetime.now(timezone.utc):
+                        # Auto-deactivate expired user
+                        sb.table('users').update({'is_active': False}).eq('id', user['id']).execute()
+                        sb.table('subscriptions').update({'status': 'expired'}).eq('user_id', user['id']).execute()
+                        raise HTTPException(status_code=403, detail="Assinatura vencida")
+                except (ValueError, TypeError):
+                    pass
+    
     return user, session
 
 
