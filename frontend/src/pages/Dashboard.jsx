@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import RadarTab from "../components/RadarTab";
 import GestaoTab from "../components/GestaoTab";
+import SinaisTab from "../components/SinaisTab";
 import ChangePasswordModal from "../components/ChangePasswordModal";
 import { LogOut, Settings, User, Clock, Shield, Smartphone, Monitor } from "lucide-react";
 
@@ -131,6 +132,13 @@ const Dashboard = () => {
             Gestão de Banca
           </button>
           <button
+            className={`tab-btn ${activeTab === "sinais" ? "active" : ""}`}
+            onClick={() => setActiveTab("sinais")}
+            data-testid="tab-sinais"
+          >
+            Em Construção
+          </button>
+          <button
             onClick={() => setViewMode(viewMode === "vertical" ? "horizontal" : "vertical")}
             className="flex items-center gap-1 px-3 border-2 border-[#D4AF37] rounded-lg text-xs font-bold transition-all"
             style={{
@@ -151,8 +159,15 @@ const Dashboard = () => {
 
         {/* Tab content */}
         <div className={viewMode === "horizontal" ? "flex-1 min-h-0 overflow-hidden" : ""}>
-          {activeTab === "radar" && <RadarTab viewMode={viewMode} />}
-          {activeTab === "gestao" && <GestaoTab viewMode={viewMode} />}
+          <div style={{ display: activeTab === "radar" ? "block" : "none" }} className={viewMode === "horizontal" ? "h-full" : ""}>
+            <RadarTab viewMode={viewMode} />
+          </div>
+          <div style={{ display: activeTab === "gestao" ? "block" : "none" }} className={viewMode === "horizontal" ? "h-full" : ""}>
+            <GestaoTab viewMode={viewMode} />
+          </div>
+          <div style={{ display: activeTab === "sinais" ? "block" : "none" }} className={viewMode === "horizontal" ? "h-full" : ""}>
+            <SinaisTab viewMode={viewMode} />
+          </div>
         </div>
       </div>
     </div>
