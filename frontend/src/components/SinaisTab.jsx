@@ -54,7 +54,7 @@ const detectFBPattern = (a, b, c) => {
 };
 
 const SinaisTab = ({ viewMode = "vertical" }) => {
-  const [authenticated, setAuthenticated] = useState(false);
+  const [authenticated, setAuthenticated] = useState(() => sessionStorage.getItem('sinais_auth') === 'true');
   const [senhaInput, setSenhaInput] = useState("");
   const [senhaError, setSenhaError] = useState(false);
   const [signals, setSignals] = useState([]);
@@ -66,6 +66,7 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
   const handleLogin = () => {
     if (senhaInput === SENHA) {
       setAuthenticated(true);
+      sessionStorage.setItem('sinais_auth', 'true');
       setSenhaError(false);
     } else {
       setSenhaError(true);
@@ -84,146 +85,162 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
 
         if (JSON.stringify(giros) === JSON.stringify(prev)) return;
 
-        // Detect if a new number was added (not undo/clear)
-        const isNewNumber = giros.length > 0 && (
-          giros.length > prev.length ||
-          (giros.length === prev.length && giros[giros.length - 1] !== prev[prev.length - 1])
-        );
-
         if (giros.length === 0) {
-          // Clear - reset active signals but keep completed ones
           activeSignalsRef.current = [];
           prevGirosRef.current = giros;
           return;
         }
 
-        if (!isNewNumber) {
+        // Find how many new numbers were added since last check
+        let newNumbers = [];
+        if (giros.length > prev.length) {
+          // Numbers added
+          newNumbers = giros.slice(prev.length);
+        } else if (giros.length === prev.length && giros[giros.length - 1] !== prev[prev.length - 1]) {
+          // At limit - last number changed
+          newNumbers = [giros[giros.length - 1]];
+        } else if (giros.length < prev.length) {
+          // Undo happened - don't process
           prevGirosRef.current = giros;
           return;
         }
 
-        const newNum = giros[giros.length - 1];
+        if (newNumbers.length === 0) {
+          prevGirosRef.current = giros;
+          return;
+        }
+
+        // Process each new number sequentially
         let updatedActive = [...activeSignalsRef.current];
-        let newSignals = [];
+        let allNewSignals = [];
 
-        // --- Update active signals (decrement attempts, check hit) ---
-        updatedActive = updatedActive.map(s => {
-          if (s.status !== 'waiting') return s;
-          const hit = s.numbers.includes(newNum);
-          const attemptsUsed = s.attemptsUsed + 1;
-          if (hit) {
-            return { ...s, status: 'green', attemptsUsed, hitNumber: newNum };
-          } else if (attemptsUsed >= 3) {
-            return { ...s, status: 'red', attemptsUsed };
-          }
-          return { ...s, attemptsUsed };
-        });
+        for (let ni = 0; ni < newNumbers.length; ni++) {
+          const newNum = newNumbers[ni];
+          // The giros state at this point
+          const girosAtPoint = giros.slice(0, prev.length + ni + 1);
+          if (girosAtPoint.length > giros.length) break;
 
-        // --- Detect REGIÃO signal (6+ confirmations, last number in region) ---
-        if (giros.length >= 6) {
-          const freqs = calculateRegionFrequencies(giros);
-          for (const [regionName, count] of Object.entries(freqs)) {
-            if (count >= 6) {
-              const regionNums = REGIOES_MAPEADAS[regionName];
-              if (regionNums.includes(newNum)) {
-                // Check if there's already an active signal for this region
-                const alreadyActive = updatedActive.some(
-                  s => s.type === 'região' && s.label === regionName && s.status === 'waiting'
-                );
-                if (!alreadyActive) {
-                  newSignals.push({
-                    id: Date.now() + Math.random(),
-                    type: 'região',
-                    label: regionName,
-                    detail: `${count} confirmações`,
-                    numbers: regionNums,
-                    status: 'waiting',
-                    attemptsUsed: 0,
-                    hitNumber: null,
-                  });
+          // --- Update active signals ---
+          updatedActive = updatedActive.map(s => {
+            if (s.status !== 'waiting') return s;
+            if (s.skipFirst) {
+              return { ...s, skipFirst: false };
+            }
+            const hit = s.numbers.includes(newNum);
+            const attemptsUsed = s.attemptsUsed + 1;
+            if (hit) {
+              return { ...s, status: 'green', attemptsUsed, hitNumber: newNum };
+            } else if (attemptsUsed >= 3) {
+              return { ...s, status: 'red', attemptsUsed };
+            }
+            return { ...s, attemptsUsed };
+          });
+
+          // --- Detect REGIÃO signal ---
+          if (girosAtPoint.length >= 6) {
+            const freqs = calculateRegionFrequencies(girosAtPoint);
+            for (const [regionName, count] of Object.entries(freqs)) {
+              if (count >= 6) {
+                const regionNums = REGIOES_MAPEADAS[regionName];
+                if (regionNums.includes(newNum)) {
+                  const alreadyActive = updatedActive.some(
+                    s => s.type === 'região' && s.label === regionName && s.status === 'waiting'
+                  );
+                  if (!alreadyActive) {
+                    const sig = {
+                      id: Date.now() + Math.random(),
+                      type: 'região',
+                      label: regionName,
+                      detail: `${count} confirmações`,
+                      numbers: regionNums,
+                      status: 'waiting',
+                      attemptsUsed: 0,
+                      hitNumber: null,
+                      skipFirst: true,
+                    };
+                    updatedActive.push(sig);
+                    allNewSignals.push(sig);
+                  }
                 }
               }
             }
           }
-        }
 
-        // --- Detect FB signal ---
-        if (giros.length >= 3) {
-          const [a, b, c] = giros.slice(-3);
-          const pattern = detectFBPattern(a, b, c);
-          if (pattern) {
-            newSignals.push({
-              id: Date.now() + Math.random(),
-              type: 'fb',
-              label: `${c}, ${b}, ${a}`,
-              detail: 'Padrão formado',
-              numbers: pattern.entry,
-              status: 'waiting',
-              attemptsUsed: 0,
-              hitNumber: null,
-            });
-          }
-        }
-
-        // --- Detect OCULTOS signal (terminal weight ≥ 20) ---
-        if (giros.length >= 3) {
-          const weights = calculateTerminalWeights(giros);
-          if (weights.length > 0 && weights[0].peso >= 20) {
-            const topTerminal = weights[0].terminal;
-            const family = getTerminalFamily(topTerminal);
-            const alreadyActive = updatedActive.some(
-              s => s.type === 'ocultos' && s.label === `Terminal ${topTerminal}` && s.status === 'waiting'
-            );
-            if (!alreadyActive) {
-              newSignals.push({
-                id: Date.now() + Math.random(),
-                type: 'ocultos',
-                label: `Terminal ${topTerminal}`,
-                detail: `Peso ${weights[0].peso}x`,
-                numbers: family,
+          // --- Detect FB signal ---
+          if (girosAtPoint.length >= 3) {
+            const [a, b, c] = girosAtPoint.slice(-3);
+            const pattern = detectFBPattern(a, b, c);
+            if (pattern) {
+              const sig = {
+                id: Date.now() + Math.random() + ni,
+                type: 'fb',
+                label: `${c}, ${b}, ${a}`,
+                detail: 'Padrão formado',
+                numbers: pattern.entry,
                 status: 'waiting',
                 attemptsUsed: 0,
                 hitNumber: null,
-              });
+                skipFirst: true,
+              };
+              updatedActive.push(sig);
+              allNewSignals.push(sig);
+            }
+          }
+
+          // --- Detect OCULTOS signal ---
+          if (girosAtPoint.length >= 3) {
+            const weights = calculateTerminalWeights(girosAtPoint);
+            if (weights.length > 0 && weights[0].peso >= 20) {
+              const topTerminal = weights[0].terminal;
+              const family = getTerminalFamily(topTerminal);
+              const alreadyActive = updatedActive.some(
+                s => s.type === 'ocultos' && s.label === `Terminal ${topTerminal}` && s.status === 'waiting'
+              );
+              if (!alreadyActive) {
+                const sig = {
+                  id: Date.now() + Math.random() + ni + 0.5,
+                  type: 'ocultos',
+                  label: `Terminal ${topTerminal}`,
+                  detail: `Peso ${weights[0].peso}x`,
+                  numbers: family,
+                  status: 'waiting',
+                  attemptsUsed: 0,
+                  hitNumber: null,
+                  skipFirst: true,
+                };
+                updatedActive.push(sig);
+                allNewSignals.push(sig);
+              }
             }
           }
         }
 
-        // Merge
-        const allActive = [...updatedActive, ...newSignals];
-        activeSignalsRef.current = allActive.filter(s => s.status === 'waiting');
+        // Update refs and state
+        activeSignalsRef.current = updatedActive.filter(s => s.status === 'waiting');
 
-        // Move completed signals to display list
-        const completed = allActive.filter(s => s.status === 'green' || s.status === 'red');
-        if (completed.length > 0 || newSignals.length > 0) {
-          setSignals(prev => {
-            let updated = [...prev];
-            // Update any that just completed
-            for (const c of completed) {
-              const idx = updated.findIndex(s => s.id === c.id);
-              if (idx >= 0) {
-                updated[idx] = c;
-              }
+        setSignals(prev => {
+          let updated = [...prev];
+          // Update existing signals that changed status
+          for (const s of updatedActive) {
+            const idx = updated.findIndex(u => u.id === s.id);
+            if (idx >= 0) {
+              updated[idx] = s;
             }
-            // Add new signals
-            for (const n of newSignals) {
+          }
+          // Add new signals
+          for (const n of allNewSignals) {
+            if (!updated.some(u => u.id === n.id)) {
               updated.push(n);
             }
-            return updated;
-          });
-        }
-
-        // Update waiting signals in display
-        setSignals(prev => prev.map(s => {
-          const active = allActive.find(a => a.id === s.id);
-          return active || s;
-        }));
+          }
+          return updated;
+        });
 
         prevGirosRef.current = giros;
       } catch (e) {
         console.error("Sinais monitor error:", e);
       }
-    }, 500);
+    }, 200);
 
     return () => clearInterval(interval);
   }, [authenticated]);
