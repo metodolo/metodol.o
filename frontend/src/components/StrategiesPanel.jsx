@@ -12,7 +12,10 @@ const CONDITION_BLOCKS = [
   { value: 'number_repeated', label: 'Número repetiu X vezes' },
   { value: 'specific_number_ponta', label: 'Número específico na ponta' },
   { value: 'fb_pattern', label: 'Estratégia FB formou padrão' },
-  { value: 'terminal_weight', label: 'Terminal com peso X+' },
+  { value: 'ocultos_strong', label: 'Radar de Ocultos forte' },
+  { value: 'color_count', label: 'Cor (Vermelho/Preto) com X nos 14' },
+  { value: 'color_sequence', label: 'Cor seguida (X vermelhos/pretos)' },
+  { value: 'highlow_count', label: 'Alto/Médio/Baixo com X nos 14' },
 ];
 
 const NumberBall = ({ n, size = 28 }) => (
@@ -28,8 +31,8 @@ const StrategiesPanel = ({ onBack }) => {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
-  // Form
   const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
   const [conditions, setConditions] = useState([]);
   const [entryNumbers, setEntryNumbers] = useState('');
   const [attempts, setAttempts] = useState(3);
@@ -45,12 +48,12 @@ const StrategiesPanel = ({ onBack }) => {
   useEffect(() => { fetchStrategies(); }, [fetchStrategies]);
 
   const resetForm = () => {
-    setName(''); setConditions([]); setEntryNumbers(''); setAttempts(3);
+    setName(''); setDescription(''); setConditions([]); setEntryNumbers(''); setAttempts(3);
     setEditingId(null); setShowForm(false);
   };
 
   const addCondition = () => {
-    setConditions([...conditions, { type: 'region_count', region: '', min_count: 6, number: '', min_repeats: 2, min_weight: 20 }]);
+    setConditions([...conditions, { type: 'region_count', region: '', min_count: 6, number: '', min_repeats: 2, color: 'preto', min_color: 8, min_sequence: 4, highlow: 'alto', min_highlow: 5, min_ocultos: 20 }]);
   };
 
   const updateCondition = (idx, field, value) => {
@@ -59,12 +62,11 @@ const StrategiesPanel = ({ onBack }) => {
     setConditions(updated);
   };
 
-  const removeCondition = (idx) => {
-    setConditions(conditions.filter((_, i) => i !== idx));
-  };
+  const removeCondition = (idx) => setConditions(conditions.filter((_, i) => i !== idx));
 
   const startEdit = (s) => {
     setName(s.name);
+    setDescription(s.condition_params?.description || '');
     setConditions(s.condition_params?.conditions || []);
     setEntryNumbers((s.action_params?.numbers || []).join(', '));
     setAttempts(s.attempts || 3);
@@ -76,38 +78,24 @@ const StrategiesPanel = ({ onBack }) => {
     if (!name.trim() || conditions.length === 0) return;
     const nums = entryNumbers.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n >= 0 && n <= 36);
     if (nums.length === 0) return;
-
     const body = {
-      name: name.trim(),
-      is_active: true,
-      condition_type: 'multi',
-      condition_params: { conditions },
-      action_type: 'custom_numbers',
-      action_params: { numbers: nums },
-      attempts,
+      name: name.trim(), is_active: true, condition_type: 'multi',
+      condition_params: { description, conditions },
+      action_type: 'custom_numbers', action_params: { numbers: nums }, attempts,
     };
-
     try {
-      if (editingId) {
-        await strategiesApi.update(editingId, body);
-      } else {
-        await strategiesApi.create(body);
-      }
-      await fetchStrategies();
-      resetForm();
+      if (editingId) await strategiesApi.update(editingId, body);
+      else await strategiesApi.create(body);
+      await fetchStrategies(); resetForm();
     } catch (e) { console.error(e); }
   };
 
   const handleToggle = async (s) => {
-    try {
-      await strategiesApi.update(s.id, { is_active: !s.is_active });
-      await fetchStrategies();
-    } catch (e) { console.error(e); }
+    try { await strategiesApi.update(s.id, { is_active: !s.is_active }); await fetchStrategies(); } catch (e) { console.error(e); }
   };
 
   const handleDelete = async (id) => {
-    try { await strategiesApi.remove(id); await fetchStrategies(); }
-    catch (e) { console.error(e); }
+    try { await strategiesApi.remove(id); await fetchStrategies(); } catch (e) { console.error(e); }
   };
 
   const getConditionDesc = (c) => {
@@ -116,8 +104,11 @@ const StrategiesPanel = ({ onBack }) => {
       case 'region_ponta': return `Número da região ${c.region || '?'} na ponta`;
       case 'number_repeated': return `Número ${c.number ?? '?'} repetiu ${c.min_repeats || 2}x`;
       case 'specific_number_ponta': return `Número ${c.number ?? '?'} na ponta`;
-      case 'fb_pattern': return 'Estratégia FB formou padrão';
-      case 'terminal_weight': return `Terminal com peso ${c.min_weight || 20}+`;
+      case 'fb_pattern': return 'FB formou padrão';
+      case 'ocultos_strong': return `Ocultos com peso ${c.min_ocultos || 20}+`;
+      case 'color_count': return `${c.color || 'preto'} com ${c.min_color || 8}+ nos 14`;
+      case 'color_sequence': return `${c.color || 'preto'} ${c.min_sequence || 4}x seguidas`;
+      case 'highlow_count': return `${c.highlow || 'alto'} com ${c.min_highlow || 5}+ nos 14`;
       default: return c.type;
     }
   };
@@ -126,11 +117,8 @@ const StrategiesPanel = ({ onBack }) => {
     <div className="p-3 bg-[rgba(0,0,0,0.5)] border border-[#555] rounded-lg mb-2">
       <div className="flex items-center justify-between mb-2">
         <span className="text-[#D4AF37] text-xs font-bold">CONDIÇÃO {idx + 1}</span>
-        <button onClick={() => removeCondition(idx)} className="text-red-500 hover:text-red-300">
-          <MinusCircle className="w-4 h-4" />
-        </button>
+        <button onClick={() => removeCondition(idx)} className="text-red-500 hover:text-red-300"><MinusCircle className="w-4 h-4" /></button>
       </div>
-
       <select value={cond.type} onChange={(e) => updateCondition(idx, 'type', e.target.value)}
         className="w-full p-2 bg-black border border-[#D4AF37] rounded-lg text-white text-sm mb-2">
         {CONDITION_BLOCKS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
@@ -139,13 +127,13 @@ const StrategiesPanel = ({ onBack }) => {
       {(cond.type === 'region_count' || cond.type === 'region_ponta') && (
         <div className="space-y-2">
           <div>
-            <label className="text-[10px] text-gray-400">Qual região? (digite: ex 8/3)</label>
+            <label className="text-[10px] text-gray-400">Qual região? (digite)</label>
             <input type="text" value={cond.region || ''} onChange={(e) => updateCondition(idx, 'region', e.target.value)}
-              placeholder="Ex: 8/3, 7/2, 6/5..." className="w-full p-2 bg-black border border-[#666] rounded-lg text-white text-sm" />
+              placeholder="Ex: 8/3, 7/2, 6/5, 1/4, 9/0" className="w-full p-2 bg-black border border-[#666] rounded-lg text-white text-sm" />
           </div>
           {cond.type === 'region_count' && (
             <div>
-              <label className="text-[10px] text-gray-400">Mínimo de confirmações</label>
+              <label className="text-[10px] text-gray-400">Mínimo de confirmações nos 14</label>
               <input type="number" value={cond.min_count || 6} onChange={(e) => updateCondition(idx, 'min_count', parseInt(e.target.value) || 6)}
                 className="w-full p-2 bg-black border border-[#666] rounded-lg text-white text-sm" />
             </div>
@@ -180,18 +168,73 @@ const StrategiesPanel = ({ onBack }) => {
         <div className="text-xs text-gray-400 py-1">Ativa quando a Estratégia FB detectar um padrão</div>
       )}
 
-      {cond.type === 'terminal_weight' && (
+      {cond.type === 'ocultos_strong' && (
         <div>
-          <label className="text-[10px] text-gray-400">Peso mínimo do terminal</label>
-          <input type="number" value={cond.min_weight || 20} onChange={(e) => updateCondition(idx, 'min_weight', parseInt(e.target.value) || 20)}
+          <label className="text-[10px] text-gray-400">Peso mínimo do oculto mais forte</label>
+          <input type="number" value={cond.min_ocultos || 20} onChange={(e) => updateCondition(idx, 'min_ocultos', parseInt(e.target.value) || 20)}
             className="w-full p-2 bg-black border border-[#666] rounded-lg text-white text-sm" />
+        </div>
+      )}
+
+      {cond.type === 'color_count' && (
+        <div className="space-y-2">
+          <div>
+            <label className="text-[10px] text-gray-400">Qual cor?</label>
+            <select value={cond.color || 'preto'} onChange={(e) => updateCondition(idx, 'color', e.target.value)}
+              className="w-full p-2 bg-black border border-[#666] rounded-lg text-white text-sm">
+              <option value="preto">Preto</option>
+              <option value="vermelho">Vermelho</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-[10px] text-gray-400">Mínimo dessa cor nos 14 giros</label>
+            <input type="number" value={cond.min_color || 8} onChange={(e) => updateCondition(idx, 'min_color', parseInt(e.target.value) || 8)}
+              className="w-full p-2 bg-black border border-[#666] rounded-lg text-white text-sm" />
+          </div>
+        </div>
+      )}
+
+      {cond.type === 'color_sequence' && (
+        <div className="space-y-2">
+          <div>
+            <label className="text-[10px] text-gray-400">Qual cor?</label>
+            <select value={cond.color || 'preto'} onChange={(e) => updateCondition(idx, 'color', e.target.value)}
+              className="w-full p-2 bg-black border border-[#666] rounded-lg text-white text-sm">
+              <option value="preto">Preto</option>
+              <option value="vermelho">Vermelho</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-[10px] text-gray-400">Quantas vezes seguidas?</label>
+            <input type="number" value={cond.min_sequence || 4} onChange={(e) => updateCondition(idx, 'min_sequence', parseInt(e.target.value) || 4)}
+              className="w-full p-2 bg-black border border-[#666] rounded-lg text-white text-sm" />
+          </div>
+        </div>
+      )}
+
+      {cond.type === 'highlow_count' && (
+        <div className="space-y-2">
+          <div>
+            <label className="text-[10px] text-gray-400">Qual faixa?</label>
+            <select value={cond.highlow || 'alto'} onChange={(e) => updateCondition(idx, 'highlow', e.target.value)}
+              className="w-full p-2 bg-black border border-[#666] rounded-lg text-white text-sm">
+              <option value="alto">Alto (25-36)</option>
+              <option value="medio">Médio (13-24)</option>
+              <option value="baixo">Baixo (1-12)</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-[10px] text-gray-400">Mínimo nos 14 giros</label>
+            <input type="number" value={cond.min_highlow || 5} onChange={(e) => updateCondition(idx, 'min_highlow', parseInt(e.target.value) || 5)}
+              className="w-full p-2 bg-black border border-[#666] rounded-lg text-white text-sm" />
+          </div>
         </div>
       )}
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-black p-4" data-testid="strategies-panel">
+    <div className="min-h-screen bg-black p-4 overflow-y-auto" style={{ maxHeight: '100vh', scrollbarWidth: 'thin', scrollbarColor: '#D4AF37 #111' }} data-testid="strategies-panel">
       <div className="flex items-center gap-3 mb-6">
         <button onClick={onBack} className="text-[#D4AF37] hover:text-white" data-testid="strategies-back">
           <ChevronLeft className="w-6 h-6" />
@@ -211,15 +254,20 @@ const StrategiesPanel = ({ onBack }) => {
             <button onClick={resetForm} className="text-gray-500 hover:text-white"><X className="w-5 h-5" /></button>
           </div>
 
-          {/* Name */}
           <div className="mb-4">
             <label className="text-sm text-[#D4AF37] font-bold block mb-1">NOME</label>
             <input type="text" value={name} onChange={(e) => setName(e.target.value)}
-              placeholder="Ex: Região 8/3 na Ponta com Repetição"
+              placeholder="Ex: Região 8/3 na Ponta"
               className="w-full p-3 bg-black border-2 border-[#D4AF37] rounded-lg text-white" data-testid="strategy-name" />
           </div>
 
-          {/* Conditions */}
+          <div className="mb-4">
+            <label className="text-sm text-[#D4AF37] font-bold block mb-1">DESCRIÇÃO (opcional)</label>
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)}
+              placeholder="Descreva a estratégia como quiser... Ex: Quando a região 8/3 tiver com 6 números entre os 14, espera um número da região chegar na ponta e faz a entrada nos vizinhos."
+              rows={3} className="w-full p-3 bg-black border-2 border-[#555] rounded-lg text-gray-300 text-sm resize-none" />
+          </div>
+
           <div className="mb-4">
             <div className="flex items-center justify-between mb-2">
               <label className="text-sm text-[#D4AF37] font-bold">CONDIÇÕES (QUANDO ATIVAR)</label>
@@ -236,7 +284,6 @@ const StrategiesPanel = ({ onBack }) => {
             )}
           </div>
 
-          {/* Entry Numbers */}
           <div className="mb-4">
             <label className="text-sm text-[#D4AF37] font-bold block mb-1">NÚMEROS PARA ENTRAR</label>
             <input type="text" value={entryNumbers} onChange={(e) => setEntryNumbers(e.target.value)}
@@ -251,7 +298,6 @@ const StrategiesPanel = ({ onBack }) => {
             )}
           </div>
 
-          {/* Attempts */}
           <div className="mb-4">
             <label className="text-sm text-[#D4AF37] font-bold block mb-1">TENTATIVAS</label>
             <input type="number" value={attempts} onChange={(e) => setAttempts(parseInt(e.target.value) || 3)} min="1" max="10"
@@ -266,7 +312,6 @@ const StrategiesPanel = ({ onBack }) => {
         </div>
       )}
 
-      {/* List */}
       {loading ? (
         <div className="text-center text-gray-500 py-8">Carregando...</div>
       ) : strategies.length === 0 && !showForm ? (
@@ -278,6 +323,7 @@ const StrategiesPanel = ({ onBack }) => {
         <div className="space-y-3">
           {strategies.map(s => {
             const conds = s.condition_params?.conditions || [];
+            const desc = s.condition_params?.description || '';
             return (
               <div key={s.id} className={`card-glass border-2 p-4 ${s.is_active ? 'border-[#D4AF37]' : 'border-[#333] opacity-50'}`}>
                 <div className="flex items-start gap-3">
@@ -286,6 +332,7 @@ const StrategiesPanel = ({ onBack }) => {
                   </button>
                   <div className="flex-1 min-w-0">
                     <div className="text-white font-bold">{s.name}</div>
+                    {desc && <div className="text-xs text-gray-500 mt-0.5 italic">{desc}</div>}
                     <div className="text-xs text-gray-400 mt-1">
                       {conds.map((c, i) => (
                         <span key={i}>

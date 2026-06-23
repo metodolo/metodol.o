@@ -5,7 +5,10 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   REGIOES_MAPEADAS,
+  VERMELHOS,
   calculateRegionFrequencies,
+  calculateTerminalWeights,
+  getTerminalFamily,
   getBgColor,
 } from "../engine/radarEngine";
 import { strategiesApi } from "../services/api";
@@ -62,9 +65,46 @@ const evaluateCondition = (cond, giros, newNum) => {
       const [a, b, c] = giros.slice(-3);
       return detectFBPattern(a, b, c) !== null;
     }
-    case 'terminal_weight': {
-      // Simple terminal weight check
-      return false; // TODO: implement if needed
+    case 'ocultos_strong': {
+      const weights = calculateTerminalWeights(giros);
+      if (weights.length === 0) return false;
+      return weights[0].peso >= (cond.min_ocultos || 20);
+    }
+    case 'color_count': {
+      const color = cond.color || 'preto';
+      let count = 0;
+      for (const n of giros) {
+        if (n === 0) continue;
+        const isRed = VERMELHOS.includes(n);
+        if (color === 'vermelho' && isRed) count++;
+        if (color === 'preto' && !isRed) count++;
+      }
+      return count >= (cond.min_color || 8);
+    }
+    case 'color_sequence': {
+      const color = cond.color || 'preto';
+      const minSeq = cond.min_sequence || 4;
+      let streak = 0;
+      for (let i = giros.length - 1; i >= 0; i--) {
+        const n = giros[i];
+        if (n === 0) break;
+        const isRed = VERMELHOS.includes(n);
+        if ((color === 'vermelho' && isRed) || (color === 'preto' && !isRed)) {
+          streak++;
+        } else break;
+      }
+      return streak >= minSeq;
+    }
+    case 'highlow_count': {
+      const hl = cond.highlow || 'alto';
+      let count = 0;
+      for (const n of giros) {
+        if (n === 0) continue;
+        if (hl === 'alto' && n >= 25) count++;
+        if (hl === 'medio' && n >= 13 && n <= 24) count++;
+        if (hl === 'baixo' && n >= 1 && n <= 12) count++;
+      }
+      return count >= (cond.min_highlow || 5);
     }
     default:
       return false;
