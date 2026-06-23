@@ -224,6 +224,14 @@ export const healthApi = {
   },
 };
 
+export const strategiesApi = {
+  list: () => apiRequest("/strategies"),
+  create: (data) => apiRequest("/strategies", { method: "POST", body: JSON.stringify(data) }),
+  update: (id, data) => apiRequest(`/strategies/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  remove: (id) => apiRequest(`/strategies/${id}`, { method: "DELETE" }),
+};
+
+
 // Google OAuth URL generator
 // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
 export const getGoogleAuthUrl = () => {

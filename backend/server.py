@@ -1581,6 +1581,94 @@ async def health_check():
         )
 
 
+# ============ STRATEGIES CRUD (Admin only, MongoDB) ============
+
+from pymongo import MongoClient
+import uuid
+
+_mongo_client = None
+def get_mongo_db():
+    global _mongo_client
+    if _mongo_client is None:
+        _mongo_client = MongoClient(os.environ.get('MONGO_URL', 'mongodb://localhost:27017'))
+    return _mongo_client[os.environ.get('DB_NAME', 'test_database')]
+
+class StrategyCreate(BaseModel):
+    name: str
+    is_active: bool = True
+    condition_type: str
+    condition_params: dict = {}
+    action_type: str
+    action_params: dict = {}
+    attempts: int = 3
+
+class StrategyUpdate(BaseModel):
+    name: Optional[str] = None
+    is_active: Optional[bool] = None
+    condition_type: Optional[str] = None
+    condition_params: Optional[dict] = None
+    action_type: Optional[str] = None
+    action_params: Optional[dict] = None
+    attempts: Optional[int] = None
+
+@api_router.get("/strategies")
+async def get_strategies(request: Request):
+    user, session = await get_current_user_from_request(request)
+    db = get_mongo_db()
+    strategies = list(db.strategies.find({}, {"_id": 0}).sort("created_at", -1))
+    return {"strategies": strategies}
+
+@api_router.post("/strategies")
+async def create_strategy(request: Request, body: StrategyCreate):
+    user, session = await get_current_user_from_request(request)
+    if user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Admin only")
+    db = get_mongo_db()
+    data = {
+        'id': str(uuid.uuid4()),
+        'name': body.name,
+        'is_active': body.is_active,
+        'condition_type': body.condition_type,
+        'condition_params': body.condition_params,
+        'action_type': body.action_type,
+        'action_params': body.action_params,
+        'attempts': body.attempts,
+        'created_at': datetime.now(timezone.utc).isoformat(),
+    }
+    db.strategies.insert_one(data)
+    data.pop('_id', None)
+    return {"strategy": data}
+
+@api_router.put("/strategies/{strategy_id}")
+async def update_strategy(request: Request, strategy_id: str, body: StrategyUpdate):
+    user, session = await get_current_user_from_request(request)
+    if user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Admin only")
+    db = get_mongo_db()
+    update_data = {}
+    for field in ['name', 'is_active', 'condition_type', 'condition_params', 'action_type', 'action_params', 'attempts']:
+        val = getattr(body, field, None)
+        if val is not None:
+            update_data[field] = val
+    if not update_data:
+        raise HTTPException(status_code=400, detail="Nothing to update")
+    result = db.strategies.update_one({'id': strategy_id}, {'$set': update_data})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Strategy not found")
+    updated = db.strategies.find_one({'id': strategy_id}, {"_id": 0})
+    return {"strategy": updated}
+
+@api_router.delete("/strategies/{strategy_id}")
+async def delete_strategy(request: Request, strategy_id: str):
+    user, session = await get_current_user_from_request(request)
+    if user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Admin only")
+    db = get_mongo_db()
+    db.strategies.delete_one({'id': strategy_id})
+    return {"ok": True}
+
+
+
 # Include the router
 app.include_router(api_router)
 
