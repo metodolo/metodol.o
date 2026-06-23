@@ -1,19 +1,26 @@
 /**
- * Strategies Panel - Admin only - Free-form strategy builder
+ * Strategies Panel - Admin only - Free-form strategy builder with condition blocks
  */
 import React, { useState, useEffect, useCallback } from "react";
-import { ChevronLeft, Plus, Trash2, ToggleLeft, ToggleRight, Save, Edit2, X } from "lucide-react";
+import { ChevronLeft, Plus, Trash2, ToggleLeft, ToggleRight, Save, Edit2, X, PlusCircle, MinusCircle } from "lucide-react";
 import { strategiesApi } from "../services/api";
 import { getBgColor } from "../engine/radarEngine";
 
-const TRIGGER_TYPES = [
-  { value: 'region_strong', label: 'Região forte' },
-  { value: 'number_repeated', label: 'Número repetiu' },
-  { value: 'fb_pattern', label: 'Estratégia FB formou' },
-  { value: 'specific_number', label: 'Número específico saiu' },
+const CONDITION_BLOCKS = [
+  { value: 'region_count', label: 'Região com X confirmações' },
+  { value: 'region_ponta', label: 'Número da região na ponta' },
+  { value: 'number_repeated', label: 'Número repetiu X vezes' },
+  { value: 'specific_number_ponta', label: 'Número específico na ponta' },
+  { value: 'fb_pattern', label: 'Estratégia FB formou padrão' },
+  { value: 'terminal_weight', label: 'Terminal com peso X+' },
 ];
 
-const REGIONS = ['6/5', '1/4', '8/3', '7/2', '9/0'];
+const NumberBall = ({ n, size = 28 }) => (
+  <div className="inline-flex items-center justify-center rounded-full text-white font-bold"
+    style={{ background: getBgColor(n), minWidth: size, height: size, fontSize: size * 0.4, border: '2px solid #D4AF37', boxShadow: '0 0 6px rgba(212,175,55,0.4)' }}>
+    {n}
+  </div>
+);
 
 const StrategiesPanel = ({ onBack }) => {
   const [strategies, setStrategies] = useState([]);
@@ -23,12 +30,7 @@ const StrategiesPanel = ({ onBack }) => {
 
   // Form
   const [name, setName] = useState('');
-  const [triggerType, setTriggerType] = useState('region_strong');
-  const [triggerRegion, setTriggerRegion] = useState('');
-  const [triggerMinConf, setTriggerMinConf] = useState(6);
-  const [triggerNeedsPonta, setTriggerNeedsPonta] = useState(true);
-  const [triggerNumber, setTriggerNumber] = useState('');
-  const [triggerMinRepeats, setTriggerMinRepeats] = useState(2);
+  const [conditions, setConditions] = useState([]);
   const [entryNumbers, setEntryNumbers] = useState('');
   const [attempts, setAttempts] = useState(3);
 
@@ -36,61 +38,50 @@ const StrategiesPanel = ({ onBack }) => {
     try {
       const res = await strategiesApi.list();
       setStrategies(res.strategies || []);
-    } catch (e) {
-      console.error('Fetch failed:', e);
-    } finally {
-      setLoading(false);
-    }
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
   }, []);
 
   useEffect(() => { fetchStrategies(); }, [fetchStrategies]);
 
   const resetForm = () => {
-    setName(''); setTriggerType('region_strong'); setTriggerRegion('');
-    setTriggerMinConf(6); setTriggerNeedsPonta(true); setTriggerNumber('');
-    setTriggerMinRepeats(2); setEntryNumbers(''); setAttempts(3);
+    setName(''); setConditions([]); setEntryNumbers(''); setAttempts(3);
     setEditingId(null); setShowForm(false);
+  };
+
+  const addCondition = () => {
+    setConditions([...conditions, { type: 'region_count', region: '', min_count: 6, number: '', min_repeats: 2, min_weight: 20 }]);
+  };
+
+  const updateCondition = (idx, field, value) => {
+    const updated = [...conditions];
+    updated[idx] = { ...updated[idx], [field]: value };
+    setConditions(updated);
+  };
+
+  const removeCondition = (idx) => {
+    setConditions(conditions.filter((_, i) => i !== idx));
   };
 
   const startEdit = (s) => {
     setName(s.name);
-    setTriggerType(s.condition_type || 'region_strong');
-    const p = s.condition_params || {};
-    setTriggerRegion(p.region || '');
-    setTriggerMinConf(p.min_confirmations || 6);
-    setTriggerNeedsPonta(p.needs_ponta !== false);
-    setTriggerNumber(p.number !== undefined ? String(p.number) : '');
-    setTriggerMinRepeats(p.min_repeats || 2);
-    const nums = s.action_params?.numbers || [];
-    setEntryNumbers(nums.join(', '));
+    setConditions(s.condition_params?.conditions || []);
+    setEntryNumbers((s.action_params?.numbers || []).join(', '));
     setAttempts(s.attempts || 3);
     setEditingId(s.id);
     setShowForm(true);
   };
 
   const handleSave = async () => {
-    if (!name.trim()) return;
+    if (!name.trim() || conditions.length === 0) return;
     const nums = entryNumbers.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n >= 0 && n <= 36);
-    if (nums.length === 0 && triggerType !== 'fb_pattern') return;
-
-    const condParams = {};
-    if (triggerType === 'region_strong') {
-      condParams.region = triggerRegion || '';
-      condParams.min_confirmations = triggerMinConf;
-      condParams.needs_ponta = triggerNeedsPonta;
-    } else if (triggerType === 'number_repeated') {
-      condParams.number = parseInt(triggerNumber) || 0;
-      condParams.min_repeats = triggerMinRepeats;
-    } else if (triggerType === 'specific_number') {
-      condParams.number = parseInt(triggerNumber) || 0;
-      condParams.needs_ponta = triggerNeedsPonta;
-    }
+    if (nums.length === 0) return;
 
     const body = {
       name: name.trim(),
       is_active: true,
-      condition_type: triggerType,
-      condition_params: condParams,
+      condition_type: 'multi',
+      condition_params: { conditions },
       action_type: 'custom_numbers',
       action_params: { numbers: nums },
       attempts,
@@ -104,9 +95,7 @@ const StrategiesPanel = ({ onBack }) => {
       }
       await fetchStrategies();
       resetForm();
-    } catch (e) {
-      console.error('Save failed:', e);
-    }
+    } catch (e) { console.error(e); }
   };
 
   const handleToggle = async (s) => {
@@ -117,31 +106,87 @@ const StrategiesPanel = ({ onBack }) => {
   };
 
   const handleDelete = async (id) => {
-    try {
-      await strategiesApi.remove(id);
-      await fetchStrategies();
-    } catch (e) { console.error(e); }
+    try { await strategiesApi.remove(id); await fetchStrategies(); }
+    catch (e) { console.error(e); }
   };
 
-  const getTriggerDesc = (s) => {
-    const p = s.condition_params || {};
-    switch (s.condition_type) {
-      case 'region_strong':
-        return `Região ${p.region || 'mais forte'} com ${p.min_confirmations || 6}+ confirmações${p.needs_ponta ? ' + número na ponta' : ''}`;
-      case 'number_repeated':
-        return `Número ${p.number ?? '?'} repetiu ${p.min_repeats || 2}x`;
-      case 'fb_pattern':
-        return 'Estratégia FB formou padrão';
-      case 'specific_number':
-        return `Número ${p.number ?? '?'} saiu${p.needs_ponta ? ' na ponta' : ''}`;
-      default: return s.condition_type;
+  const getConditionDesc = (c) => {
+    switch (c.type) {
+      case 'region_count': return `Região ${c.region || '?'} com ${c.min_count || 6}+ confirmações`;
+      case 'region_ponta': return `Número da região ${c.region || '?'} na ponta`;
+      case 'number_repeated': return `Número ${c.number ?? '?'} repetiu ${c.min_repeats || 2}x`;
+      case 'specific_number_ponta': return `Número ${c.number ?? '?'} na ponta`;
+      case 'fb_pattern': return 'Estratégia FB formou padrão';
+      case 'terminal_weight': return `Terminal com peso ${c.min_weight || 20}+`;
+      default: return c.type;
     }
   };
 
-  const NumberBall = ({ n, size = 28 }) => (
-    <div className="inline-flex items-center justify-center rounded-full text-white font-bold"
-      style={{ background: getBgColor(n), minWidth: size, height: size, fontSize: size * 0.4, border: '2px solid #D4AF37', boxShadow: '0 0 6px rgba(212,175,55,0.4)' }}>
-      {n}
+  const ConditionBlock = ({ cond, idx }) => (
+    <div className="p-3 bg-[rgba(0,0,0,0.5)] border border-[#555] rounded-lg mb-2">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[#D4AF37] text-xs font-bold">CONDIÇÃO {idx + 1}</span>
+        <button onClick={() => removeCondition(idx)} className="text-red-500 hover:text-red-300">
+          <MinusCircle className="w-4 h-4" />
+        </button>
+      </div>
+
+      <select value={cond.type} onChange={(e) => updateCondition(idx, 'type', e.target.value)}
+        className="w-full p-2 bg-black border border-[#D4AF37] rounded-lg text-white text-sm mb-2">
+        {CONDITION_BLOCKS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+      </select>
+
+      {(cond.type === 'region_count' || cond.type === 'region_ponta') && (
+        <div className="space-y-2">
+          <div>
+            <label className="text-[10px] text-gray-400">Qual região? (digite: ex 8/3)</label>
+            <input type="text" value={cond.region || ''} onChange={(e) => updateCondition(idx, 'region', e.target.value)}
+              placeholder="Ex: 8/3, 7/2, 6/5..." className="w-full p-2 bg-black border border-[#666] rounded-lg text-white text-sm" />
+          </div>
+          {cond.type === 'region_count' && (
+            <div>
+              <label className="text-[10px] text-gray-400">Mínimo de confirmações</label>
+              <input type="number" value={cond.min_count || 6} onChange={(e) => updateCondition(idx, 'min_count', parseInt(e.target.value) || 6)}
+                className="w-full p-2 bg-black border border-[#666] rounded-lg text-white text-sm" />
+            </div>
+          )}
+        </div>
+      )}
+
+      {cond.type === 'number_repeated' && (
+        <div className="space-y-2">
+          <div>
+            <label className="text-[10px] text-gray-400">Qual número? (0-36)</label>
+            <input type="number" min="0" max="36" value={cond.number ?? ''} onChange={(e) => updateCondition(idx, 'number', e.target.value)}
+              placeholder="Ex: 4" className="w-full p-2 bg-black border border-[#666] rounded-lg text-white text-sm" />
+          </div>
+          <div>
+            <label className="text-[10px] text-gray-400">Quantas vezes repetiu?</label>
+            <input type="number" min="2" max="14" value={cond.min_repeats || 2} onChange={(e) => updateCondition(idx, 'min_repeats', parseInt(e.target.value) || 2)}
+              className="w-full p-2 bg-black border border-[#666] rounded-lg text-white text-sm" />
+          </div>
+        </div>
+      )}
+
+      {cond.type === 'specific_number_ponta' && (
+        <div>
+          <label className="text-[10px] text-gray-400">Qual número na ponta? (0-36)</label>
+          <input type="number" min="0" max="36" value={cond.number ?? ''} onChange={(e) => updateCondition(idx, 'number', e.target.value)}
+            placeholder="Ex: 14" className="w-full p-2 bg-black border border-[#666] rounded-lg text-white text-sm" />
+        </div>
+      )}
+
+      {cond.type === 'fb_pattern' && (
+        <div className="text-xs text-gray-400 py-1">Ativa quando a Estratégia FB detectar um padrão</div>
+      )}
+
+      {cond.type === 'terminal_weight' && (
+        <div>
+          <label className="text-[10px] text-gray-400">Peso mínimo do terminal</label>
+          <input type="number" value={cond.min_weight || 20} onChange={(e) => updateCondition(idx, 'min_weight', parseInt(e.target.value) || 20)}
+            className="w-full p-2 bg-black border border-[#666] rounded-lg text-white text-sm" />
+        </div>
+      )}
     </div>
   );
 
@@ -152,7 +197,7 @@ const StrategiesPanel = ({ onBack }) => {
           <ChevronLeft className="w-6 h-6" />
         </button>
         <h1 className="text-[#D4AF37] font-bold text-xl">PAINEL DE ESTRATÉGIAS</h1>
-        <button onClick={() => { resetForm(); setShowForm(true); }}
+        <button onClick={() => { resetForm(); setShowForm(true); addCondition(); }}
           className="ml-auto flex items-center gap-1 px-4 py-2 bg-black border-2 border-[#D4AF37] rounded-lg text-[#D4AF37] font-bold text-sm hover:bg-[rgba(212,175,55,0.1)]"
           data-testid="strategies-add">
           <Plus className="w-4 h-4" /> Nova Estratégia
@@ -168,83 +213,34 @@ const StrategiesPanel = ({ onBack }) => {
 
           {/* Name */}
           <div className="mb-4">
-            <label className="text-sm text-[#D4AF37] font-bold block mb-1">NOME DA ESTRATÉGIA</label>
+            <label className="text-sm text-[#D4AF37] font-bold block mb-1">NOME</label>
             <input type="text" value={name} onChange={(e) => setName(e.target.value)}
-              placeholder="Ex: Repetição do 4, Região 8/3 na Ponta..."
+              placeholder="Ex: Região 8/3 na Ponta com Repetição"
               className="w-full p-3 bg-black border-2 border-[#D4AF37] rounded-lg text-white" data-testid="strategy-name" />
           </div>
 
-          {/* Trigger */}
-          <div className="mb-4 p-4 bg-[rgba(212,175,55,0.05)] border border-[#333] rounded-lg">
-            <label className="text-sm text-[#D4AF37] font-bold block mb-2">QUANDO ATIVAR (GATILHO)</label>
-            <select value={triggerType} onChange={(e) => setTriggerType(e.target.value)}
-              className="w-full p-3 bg-black border-2 border-[#D4AF37] rounded-lg text-white mb-3" data-testid="strategy-trigger-type">
-              {TRIGGER_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-            </select>
-
-            {triggerType === 'region_strong' && (
-              <div className="space-y-3">
-                <div>
-                  <label className="text-xs text-gray-400 block mb-1">Qual região?</label>
-                  <select value={triggerRegion} onChange={(e) => setTriggerRegion(e.target.value)}
-                    className="w-full p-2 bg-black border border-[#D4AF37] rounded-lg text-white text-sm">
-                    <option value="">Qualquer (a mais forte)</option>
-                    {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs text-gray-400 block mb-1">Mínimo de confirmações</label>
-                  <input type="number" value={triggerMinConf} onChange={(e) => setTriggerMinConf(parseInt(e.target.value)||6)}
-                    className="w-full p-2 bg-black border border-[#D4AF37] rounded-lg text-white text-sm" />
-                </div>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={triggerNeedsPonta} onChange={(e) => setTriggerNeedsPonta(e.target.checked)}
-                    className="w-4 h-4 accent-[#D4AF37]" />
-                  <span className="text-sm text-white">Número da região precisa estar na ponta (último digitado)</span>
-                </label>
-              </div>
-            )}
-
-            {triggerType === 'number_repeated' && (
-              <div className="space-y-3">
-                <div>
-                  <label className="text-xs text-gray-400 block mb-1">Qual número? (0-36)</label>
-                  <input type="number" min="0" max="36" value={triggerNumber} onChange={(e) => setTriggerNumber(e.target.value)}
-                    placeholder="Ex: 4" className="w-full p-2 bg-black border border-[#D4AF37] rounded-lg text-white text-sm" />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-400 block mb-1">Quantas vezes precisa repetir?</label>
-                  <input type="number" min="2" max="10" value={triggerMinRepeats} onChange={(e) => setTriggerMinRepeats(parseInt(e.target.value)||2)}
-                    className="w-full p-2 bg-black border border-[#D4AF37] rounded-lg text-white text-sm" />
-                </div>
-              </div>
-            )}
-
-            {triggerType === 'fb_pattern' && (
-              <div className="text-sm text-gray-400 py-2">Ativa automaticamente quando a Estratégia FB detectar um padrão nos números digitados.</div>
-            )}
-
-            {triggerType === 'specific_number' && (
-              <div className="space-y-3">
-                <div>
-                  <label className="text-xs text-gray-400 block mb-1">Qual número? (0-36)</label>
-                  <input type="number" min="0" max="36" value={triggerNumber} onChange={(e) => setTriggerNumber(e.target.value)}
-                    placeholder="Ex: 14" className="w-full p-2 bg-black border border-[#D4AF37] rounded-lg text-white text-sm" />
-                </div>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={triggerNeedsPonta} onChange={(e) => setTriggerNeedsPonta(e.target.checked)}
-                    className="w-4 h-4 accent-[#D4AF37]" />
-                  <span className="text-sm text-white">Precisa estar na ponta (último digitado)</span>
-                </label>
+          {/* Conditions */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm text-[#D4AF37] font-bold">CONDIÇÕES (QUANDO ATIVAR)</label>
+              <button onClick={addCondition} className="flex items-center gap-1 text-xs text-[#D4AF37] hover:text-white">
+                <PlusCircle className="w-4 h-4" /> Adicionar
+              </button>
+            </div>
+            <div className="text-[10px] text-gray-500 mb-2">Todas as condições precisam ser verdadeiras para o sinal ativar</div>
+            {conditions.map((c, i) => <ConditionBlock key={i} cond={c} idx={i} />)}
+            {conditions.length === 0 && (
+              <div className="text-center text-gray-600 text-sm py-3 border border-dashed border-[#333] rounded-lg">
+                Clique em "Adicionar" para criar condições
               </div>
             )}
           </div>
 
           {/* Entry Numbers */}
-          <div className="mb-4 p-4 bg-[rgba(212,175,55,0.05)] border border-[#333] rounded-lg">
-            <label className="text-sm text-[#D4AF37] font-bold block mb-2">NÚMEROS PARA ENTRAR</label>
+          <div className="mb-4">
+            <label className="text-sm text-[#D4AF37] font-bold block mb-1">NÚMEROS PARA ENTRAR</label>
             <input type="text" value={entryNumbers} onChange={(e) => setEntryNumbers(e.target.value)}
-              placeholder="Digite os números separados por vírgula: 4, 21, 3, 1"
+              placeholder="Digite separado por vírgula: 8, 26, 35, 0, 3, 12, 30, 28"
               className="w-full p-3 bg-black border-2 border-[#D4AF37] rounded-lg text-white" data-testid="strategy-numbers" />
             {entryNumbers && (
               <div className="flex flex-wrap gap-1 mt-2">
@@ -258,7 +254,7 @@ const StrategiesPanel = ({ onBack }) => {
           {/* Attempts */}
           <div className="mb-4">
             <label className="text-sm text-[#D4AF37] font-bold block mb-1">TENTATIVAS</label>
-            <input type="number" value={attempts} onChange={(e) => setAttempts(parseInt(e.target.value)||3)} min="1" max="10"
+            <input type="number" value={attempts} onChange={(e) => setAttempts(parseInt(e.target.value) || 3)} min="1" max="10"
               className="w-24 p-3 bg-black border-2 border-[#D4AF37] rounded-lg text-white text-center" data-testid="strategy-attempts" />
           </div>
 
@@ -280,30 +276,38 @@ const StrategiesPanel = ({ onBack }) => {
         </div>
       ) : (
         <div className="space-y-3">
-          {strategies.map(s => (
-            <div key={s.id} className={`card-glass border-2 p-4 ${s.is_active ? 'border-[#D4AF37]' : 'border-[#333] opacity-50'}`}>
-              <div className="flex items-start gap-3">
-                <button onClick={() => handleToggle(s)} className="shrink-0 mt-1">
-                  {s.is_active ? <ToggleRight className="w-7 h-7 text-[#D4AF37]" /> : <ToggleLeft className="w-7 h-7 text-gray-600" />}
-                </button>
-                <div className="flex-1 min-w-0">
-                  <div className="text-white font-bold">{s.name}</div>
-                  <div className="text-xs text-gray-400 mt-1">
-                    <span className="text-[#D4AF37]">Gatilho:</span> {getTriggerDesc(s)}
+          {strategies.map(s => {
+            const conds = s.condition_params?.conditions || [];
+            return (
+              <div key={s.id} className={`card-glass border-2 p-4 ${s.is_active ? 'border-[#D4AF37]' : 'border-[#333] opacity-50'}`}>
+                <div className="flex items-start gap-3">
+                  <button onClick={() => handleToggle(s)} className="shrink-0 mt-1">
+                    {s.is_active ? <ToggleRight className="w-7 h-7 text-[#D4AF37]" /> : <ToggleLeft className="w-7 h-7 text-gray-600" />}
+                  </button>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-white font-bold">{s.name}</div>
+                    <div className="text-xs text-gray-400 mt-1">
+                      {conds.map((c, i) => (
+                        <span key={i}>
+                          {i > 0 && <span className="text-[#D4AF37]"> + </span>}
+                          {getConditionDesc(c)}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      <span className="text-xs text-[#D4AF37] mr-1 self-center">Entrada:</span>
+                      {(s.action_params?.numbers || []).map((n, i) => <NumberBall key={i} n={n} size={26} />)}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">{s.attempts} tentativas</div>
                   </div>
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    <span className="text-xs text-[#D4AF37] mr-1 self-center">Entrada:</span>
-                    {(s.action_params?.numbers || []).map((n, i) => <NumberBall key={i} n={n} size={26} />)}
+                  <div className="flex gap-1 shrink-0">
+                    <button onClick={() => startEdit(s)} className="p-2 text-gray-400 hover:text-[#D4AF37]"><Edit2 className="w-4 h-4" /></button>
+                    <button onClick={() => handleDelete(s.id)} className="p-2 text-gray-400 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
                   </div>
-                  <div className="text-xs text-gray-500 mt-1">{s.attempts} tentativas</div>
-                </div>
-                <div className="flex gap-1 shrink-0">
-                  <button onClick={() => startEdit(s)} className="p-2 text-gray-400 hover:text-[#D4AF37]"><Edit2 className="w-4 h-4" /></button>
-                  <button onClick={() => handleDelete(s.id)} className="p-2 text-gray-400 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

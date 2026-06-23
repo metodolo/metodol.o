@@ -34,8 +34,51 @@ const detectFBPattern = (a, b, c) => {
   return null;
 };
 
-// Evaluate a single strategy trigger against current giros
+// Evaluate a single condition block
+const evaluateCondition = (cond, giros, newNum) => {
+  switch (cond.type) {
+    case 'region_count': {
+      if (!cond.region) return false;
+      const freqs = calculateRegionFrequencies(giros);
+      return (freqs[cond.region] || 0) >= (cond.min_count || 6);
+    }
+    case 'region_ponta': {
+      if (!cond.region) return false;
+      const regionNums = REGIOES_MAPEADAS[cond.region] || [];
+      return regionNums.includes(newNum);
+    }
+    case 'number_repeated': {
+      const target = parseInt(cond.number);
+      if (isNaN(target)) return false;
+      return giros.filter(n => n === target).length >= (cond.min_repeats || 2);
+    }
+    case 'specific_number_ponta': {
+      const target = parseInt(cond.number);
+      if (isNaN(target)) return false;
+      return newNum === target;
+    }
+    case 'fb_pattern': {
+      if (giros.length < 3) return false;
+      const [a, b, c] = giros.slice(-3);
+      return detectFBPattern(a, b, c) !== null;
+    }
+    case 'terminal_weight': {
+      // Simple terminal weight check
+      return false; // TODO: implement if needed
+    }
+    default:
+      return false;
+  }
+};
+
+// Evaluate all conditions of a strategy (ALL must be true)
 const evaluateTrigger = (strategy, giros, newNum) => {
+  if (strategy.condition_type === 'multi') {
+    const conditions = strategy.condition_params?.conditions || [];
+    if (conditions.length === 0) return false;
+    return conditions.every(c => evaluateCondition(c, giros, newNum));
+  }
+  // Legacy single condition support
   const { condition_type, condition_params: p } = strategy;
 
   if (condition_type === 'region_strong') {
@@ -45,43 +88,27 @@ const evaluateTrigger = (strategy, giros, newNum) => {
     if (targetRegion) {
       const count = freqs[targetRegion] || 0;
       if (count < (p.min_confirmations || 6)) return false;
-      if (p.needs_ponta) {
-        return (REGIOES_MAPEADAS[targetRegion] || []).includes(newNum);
-      }
+      if (p.needs_ponta) return (REGIOES_MAPEADAS[targetRegion] || []).includes(newNum);
       return true;
     }
-    // Any strongest region
-    const maxCount = Math.max(...Object.values(freqs));
-    if (maxCount < (p.min_confirmations || 6)) return false;
-    if (p.needs_ponta) {
-      for (const [rName, cnt] of Object.entries(freqs)) {
-        if (cnt === maxCount && (REGIOES_MAPEADAS[rName] || []).includes(newNum)) return true;
-      }
-      return false;
-    }
-    return true;
+    return false;
   }
-
   if (condition_type === 'number_repeated') {
     const target = p.number;
     if (target === undefined) return false;
-    const count = giros.filter(n => n === target).length;
-    return count >= (p.min_repeats || 2);
+    return giros.filter(n => n === parseInt(target)).length >= (p.min_repeats || 2);
   }
-
   if (condition_type === 'fb_pattern') {
     if (giros.length < 3) return false;
     const [a, b, c] = giros.slice(-3);
     return detectFBPattern(a, b, c) !== null;
   }
-
   if (condition_type === 'specific_number') {
     const target = p.number;
     if (target === undefined) return false;
-    if (p.needs_ponta) return newNum === target;
-    return giros.includes(target);
+    if (p.needs_ponta) return newNum === parseInt(target);
+    return giros.includes(parseInt(target));
   }
-
   return false;
 };
 
