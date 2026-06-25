@@ -7,16 +7,14 @@ import { useAuth } from "../context/AuthContext";
 import RadarTab from "../components/RadarTab";
 import GestaoTab from "../components/GestaoTab";
 import SinaisTab from "../components/SinaisTab";
-import StrategiesPanel from "../components/StrategiesPanel";
 import ChangePasswordModal from "../components/ChangePasswordModal";
-import { LogOut, Settings, User, Clock, Shield, Smartphone, Monitor } from "lucide-react";
+import { LogOut, User, Clock, Shield, Smartphone, Monitor } from "lucide-react";
 
 const Dashboard = () => {
   const { user, subscription, usage, logout, isAdmin, error, setError, mustChangePassword } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("radar");
   const [viewMode, setViewMode] = useState(() => localStorage.getItem("viewMode") || "vertical");
-  const [showStrategies, setShowStrategies] = useState(false);
 
   useEffect(() => {
     localStorage.setItem("viewMode", viewMode);
@@ -106,18 +104,6 @@ const Dashboard = () => {
               </button>
             )}
 
-            {/* Strategies panel button (admin only) */}
-            {isAdmin && (
-              <button
-                onClick={() => setShowStrategies(true)}
-                className="p-1 text-[#D4AF37] hover:text-white transition-colors"
-                data-testid="strategies-btn"
-                title="Painel de Estratégias"
-              >
-                <Settings className="w-5 h-5" />
-              </button>
-            )}
-
             {/* Logout */}
             <button
               onClick={handleLogout}
@@ -130,11 +116,7 @@ const Dashboard = () => {
         </div>
 
         {/* Strategies Panel (admin overlay) */}
-        {showStrategies && (
-          <StrategiesPanel onBack={() => setShowStrategies(false)} />
-        )}
-
-        <div style={{ display: showStrategies ? 'none' : undefined }}>
+        <div>
         <div className={`flex gap-2 sticky top-0 z-50 bg-black ${viewMode === "horizontal" ? "py-1 mb-1" : "py-2 mb-3"}`}>
           <button
             className={`tab-btn ${activeTab === "radar" ? "active" : ""}`}
