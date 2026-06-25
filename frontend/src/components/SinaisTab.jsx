@@ -250,10 +250,10 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
     return (
       <div className={`card-glass border-2 border-[#D4AF37] ${compact ? "!p-2" : ""}`} data-testid="ref-analysis">
         <span className="label-accent" style={{ color: '#fff', borderColor: '#D4AF37', fontSize: compact ? '0.7rem' : '0.9rem' }}>
-          ANÁLISE DE REFERÊNCIAS ({colorLabel})
+          ANÁLISE IGUALITÁRIOS
         </span>
         <div className="text-[10px] text-gray-500 mb-2">
-          Mesa com mais {moreBlack ? 'preto' : 'vermelho'} → contagem das referências dos {colorLabel.toLowerCase()}
+          Mesa com mais {moreBlack ? 'preto' : 'vermelho'} → contagem dos {colorLabel.toLowerCase()} nas referências
         </div>
         {topRefs.length > 0 ? (
           <div className="flex gap-3 justify-center">
