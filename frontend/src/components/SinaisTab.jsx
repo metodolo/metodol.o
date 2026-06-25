@@ -165,7 +165,7 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
         <span className={`font-black neon-red ${compact ? "text-2xl" : "text-4xl"}`}>{red}</span>
       </div>
       <div className="flex-[2] text-center">
-        <span className={compact ? "text-[#D4AF37] font-bold text-lg" : "text-[#D4AF37] font-bold text-2xl"}>MÉTODO L.O.</span>
+        <span className={compact ? "logo-metodo text-xl" : "logo-metodo"} style={compact ? { fontSize: "1.2rem" } : {}}>Método L.O</span>
       </div>
       <div className="flex-1 text-center">
         <small className="text-gray-400 text-xs">PRETO</small><br />
