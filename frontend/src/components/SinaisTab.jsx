@@ -1,8 +1,9 @@
 /**
- * Sinais Tab - Independent roulette tracker (password protected)
- * Separate keyboard + history, same as RadarTab but independent state
+ * Sinais Tab (Em Construção) - Independent tracker synced with RadarTab
+ * Password protected. Shares giros with RadarTab via localStorage.
+ * Shows reference number analysis by opposite color.
  */
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   VERMELHOS,
   countColors,
@@ -12,7 +13,7 @@ import {
 } from "../engine/radarEngine";
 
 const SENHA = "13052017";
-const STORAGE_KEY_SINAIS = "sinais_giros";
+const STORAGE_KEY = "radar_giros";
 
 const NUMBER_INFO = {
   0: { refs: '5/1/4/8' }, 1: { refs: '2/6' }, 2: { refs: '1/3/7' }, 3: { refs: '2/4/8' },
@@ -31,7 +32,9 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
   const [authenticated, setAuthenticated] = useState(() => sessionStorage.getItem('sinais_auth') === 'true');
   const [senhaInput, setSenhaInput] = useState("");
   const [senhaError, setSenhaError] = useState(false);
-  const [giros, setGiros] = useState([]);
+  const [giros, setGiros] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { return []; }
+  });
   const [limiteGiros, setLimiteGiros] = useState(14);
   const painelRef = useRef(null);
   const isHorizontal = viewMode === "horizontal";
@@ -46,19 +49,39 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
     }
   };
 
+  // Sync: write giros to localStorage when changed locally
+  const writeGiros = useCallback((newGiros) => {
+    setGiros(newGiros);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(newGiros));
+  }, []);
+
+  // Sync: poll localStorage for changes from RadarTab
+  useEffect(() => {
+    const interval = setInterval(() => {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        const parsed = saved ? JSON.parse(saved) : [];
+        setGiros(prev => {
+          if (JSON.stringify(prev) === JSON.stringify(parsed)) return prev;
+          return parsed;
+        });
+      } catch { /* ignore */ }
+    }, 300);
+    return () => clearInterval(interval);
+  }, []);
+
   const addNumber = (n) => {
-    setGiros((prev) => {
-      const newGiros = [...prev, n];
-      return newGiros.length > limiteGiros ? newGiros.slice(-limiteGiros) : newGiros;
-    });
+    const newGiros = [...giros, n];
+    const trimmed = newGiros.length > limiteGiros ? newGiros.slice(-limiteGiros) : newGiros;
+    writeGiros(trimmed);
   };
 
-  const undo = () => setGiros((prev) => prev.slice(0, -1));
-  const limpar = () => setGiros([]);
+  const undo = () => writeGiros(giros.slice(0, -1));
+  const limpar = () => writeGiros([]);
 
   const setLimite = (valor) => {
     setLimiteGiros(valor);
-    setGiros((prev) => prev.length > valor ? prev.slice(-valor) : prev);
+    if (giros.length > valor) writeGiros(giros.slice(-valor));
   };
 
   const { red, black } = countColors(giros);
@@ -77,6 +100,35 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
       if (repeated.has(n) && !markedNums.has(n)) { blinkSet.add(idx); markedNums.add(n); }
     });
     return blinkSet;
+  };
+
+  // Calculate top 2 reference numbers from the OPPOSITE color
+  const getTopRefs = () => {
+    if (giros.length === 0) return [];
+    const moreBlack = black >= red;
+    // Filter numbers by the OPPOSITE (minority) color
+    const targetNums = giros.filter(n => {
+      if (n === 0) return false;
+      const isRed = VERMELHOS.includes(n);
+      return moreBlack ? isRed : !isRed; // if more black → count reds' refs
+    });
+
+    if (targetNums.length === 0) return [];
+
+    // Count all refs from those numbers
+    const refCounts = {};
+    for (const n of targetNums) {
+      const info = NUMBER_INFO[n];
+      if (!info || !info.refs) continue;
+      const refs = info.refs.split('/').map(r => parseInt(r)).filter(r => !isNaN(r));
+      for (const r of refs) {
+        refCounts[r] = (refCounts[r] || 0) + 1;
+      }
+    }
+
+    // Sort by count descending and take top 2
+    const sorted = Object.entries(refCounts).sort((a, b) => b[1] - a[1]);
+    return sorted.slice(0, 2).map(([num, count]) => ({ num: parseInt(num), count }));
   };
 
   // Password screen
@@ -103,6 +155,9 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
     );
   }
 
+  const topRefs = getTopRefs();
+  const moreBlack = black >= red;
+
   // Components
   const CounterHeader = ({ compact }) => (
     <div className={`flex justify-between items-center bg-[rgba(17,17,17,0.8)] rounded-xl border-2 border-[#D4AF37] gap-2 ${compact ? "p-2" : "p-4"}`}>
@@ -111,7 +166,7 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
         <span className={`font-black neon-red ${compact ? "text-2xl" : "text-4xl"}`}>{red}</span>
       </div>
       <div className="flex-[2] text-center">
-        <span className={compact ? "text-[#D4AF37] font-bold text-lg" : "text-[#D4AF37] font-bold text-2xl"}>SINAIS</span>
+        <span className={compact ? "text-[#D4AF37] font-bold text-lg" : "text-[#D4AF37] font-bold text-2xl"}>MÉTODO L.O.</span>
       </div>
       <div className="flex-1 text-center">
         <small className="text-gray-400 text-xs">PRETO</small><br />
@@ -190,6 +245,47 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
     );
   };
 
+  const RefAnalysisCard = ({ compact }) => {
+    if (giros.length === 0) return null;
+    const colorLabel = moreBlack ? 'VERMELHOS' : 'PRETOS';
+    return (
+      <div className={`card-glass border-2 border-[#D4AF37] ${compact ? "!p-2" : ""}`} data-testid="ref-analysis">
+        <span className="label-accent" style={{ color: '#fff', borderColor: '#D4AF37', fontSize: compact ? '0.7rem' : '0.9rem' }}>
+          ANÁLISE DE REFERÊNCIAS ({colorLabel})
+        </span>
+        <div className="text-[10px] text-gray-500 mb-2">
+          Mesa com mais {moreBlack ? 'preto' : 'vermelho'} → contagem das referências dos {colorLabel.toLowerCase()}
+        </div>
+        {topRefs.length > 0 ? (
+          <div className="flex gap-3 justify-center">
+            {topRefs.map((r, i) => (
+              <div key={i} className="flex flex-col items-center bg-[rgba(0,0,0,0.5)] border-2 border-[#D4AF37] rounded-xl p-3"
+                style={{ minWidth: compact ? 70 : 90 }}>
+                <div className="inline-flex items-center justify-center rounded-full text-white font-bold"
+                  style={{
+                    background: getBgColor(r.num),
+                    minWidth: compact ? 36 : 46, height: compact ? 36 : 46,
+                    fontSize: compact ? '1rem' : '1.2rem',
+                    border: '3px solid #D4AF37',
+                    boxShadow: '0 0 12px rgba(212,175,55,0.6)',
+                  }}>
+                  {r.num}
+                </div>
+                <span className="text-[#D4AF37] font-bold mt-1" style={{ fontSize: compact ? '0.8rem' : '1rem' }}>
+                  {r.count}x
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center text-gray-600 text-sm py-2">
+            Sem dados suficientes
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // Horizontal layout
   if (isHorizontal) {
     return (
@@ -201,6 +297,7 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
         </div>
         <div className="flex flex-col gap-1 min-h-0 overflow-y-auto" style={{ flex: 1, scrollbarWidth: 'thin', scrollbarColor: '#D4AF37 #111' }}>
           <HistoryCard compact />
+          <RefAnalysisCard compact />
         </div>
       </div>
     );
@@ -213,6 +310,7 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
       <Keyboard compact={false} />
       <ActionButtons compact={false} />
       <HistoryCard compact={false} />
+      <RefAnalysisCard compact={false} />
     </div>
   );
 };
