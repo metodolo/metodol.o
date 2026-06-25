@@ -102,27 +102,26 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
     return blinkSet;
   };
 
-  // Calculate top 2 reference numbers from the OPPOSITE color
+  // Calculate top 2 reference numbers filtered by MINORITY color
   const getTopRefs = () => {
     if (giros.length === 0) return [];
     const moreBlack = black >= red;
-    // Filter numbers by the OPPOSITE (minority) color
-    const targetNums = giros.filter(n => {
-      if (n === 0) return false;
-      const isRed = VERMELHOS.includes(n);
-      return moreBlack ? isRed : !isRed; // if more black → count reds' refs
-    });
+    // minority color: if more black → minority is red; if more red → minority is black
 
-    if (targetNums.length === 0) return [];
-
-    // Count all refs from those numbers
+    // Get refs from ALL numbers in history, but only count refs that are the MINORITY color
     const refCounts = {};
-    for (const n of targetNums) {
+    for (const n of giros) {
       const info = NUMBER_INFO[n];
       if (!info || !info.refs) continue;
       const refs = info.refs.split('/').map(r => parseInt(r)).filter(r => !isNaN(r));
       for (const r of refs) {
-        refCounts[r] = (refCounts[r] || 0) + 1;
+        // Only count this ref if it's the minority color
+        if (r === 0) continue; // skip zero
+        const refIsRed = VERMELHOS.includes(r);
+        const isMinority = moreBlack ? refIsRed : !refIsRed;
+        if (isMinority) {
+          refCounts[r] = (refCounts[r] || 0) + 1;
+        }
       }
     }
 
