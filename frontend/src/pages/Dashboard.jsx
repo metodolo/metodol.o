@@ -115,8 +115,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Strategies Panel (admin overlay) */}
-        <div>
+        {/* Tabs + View Mode Toggle */}
         <div className={`flex gap-2 sticky top-0 z-50 bg-black ${viewMode === "horizontal" ? "py-1 mb-1" : "py-2 mb-3"}`}>
           <button
             className={`tab-btn ${activeTab === "radar" ? "active" : ""}`}
@@ -167,7 +166,6 @@ const Dashboard = () => {
           <div style={{ display: activeTab === "sinais" ? "block" : "none" }} className={viewMode === "horizontal" ? "h-full" : ""}>
             <SinaisTab viewMode={viewMode} />
           </div>
-        </div>
         </div>
       </div>
     </div>

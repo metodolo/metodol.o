@@ -186,6 +186,21 @@ const RadarTab = ({ viewMode = "vertical" }) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(giros));
   }, [giros]);
 
+  // Sync: poll localStorage for changes from SinaisTab
+  useEffect(() => {
+    const interval = setInterval(() => {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        const parsed = saved ? JSON.parse(saved) : [];
+        setGiros(prev => {
+          if (JSON.stringify(prev) === JSON.stringify(parsed)) return prev;
+          return parsed;
+        });
+      } catch { /* ignore */ }
+    }, 300);
+    return () => clearInterval(interval);
+  }, []);
+
   // FB Strategy: detect and track patterns (fires on every new number added)
   useEffect(() => {
     if (addCount === 0) return;
