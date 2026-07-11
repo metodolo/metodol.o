@@ -116,8 +116,15 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
   const [signal, _setSignal] = useState(null);
   const signalRef = useRef(null);
   const updateSignal = useCallback((val) => { signalRef.current = val; _setSignal(val); }, []);
-  const [scoreboard, setScoreboard] = useState({ wins: 0, reds: 0 });
+  const [scoreboard, setScoreboard] = useState(() => {
+    try { const s = sessionStorage.getItem('gatilho_score'); return s ? JSON.parse(s) : { wins: 0, reds: 0 }; } catch { return { wins: 0, reds: 0 }; }
+  });
   const prevGirosKeyRef = useRef(giros.join(','));
+
+  // Persist scoreboard
+  useEffect(() => {
+    sessionStorage.setItem('gatilho_score', JSON.stringify(scoreboard));
+  }, [scoreboard]);
 
   const tryCreateSignal = useCallback((currentGiros) => {
     const trigger = detectTrigger(currentGiros);
@@ -150,7 +157,13 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
     const sig = signalRef.current;
     if (sig) {
       if (sig.numbers.includes(lastNum)) {
+        // Correct category AND correct color → WIN
         setScoreboard(p => ({ wins: p.wins + 1, reds: p.reds }));
+        updateSignal(null);
+        tryCreateSignal(giros);
+      } else if (lastNum !== 0 && getCategory(lastNum) === sig.target) {
+        // Correct category but WRONG color → immediate LOSS
+        setScoreboard(p => ({ wins: p.wins, reds: p.reds + 1 }));
         updateSignal(null);
         tryCreateSignal(giros);
       } else {

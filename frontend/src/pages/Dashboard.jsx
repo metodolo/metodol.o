@@ -13,8 +13,12 @@ import { LogOut, User, Clock, Shield, Smartphone, Monitor } from "lucide-react";
 const Dashboard = () => {
   const { user, subscription, usage, logout, isAdmin, error, setError, mustChangePassword } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("radar");
+  const [activeTab, setActiveTab] = useState(() => localStorage.getItem("activeTab") || "radar");
   const [viewMode, setViewMode] = useState(() => localStorage.getItem("viewMode") || "vertical");
+
+  useEffect(() => {
+    localStorage.setItem("activeTab", activeTab);
+  }, [activeTab]);
 
   useEffect(() => {
     localStorage.setItem("viewMode", viewMode);

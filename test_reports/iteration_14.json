@@ -1,0 +1,54 @@
+{
+  "summary": "Frontend-only validation of the 3 requested fixes in SinaisTab.jsx + Dashboard.jsx: (1) color-mismatch = immediate LOSS, (2) activeTab persistence in localStorage across reloads, (3) scoreboard persistence in sessionStorage. All 5 test scenarios PASSED end-to-end via the live preview URL.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "tests_executed": [
+    {
+      "name": "TEST 1 - COLOR MISMATCH = IMMEDIATE LOSS",
+      "result": "PASS",
+      "observations": "LIMPAR → 3,20,17 → signal fires target=BAIXO, numbers=[2,4,6,8,10,11] (dominant=black), '3 tentativas restantes'. Clicked 5 (BAIXO red = correct category, wrong color). Signal immediately cleared to 'Aguardando sequência...' AND LOSS counter went 0→1 in the same tick. sessionStorage confirmed {\"wins\":0,\"reds\":1}. Critically, the signal did NOT show '2 tentativas restantes' — the miss was resolved as an IMMEDIATE LOSS as required."
+    },
+    {
+      "name": "TEST 2 - WRONG CATEGORY = NORMAL MISS",
+      "result": "PASS",
+      "observations": "LIMPAR → 3,20,17 → signal fires target=BAIXO. Clicked 25 (ALTO = completely different category). Signal remained ACTIVE with '2 tentativas restantes'. LOSS counter unchanged (still 1). Confirms wrong-category clicks decrement attempts (normal miss) rather than counting as immediate LOSS."
+    },
+    {
+      "name": "TEST 3 - WIN still works",
+      "result": "PASS",
+      "observations": "With signal still active from Test 2 (BAIXO [2,4,6,8,10,11], 2 tentativas), clicked 2 (BAIXO black = correct cat + correct color). WIN counter incremented 0→1. sessionStorage confirmed {\"wins\":1,\"reds\":1}."
+    },
+    {
+      "name": "TEST 4 - activeTab persistence (Dashboard.jsx)",
+      "result": "PASS",
+      "observations": "Before reload: localStorage.activeTab='sinais'. Called page.reload(). After reload: localStorage.activeTab='sinais', [data-testid=sinais-tab] still in DOM, tab-sinais button has 'active' class, tab-radar does NOT have 'active' class. User stays on Em Construção tab after reload, no longer defaults to Radar. Sinais password prompt did NOT re-appear because sessionStorage 'sinais_auth' still valid within the same browser session."
+    },
+    {
+      "name": "TEST 5 - Scoreboard persistence (sessionStorage)",
+      "result": "PASS",
+      "observations": "Before reload: WIN:1 LOSS:1, sessionStorage.gatilho_score={\"wins\":1,\"reds\":1}. After reload: WIN:1 LOSS:1 rendered on the scoreboard, sessionStorage still {\"wins\":1,\"reds\":1}. Scoreboard was correctly rehydrated from sessionStorage on component mount via the useState lazy initializer at line 119-121."
+    }
+  ],
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "SinaisTab.jsx lines 164-168: new 'color mismatch = immediate LOSS' branch correctly uses getCategory(lastNum) === sig.target to short-circuit the 3-attempt loop. Logic is clean and correctly ordered AFTER the sig.numbers.includes(lastNum) WIN branch, so a number that matches both cat+color still wins.",
+    "SinaisTab.jsx lines 119-127: scoreboard useState lazy initializer + useEffect writer to sessionStorage is a solid pattern. Note it uses sessionStorage (not localStorage), so scores reset when the browser tab is closed — this appears intentional (session-scoped scoring) and matches the request.",
+    "Dashboard.jsx lines 16-21: activeTab lazy init from localStorage + useEffect writer works. Same pattern already existed for viewMode.",
+    "Zero (0) short-circuit: line 164 correctly excludes lastNum !== 0 before category check. getCategory(0) already returns null so the guard is defensive-only but harmless.",
+    "SinaisTab.jsx is now 487 lines — still under the 700-line soft limit. Same recommendation as iteration_13: consider extracting sub-cards to their own files eventually.",
+    "Note: since giros is polled from localStorage every 300ms and shared with RadarTab, in-flight edits in RadarTab could theoretically race with signal resolution here — no issue observed in this test but worth keeping in mind."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "N/A (skipped per request)", "frontend": "100% (5/5 scenarios PASS)" },
+  "test_credentials": "Admin CPF 154.831.997-07 / admin123. Sinais tab password: 13052017. Both working.",
+  "seed_data_creation": "None. All state was managed via keypad inputs + LIMPAR button + programmatic reset of sessionStorage/localStorage keys ('gatilho_score', 'radar_giros') to ensure clean baseline.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "The 3 fixes from this iteration are validated: (1) color-mismatch immediate LOSS in SinaisTab.jsx lines 164-168, (2) activeTab persistence in Dashboard.jsx lines 16-21 (localStorage key 'activeTab'), (3) scoreboard persistence in SinaisTab.jsx lines 119-127 (sessionStorage key 'gatilho_score', JSON {wins, reds}). All working. Key data-testids used: submit-btn (login), tab-sinais, sinais-password-input/submit, sinais-btn-{0..36}, sinais-btn-clear, gatilho-signal-active/idle, gatilho-scoreboard, sinais-tab. Login form has both 'submit-btn' (email/pass) and 'google-login-btn' — always use test-id 'submit-btn' for CPF login (do NOT use get_by_role('button', name='ENTRAR') as both buttons contain 'ENTRAR' text and it fails strict-mode).",
+  "rca of the issue": "No issue to RCA in this iteration — all requested fixes verified working. The new color-mismatch branch (line 164 in SinaisTab.jsx) checks getCategory(lastNum) === sig.target BEFORE the generic attempts-increment branch, ensuring right-category-wrong-color plays are resolved as an immediate LOSS in the same effect tick that also re-arms via tryCreateSignal(giros)."
+}
