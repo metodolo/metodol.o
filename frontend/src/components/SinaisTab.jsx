@@ -43,15 +43,18 @@ function getCategory(n) {
 function detectTrigger(giros) {
   const cats = giros.map(n => getCategory(n)).filter(c => c !== null);
   if (cats.length < 3) return null;
+  // Find streak of same category at the end
   const lastCat = cats[cats.length - 1];
-  const prevCat = cats[cats.length - 2];
-  if (lastCat === prevCat) return null;
-  let consecutive = 0;
+  let streakLen = 1;
   for (let i = cats.length - 2; i >= 0; i--) {
-    if (cats[i] === prevCat) consecutive++;
+    if (cats[i] === lastCat) streakLen++;
     else break;
   }
-  return consecutive >= 2 ? lastCat : null;
+  if (streakLen < 2) return null;
+  // Target = category BEFORE the streak
+  const beforeIdx = cats.length - 1 - streakLen;
+  if (beforeIdx < 0) return null;
+  return cats[beforeIdx];
 }
 
 function getRangeNumbers(category) {
@@ -381,11 +384,6 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
   };
 
   const GatilhoCard = ({ compact }) => {
-    const { red: r, black: b } = countColors(giros);
-    const dominantLabel = r > b ? 'VERMELHO' : 'PRETO';
-    const dominantColorEn = r > b ? 'red' : 'black';
-    const cats = giros.map(n => getCategory(n)).filter(c => c !== null);
-    const lastCats = cats.slice(-6);
     const remaining = signal ? 3 - signal.attemptsUsed : 0;
 
     return (
@@ -394,27 +392,11 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
           GATILHOS DE ENTRADA
         </span>
 
-        {lastCats.length > 0 && (
-          <div className="flex gap-1 flex-wrap mt-1 mb-1">
-            {lastCats.map((cat, i) => (
-              <span key={i} className={`tag ${cat === 'ALTO' ? 'tag-alto' : cat === 'MÉDIO' ? 'tag-medio' : 'tag-baixo'}`}
-                style={{ fontSize: compact ? '0.55rem' : '0.65rem', fontWeight: 800, width: 'auto', display: 'inline-block', padding: '2px 8px' }}>
-                {cat}
-              </span>
-            ))}
-          </div>
-        )}
-
-        <div className="text-[10px] text-gray-500 mb-2">
-          Cor dominante: <span style={{ color: dominantColorEn === 'red' ? '#ff3131' : '#ccc', fontWeight: 700 }}>{dominantLabel}</span>
-          {' '}({r}V / {b}P)
-        </div>
-
         {signal ? (
-          <div className="gatilho-signal-box bg-[rgba(0,0,0,0.6)] border-2 border-[#D4AF37] rounded-xl p-3 mb-2"
+          <div className="gatilho-signal-box bg-[rgba(0,0,0,0.6)] border-2 border-[#D4AF37] rounded-xl p-3 mt-2"
             data-testid="gatilho-signal-active">
             <div className="text-center text-[#D4AF37] font-bold mb-2" style={{ fontSize: compact ? '0.75rem' : '0.9rem' }}>
-              ENTRADA CONFIRMADA — {signal.target}
+              ENTRADA CONFIRMADA
             </div>
             <div className="flex gap-2 flex-wrap justify-center mb-2">
               {signal.numbers.map(n => (
@@ -435,7 +417,7 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
             </div>
           </div>
         ) : (
-          <div className="text-center text-gray-600 text-sm py-2" data-testid="gatilho-signal-idle">
+          <div className="text-center text-gray-600 text-sm py-2 mt-2" data-testid="gatilho-signal-idle">
             {giros.length < 3 ? 'Mínimo 3 giros para detectar padrão' : 'Aguardando sequência...'}
           </div>
         )}
@@ -448,7 +430,7 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
             </span>
           </div>
           <div className="flex items-center gap-1">
-            <span className="font-bold" style={{ color: '#ff3131', fontSize: compact ? '0.7rem' : '0.85rem' }}>RED:</span>
+            <span className="font-bold" style={{ color: '#ff3131', fontSize: compact ? '0.7rem' : '0.85rem' }}>LOSS:</span>
             <span className="text-white font-bold px-2 py-0.5 rounded" style={{ background: 'rgba(255,49,49,0.15)', border: '1px solid rgba(255,49,49,0.4)', fontSize: compact ? '0.7rem' : '0.85rem' }}>
               {scoreboard.reds}
             </span>
