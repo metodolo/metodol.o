@@ -1,9 +1,8 @@
 # Test Credentials
 
 ## Admin Account
-- **CPF**: 154.831.997-07
-- **Password**: admin123
-- **Role**: Administrador
+- CPF: 154.831.997-07
+- Password: admin123
 
-## App URL
-- **Preview**: https://radar-blacklist-hub.preview.emergentagent.com
+## Sinais Tab (Em Construção)
+- Password: 13052017

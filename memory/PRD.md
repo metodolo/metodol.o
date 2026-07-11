@@ -1,176 +1,40 @@
-# RADAR V22 + Método L.O - Product Requirements Document
+# Método L.O - PRD (Product Requirements Document)
 
-## Status: FUNCIONAL - PRONTO PARA VENDA
+## Original Problem Statement
+Convert HTML-based "RADAR V22" / "Método L.O" roulette tracking app into a modern full-stack web application with black and gold theme, admin panel, complex pattern detection, and advanced UI/UX.
 
-### URLs de Produção
-| Serviço | URL |
-|---------|-----|
-| Frontend (Vercel) | https://metodol-o.vercel.app |
-| Backend (Railway) | https://metodolo-production-19fc.up.railway.app |
+## Stack
+- Frontend: React + Vite, Tailwind CSS
+- Backend: FastAPI (Python)
+- Auth: Supabase
+- Database: MongoDB
 
-### Credenciais Admin
-| Campo | Valor |
-|-------|-------|
-| CPF | `154.831.997-07` |
-| Senha | `admin123` (troca obrigatória no primeiro login) |
+## Core Features (Implemented)
+- CPF-based auth with 1-device session limit
+- Admin panel for user subscription management
+- Radar de Jogo: digital roots, regions, hidden numbers, parities, Alto/Médio/Baixo
+- Estratégia FB: oldest-number targeting with 14-spin limit and hit detection
+- Junção dos Números: combined number analysis
+- Gestão de Banca: bankroll management
+- Background task: auto-deactivate expired subscriptions (every 5 min)
+- Horizontal/Vertical responsive layout
 
----
+## Em Construção Tab (Experimental Signals)
+- Password-protected (13052017) clone of RadarTab
+- Bidirectional sync with RadarTab via localStorage
+- Análise Igualitários: minority color reference counting (top 2)
+- **Gatilhos de Entrada** (NEW - Jul 2026):
+  - Detects Alto(25-36)/Médio(13-24)/Baixo(1-12) sequences
+  - Trigger: 2+ consecutive same category followed by different → signal for new category
+  - Numbers filtered by dominant color of board (14 spins)
+  - 3-attempt hit detection
+  - Win/Red scoreboard
 
-## Funcionalidades Implementadas
+## Upcoming Tasks
+- P2: Database persistence for daily runs/metrics/historical analysis
+- P2: Automatic mode with external API
+- P3: Custom domain configuration
 
-### Autenticação
-- Login com CPF/Senha
-- Login com Google OAuth (Emergent)
-- Limite de 1 dispositivo ativo por usuário (verificação a cada 15s)
-- Sistema de heartbeat para controle de tempo (60s)
-- Troca obrigatória de senha no primeiro login do admin
-- Modo Whitelist: Somente emails pré-cadastrados pelo admin podem acessar o app
-
-### Radar de Jogo
-- Entrada de números 0-36
-- Contagem Vermelho/Preto
-- Análise de regiões (múltiplas destacadas)
-- Radar de Ocultos (terminais)
-- Família de números
-- Histórico de giros (12, 14 ou 50)
-- Botões CORRIGIR/LIMPAR com tema preto e dourado
-- Números repetidos piscam em dourado
-- Números de referência customizados abaixo de cada número
-- Ordem do histórico invertida (mais recente à esquerda)
-
-### Cards de Histórico (Redesign)
-- Removidos D/C (Dúzia/Coluna)
-- Mantidos PAR/IMP com cores originais (cyan/laranja)
-- Mantidos ALTO/BAIXO com cores originais (magenta/cyan)
-- Número 0: tag ZERO com caixa e borda verde, alinhado com outros
-- Números de referência em branco com borda dourada, fonte bold
-- Horizontal: cards preenchem largura total (calc 100%/limiteGiros)
-- Vertical: cards com largura fixa (75px min) com scroll lateral
-- Alinhamento vertical perfeito (border transparent normalizada no .tag)
-
-### Tabela Junção dos Números (NOVO)
-- Tabela exibida ao lado da Família (horizontal) ou abaixo (vertical)
-- Mostra dados de junção quando números se repetem no histórico
-- Números em formato de bola (mini-ball) igual à Família
-- Números da região mais forte destacados com borda dourada brilhante
-- Scrollbar dourada visível para navegar múltiplos repetidos
-- Dados completos de junção para todos os 37 números (0-36)
-
-### Gestão de Banca
-- Banca inicial, Meta %, Stop %
-- Botões GANHEI/PERDI
-- Projeção de 30 dias
-- Gráfico de evolução
-- Persistência em localStorage
-- Botão REINICIAR TUDO funcional (com confirmação e reset completo)
-- Layout horizontal: controles à esquerda (40%), gráfico+tabela à direita (60%)
-
-### Estratégia FB (NOVO)
-- Detecção de padrões baseada na raiz digital dos números
-- Regra: par que compartilha raiz digital forma padrão, MAS o número mais novo (último digitado) NÃO pode ser o alvo
-- Casos válidos: b,c match (alvo=a mais antigo) e a,c match (alvo=b do meio)
-- Caso inválido: a,b match (alvo seria c mais novo) → NÃO forma padrão
-- Alvo = número que NÃO combina (o "sobrante"), Entrada = grupo associado ao alvo
-- Formada exibida na ordem do histórico (mais recente primeiro)
-- TODOS os números da entrada com borda dourada brilhante
-- Grupos de exceção: n=1→[1,12,21,23,32,34], n=10/19/28→[10,19,28], n=11/29→[11,29], n=2/20→[2,11,20,29]
-- 3 tentativas por padrão (countdown automático)
-- Hit detection: se número novo está na entrada, padrão some (acertou)
-- Padrão some após 3 tentativas sem acerto OU quando acerta
-- Múltiplos padrões simultâneos com contagens independentes
-- Card com borda dourada, texto "tentativas" legível, números grandes, barra de rolagem
-- Funciona em layout vertical e horizontal (compact)
-
-### Bloqueio de Usuários Desativados (NOVO)
-- Tela BlockedScreen para usuários com status desativado
-- Interceptação de erro 403 no AuthContext
-- Link de renovação via LastLink/Telegram
-
-### Painel Admin (Atualizado)
-- **Aba Usuários:** Lista, ativar/desativar, derrubar sessões, configurar limite de tempo, gerenciar assinaturas
-- **Aba Pré-Cadastros:** Adicionar email + plano antes do usuário se registrar (funciona como whitelist)
-- **Aba Lista Negra:** Bloquear usuários por email ou CPF
-- **Performance:** 49 usuários carregados em <1s (6 queries bulk com maps indexados)
-- **Busca e ordenação:** Pesquisa por nome/email, ordenação alfabética
-
-### Pagamentos (Mercado Pago)
-- Integração completa com credenciais de PRODUÇÃO
-- Suporte a PIX, cartão de crédito, boleto
-- Webhook automático para ativação de assinatura
-- Planos: Mensal (R$200), Anual (R$970), Vitalício (R$1.997)
-
-### Regiões do Radar
-- Região 6/5 corrigida: agora inclui números 0 e 5
-
-### Design
-- Tema preto e dourado
-- Layout horizontal responsivo para PC/notebook/tablet
-- Layout vertical para mobile
-- Proteção de código (obfuscação, anti-dev-tools)
-
----
-
-## Pendente / Backlog
-
-### P1 - Verificação Pendente
-- Teste E2E do limite de sessão (1 dispositivo ativo)
-
-### P2 - Futuro
-- Modo "Automático" com API externa
-- Persistência de dados históricos
-- Página de pagamento/planos voltada ao usuário
-- Domínio customizado
-
-### Refatoração
-- `server.py` (1500+ linhas) -> dividir em módulos
-- `AdminPage.jsx` (850+ linhas) -> extrair componentes
-
----
-
-## Changelog
-
-### 2026-04-22
-- **Estratégia FB completa**: detecção de padrões por raiz digital
-- TODAS as combinações de pares: a-b, b-c, a-c (qualquer par que compartilhe raiz)
-- Alvo = número que não combina, exibição na ordem do histórico (mais recente primeiro)
-- Múltiplos padrões simultâneos com countdown independente de 3 tentativas
-- Sem remoção por acerto - padrão só sai quando countdown chega a 0
-- UI: borda dourada, texto "tentativas" legível, números maiores, barra de rolagem
-- Testes: 100% (iteration 4 + iteration 5 + iteration 6 + iteration 7)
-
-### Tags Baixo/Médio/Alto
-- 1-12: BAIXO (cyan #00ffff, texto preto)
-- 13-24: MÉDIO (azul escuro #1a3a6b, texto branco)
-- 25-36: ALTO (magenta #ff00ff, texto branco)
-- 0: ZERO (verde)
-
-
-### 2026-03-22 (Sessão atual)
-- Redesign dos cards de histórico: removido D/C, mantido PAR/IMP e ALTO/BAIXO
-- Número 0 agora tem caixas ZERO com borda verde alinhadas
-- Números de referência customizados em branco com borda dourada
-- Cards preenchem largura total no horizontal, tamanho fixo no vertical
-- Alinhamento vertical corrigido (border transparent normalizada no .tag)
-- Números repetidos piscam em dourado (animação blink-gold)
-- **NOVA tabela "Junção dos Números"** com bolas coloridas e scroll dourado
-- Números da junção na região forte destacados em dourado
-- Região 6/5 corrigida: adicionados números 0 e 5
-- Família + Junção preenchem a tela sem espaço preto
-- Verificado: admin carrega 49 usuários em <1s
-- Verificado: session validation 15s, heartbeat 60s (otimizações intactas)
-- Testes: 100% passou (testing agent iteration 3)
-
-### 2026-03-20
-- Otimização admin panel: ~1min → <1s
-- Otimização concurrent users: redução de 80% carga servidor
-- Layout horizontal responsivo
-- Proteção de código (obfuscação, anti-dev-tools)
-- Modo Whitelist implementado
-- requirements.txt limpo para Railway
-
-### Sessões anteriores
-- Sistema de Pré-Cadastros e Lista Negra
-- Integração Mercado Pago e Resend
-- Sessão única por dispositivo
-- Tema preto e dourado completo
-- Migração para Vite
+## Backlog
+- Refactor: Extract shared components from RadarTab/SinaisTab
+- Session limit E2E verification (user pending)
