@@ -28,8 +28,11 @@ Convert HTML-based "RADAR V22" / "Método L.O" roulette tracking app into a mode
   - Signal = category BEFORE the streak (e.g., Baixo, Médio, Médio → signal for BAIXO)
   - Numbers filtered by dominant color of board (14 spins)
   - 3-attempt hit detection with automatic re-arming after WIN or LOSS
-  - WIN/LOSS scoreboard (accumulative)
+  - **Color mismatch = immediate LOSS** (correct category but wrong color → no more attempts)
+  - WIN/LOSS scoreboard (persisted in sessionStorage)
   - Clean display: "ENTRADA CONFIRMADA" + numbers only
+- **Tab persistence**: activeTab stored in localStorage (survives page reload)
+- **Scoreboard persistence**: stored in sessionStorage
 
 ## Upcoming Tasks
 - P2: Database persistence for daily runs/metrics/historical analysis
@@ -37,5 +40,5 @@ Convert HTML-based "RADAR V22" / "Método L.O" roulette tracking app into a mode
 - P3: Custom domain configuration
 
 ## Backlog
-- Refactor: Extract shared components from RadarTab/SinaisTab
+- Refactor: Extract shared components from RadarTab/SinaisTab (~487 lines)
 - Session limit E2E verification (user pending)
