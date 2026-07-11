@@ -27,9 +27,9 @@ Convert HTML-based "RADAR V22" / "Método L.O" roulette tracking app into a mode
   - Detects 2+ consecutive same category (Alto 25-36 / Médio 13-24 / Baixo 1-12) at END of sequence
   - Signal = category BEFORE the streak (e.g., Baixo, Médio, Médio → signal for BAIXO)
   - Numbers filtered by dominant color of board (14 spins)
-  - 3-attempt hit detection
-  - WIN/LOSS scoreboard
-  - Clean display: "ENTRADA CONFIRMADA" + numbers only (no category tags)
+  - 3-attempt hit detection with automatic re-arming after WIN or LOSS
+  - WIN/LOSS scoreboard (accumulative)
+  - Clean display: "ENTRADA CONFIRMADA" + numbers only
 
 ## Upcoming Tasks
 - P2: Database persistence for daily runs/metrics/historical analysis
@@ -37,5 +37,5 @@ Convert HTML-based "RADAR V22" / "Método L.O" roulette tracking app into a mode
 - P3: Custom domain configuration
 
 ## Backlog
-- Refactor: Extract shared components from RadarTab/SinaisTab (approaching 500 lines)
+- Refactor: Extract shared components from RadarTab/SinaisTab
 - Session limit E2E verification (user pending)
