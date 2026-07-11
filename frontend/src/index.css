@@ -238,6 +238,15 @@ body {
   border: 2px solid #D4AF37 !important;
 }
 
+/* Gatilho signal pulse */
+@keyframes gatilho-pulse {
+  0%, 100% { box-shadow: 0 0 6px rgba(212,175,55,0.3); }
+  50% { box-shadow: 0 0 20px rgba(212,175,55,0.6), 0 0 40px rgba(212,175,55,0.2); }
+}
+.gatilho-signal-box {
+  animation: gatilho-pulse 2s ease-in-out infinite;
+}
+
 /* Juncao scrollbar styling */
 [data-testid="juncao-card"] .overflow-y-auto::-webkit-scrollbar {
   width: 6px;

@@ -28,6 +28,45 @@ const NUMBER_INFO = {
   36: { refs: '2/4' },
 };
 
+// --- Gatilho de Entrada helpers ---
+const BAIXO_NUMS = Array.from({ length: 12 }, (_, i) => i + 1);
+const MEDIO_NUMS = Array.from({ length: 12 }, (_, i) => i + 13);
+const ALTO_NUMS = Array.from({ length: 12 }, (_, i) => i + 25);
+
+function getCategory(n) {
+  if (n === 0) return null;
+  if (n >= 25) return 'ALTO';
+  if (n >= 13) return 'MÉDIO';
+  return 'BAIXO';
+}
+
+function detectTrigger(giros) {
+  const cats = giros.map(n => getCategory(n)).filter(c => c !== null);
+  if (cats.length < 3) return null;
+  const lastCat = cats[cats.length - 1];
+  const prevCat = cats[cats.length - 2];
+  if (lastCat === prevCat) return null;
+  let consecutive = 0;
+  for (let i = cats.length - 2; i >= 0; i--) {
+    if (cats[i] === prevCat) consecutive++;
+    else break;
+  }
+  return consecutive >= 2 ? lastCat : null;
+}
+
+function getRangeNumbers(category) {
+  if (category === 'BAIXO') return BAIXO_NUMS;
+  if (category === 'MÉDIO') return MEDIO_NUMS;
+  return ALTO_NUMS;
+}
+
+function getFilteredByColor(category, dominantColor) {
+  const range = getRangeNumbers(category);
+  return range.filter(n =>
+    dominantColor === 'red' ? VERMELHOS.includes(n) : !VERMELHOS.includes(n)
+  );
+}
+
 const SinaisTab = ({ viewMode = "vertical" }) => {
   const [authenticated, setAuthenticated] = useState(() => sessionStorage.getItem('sinais_auth') === 'true');
   const [senhaInput, setSenhaInput] = useState("");
@@ -69,6 +108,62 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
     }, 300);
     return () => clearInterval(interval);
   }, []);
+
+  // --- Gatilho de Entrada state ---
+  const [signal, _setSignal] = useState(null);
+  const signalRef = useRef(null);
+  const updateSignal = useCallback((val) => { signalRef.current = val; _setSignal(val); }, []);
+  const [scoreboard, setScoreboard] = useState({ wins: 0, reds: 0 });
+  const prevGirosKeyRef = useRef(giros.join(','));
+
+  const tryCreateSignal = useCallback((currentGiros) => {
+    const trigger = detectTrigger(currentGiros);
+    if (!trigger) return;
+    const { red: r, black: b } = countColors(currentGiros);
+    const domColor = r > b ? 'red' : 'black';
+    const nums = getFilteredByColor(trigger, domColor);
+    if (nums.length > 0) updateSignal({ target: trigger, numbers: nums, attemptsUsed: 0 });
+  }, [updateSignal]);
+
+  useEffect(() => {
+    const currKey = giros.join(',');
+    const prevKey = prevGirosKeyRef.current;
+    prevGirosKeyRef.current = currKey;
+    if (currKey === prevKey) return;
+
+    if (giros.length === 0) { updateSignal(null); return; }
+
+    const prevArr = prevKey ? prevKey.split(',').filter(Boolean).map(Number) : [];
+    const lastNum = giros[giros.length - 1];
+    const prevLast = prevArr.length > 0 ? prevArr[prevArr.length - 1] : undefined;
+    const isNew = giros.length > prevArr.length ||
+      (giros.length === prevArr.length && lastNum !== prevLast);
+
+    if (!isNew) {
+      if (giros.length < prevArr.length) updateSignal(null);
+      return;
+    }
+
+    const sig = signalRef.current;
+    if (sig) {
+      if (sig.numbers.includes(lastNum)) {
+        setScoreboard(p => ({ wins: p.wins + 1, reds: p.reds }));
+        updateSignal(null);
+        tryCreateSignal(giros);
+      } else {
+        const next = sig.attemptsUsed + 1;
+        if (next >= 3) {
+          setScoreboard(p => ({ wins: p.wins, reds: p.reds + 1 }));
+          updateSignal(null);
+          tryCreateSignal(giros);
+        } else {
+          updateSignal({ ...sig, attemptsUsed: next });
+        }
+      }
+    } else {
+      tryCreateSignal(giros);
+    }
+  }, [giros, updateSignal, tryCreateSignal]);
 
   const addNumber = (n) => {
     const newGiros = [...giros, n];
@@ -285,6 +380,84 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
     );
   };
 
+  const GatilhoCard = ({ compact }) => {
+    const { red: r, black: b } = countColors(giros);
+    const dominantLabel = r > b ? 'VERMELHO' : 'PRETO';
+    const dominantColorEn = r > b ? 'red' : 'black';
+    const cats = giros.map(n => getCategory(n)).filter(c => c !== null);
+    const lastCats = cats.slice(-6);
+    const remaining = signal ? 3 - signal.attemptsUsed : 0;
+
+    return (
+      <div className={`card-glass border-2 border-[#D4AF37] ${compact ? "!p-2" : ""}`} data-testid="gatilho-card">
+        <span className="label-accent" style={{ color: '#fff', borderColor: '#D4AF37', fontSize: compact ? '0.7rem' : '0.9rem' }}>
+          GATILHOS DE ENTRADA
+        </span>
+
+        {lastCats.length > 0 && (
+          <div className="flex gap-1 flex-wrap mt-1 mb-1">
+            {lastCats.map((cat, i) => (
+              <span key={i} className={`tag ${cat === 'ALTO' ? 'tag-alto' : cat === 'MÉDIO' ? 'tag-medio' : 'tag-baixo'}`}
+                style={{ fontSize: compact ? '0.55rem' : '0.65rem', fontWeight: 800, width: 'auto', display: 'inline-block', padding: '2px 8px' }}>
+                {cat}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <div className="text-[10px] text-gray-500 mb-2">
+          Cor dominante: <span style={{ color: dominantColorEn === 'red' ? '#ff3131' : '#ccc', fontWeight: 700 }}>{dominantLabel}</span>
+          {' '}({r}V / {b}P)
+        </div>
+
+        {signal ? (
+          <div className="gatilho-signal-box bg-[rgba(0,0,0,0.6)] border-2 border-[#D4AF37] rounded-xl p-3 mb-2"
+            data-testid="gatilho-signal-active">
+            <div className="text-center text-[#D4AF37] font-bold mb-2" style={{ fontSize: compact ? '0.75rem' : '0.9rem' }}>
+              ENTRADA CONFIRMADA — {signal.target}
+            </div>
+            <div className="flex gap-2 flex-wrap justify-center mb-2">
+              {signal.numbers.map(n => (
+                <div key={n} className="inline-flex items-center justify-center rounded-full text-white font-bold"
+                  style={{
+                    background: getBgColor(n),
+                    width: compact ? 34 : 42, height: compact ? 34 : 42,
+                    fontSize: compact ? '0.85rem' : '1rem',
+                    border: '3px solid #D4AF37',
+                    boxShadow: '0 0 10px rgba(212,175,55,0.5)',
+                  }}>
+                  {n}
+                </div>
+              ))}
+            </div>
+            <div className="text-center text-gray-400" style={{ fontSize: compact ? '0.6rem' : '0.75rem' }}>
+              {remaining} tentativa{remaining !== 1 ? 's' : ''} restante{remaining !== 1 ? 's' : ''}
+            </div>
+          </div>
+        ) : (
+          <div className="text-center text-gray-600 text-sm py-2" data-testid="gatilho-signal-idle">
+            {giros.length < 3 ? 'Mínimo 3 giros para detectar padrão' : 'Aguardando sequência...'}
+          </div>
+        )}
+
+        <div className="flex gap-4 justify-center mt-2" data-testid="gatilho-scoreboard">
+          <div className="flex items-center gap-1">
+            <span className="font-bold" style={{ color: '#00ff41', fontSize: compact ? '0.7rem' : '0.85rem' }}>WIN:</span>
+            <span className="text-white font-bold px-2 py-0.5 rounded" style={{ background: 'rgba(0,255,65,0.15)', border: '1px solid rgba(0,255,65,0.4)', fontSize: compact ? '0.7rem' : '0.85rem' }}>
+              {scoreboard.wins}
+            </span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="font-bold" style={{ color: '#ff3131', fontSize: compact ? '0.7rem' : '0.85rem' }}>RED:</span>
+            <span className="text-white font-bold px-2 py-0.5 rounded" style={{ background: 'rgba(255,49,49,0.15)', border: '1px solid rgba(255,49,49,0.4)', fontSize: compact ? '0.7rem' : '0.85rem' }}>
+              {scoreboard.reds}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // Horizontal layout
   if (isHorizontal) {
     return (
@@ -297,6 +470,7 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
         <div className="flex flex-col gap-1 min-h-0 overflow-y-auto" style={{ flex: 1, scrollbarWidth: 'thin', scrollbarColor: '#D4AF37 #111' }}>
           <HistoryCard compact />
           <RefAnalysisCard compact />
+          <GatilhoCard compact />
         </div>
       </div>
     );
@@ -310,6 +484,7 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
       <ActionButtons compact={false} />
       <HistoryCard compact={false} />
       <RefAnalysisCard compact={false} />
+      <GatilhoCard compact={false} />
     </div>
   );
 };

@@ -1,0 +1,41 @@
+{
+  "summary": "Frontend-only testing of 'Gatilhos de Entrada' feature in SinaisTab.jsx ('Em Construção' tab). All 8 requested scenarios executed against live preview URL. 7/8 fully PASS; 1 minor ambiguity on LIMPAR scoreboard behavior (see notes). Signal detection, filtering by dominant color, hit/miss counting, and edge cases all work correctly.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "tests_executed": [
+    {"name": "Login + navigate to EM CONSTRUÇÃO + sinais password", "result": "PASS", "details": "Login with CPF 154.831.997-07/admin123 → click EM CONSTRUÇÃO tab → enter password 13052017 → [data-testid=sinais-tab] visible."},
+    {"name": "A. Trigger fires on Alto→Alto→Baixo (25,30,5)", "result": "PASS", "details": "Signal appeared: 'ENTRADA CONFIRMADA — BAIXO'. Numbers = [1,3,5,7,9,12] (Baixo ∩ vermelho — correct, all inputs were red so dominante=VERMELHO). '3 tentativas restantes' visible. Scoreboard WIN:0 / RED:0."},
+    {"name": "B. Clicking a number in signal list (3) increments WIN", "result": "PASS", "details": "After clicking 3: signal cleared, idle text 'Aguardando sequência...', Scoreboard WIN:1 / RED:0."},
+    {"name": "C. 3 misses → RED counter increments, signal clears", "result": "PASS", "details": "New trigger via 25,30,5 → then miss 20 (att 1/3, active), miss 22 (att 2/3, active), miss 24 (3rd miss) → signal cleared, Scoreboard WIN:1 / RED:1."},
+    {"name": "D. Sequence tag chips render as small colored chips", "result": "PASS", "details": "In GATILHO CARD: tag chips = ['ALTO','ALTO','BAIXO'] rendered as inline-block padded chips (padding 2px 8px, width auto) — not full-width bars. Correct."},
+    {"name": "E. Cor dominante text shows VERMELHO/PRETO with V/P counts", "result": "PASS", "details": "Displayed exactly: 'Cor dominante: VERMELHO (3V / 0P)'. Red color applied to label."},
+    {"name": "F. Edge: 2 numbers only (25,5) → NO trigger", "result": "PASS", "details": "Idle text: 'Mínimo 3 giros para detectar padrão'. No signal."},
+    {"name": "G. Edge: 3 different categories (25,15,5) → NO trigger", "result": "PASS", "details": "Idle text: 'Aguardando sequência...'. No signal (no 2+ consecutive same categories)."},
+    {"name": "H. LIMPAR resets signal; scoreboard persists", "result": "PASS (with note)", "details": "Signal correctly cleared to 'Mínimo 3 giros para detectar padrão'. Scoreboard was NOT reset by LIMPAR (stays WIN:1 / RED:1). The review request wording 'resets the signal and scoreboard display correctly' is ambiguous — code (limpar() only calls writeGiros([])) intentionally preserves scoreboard across history clears (typical cumulative scoreboard behavior). If main-agent intent was that LIMPAR should also reset scoreboard, then setScoreboard({wins:0,reds:0}) must be added to limpar()."}
+  ],
+  "test_report_links": [],
+  "action_items": [
+    "CLARIFY (product decision): Should the LIMPAR button also zero the WIN/RED scoreboard, or is preserving it (cumulative across history clears) the intended behavior? Currently scoreboard persists. If reset is desired, add setScoreboard({wins:0, reds:0}) inside limpar() in SinaisTab.jsx line ~175."
+  ],
+  "critical_code_review_comments": [
+    "SinaisTab.jsx is 493 lines — near the 700-line soft limit. Consider extracting GatilhoCard, RefAnalysisCard, HistoryCard, Keyboard, CounterHeader into separate files under components/sinais/ for maintainability.",
+    "Signal effect (lines 128-166) uses signalRef + prevGirosKeyRef to detect 'new' spins. Logic correctly handles: (a) new number added, (b) undo/clear (giros shrinks → updateSignal(null)), (c) hit vs miss branching. Verified working across all 8 scenarios.",
+    "detectTrigger (lines 43-55) correctly requires ≥2 consecutive same categories before a differing category. Edge cases (2 numbers, 3 different) properly return null.",
+    "getFilteredByColor uses dominantColor==='red' ? isRed : !isRed — correctly excludes 0 from BAIXO/MEDIO/ALTO ranges (ranges are 1-12/13-24/25-36).",
+    "Dominant color tie-breaker: r > b uses strict '>', so equal counts → 'black'. In GatilhoCard: r > b ? 'VERMELHO' : 'PRETO' — same. Consistent. But note: at 0 giros both are 0 and it defaults to PRETO — that's fine because signal is guarded elsewhere.",
+    "Recharts console warnings ('width(0) and height(0)') appear on other tabs during navigation — pre-existing, unrelated to this feature.",
+    "401 errors visible at initial page load — likely pre-login auth check (expected), not a functional issue."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "N/A (skipped)", "frontend": "100% (7 unambiguous PASS + 1 PASS-with-clarification)" },
+  "test_credentials": "Admin CPF 154.831.997-07 / admin123 works. Sinais tab password 13052017 works.",
+  "seed_data_creation": "None — history manipulated in-session via number keypad + LIMPAR.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Gatilhos de Entrada fully validated. Key data-testids on Sinais tab: sinais-tab, sinais-password-input, sinais-password-submit, sinais-btn-{0..36}, sinais-btn-undo (CORRIGIR), sinais-btn-clear (LIMPAR), sinais-btn-{12|14|50}-giros, gatilho-card, gatilho-signal-active, gatilho-signal-idle, gatilho-scoreboard, ref-analysis. Signal numbers rendered as circular divs inside gatilho-signal-active. Sequence chips are .tag elements inside gatilho-card. Trigger rule: need ≥2 consecutive same categories then a different category as last spin. Categories: 1-12=BAIXO, 13-24=MÉDIO, 25-36=ALTO, 0=null (skipped). Signal numbers = category range ∩ dominant-color numbers (VERMELHOS list from radarEngine.js line 8).",
+  "rca of the issue": "N/A — no bugs found. Only open item: LIMPAR + scoreboard reset is a product-decision clarification, not a bug."
+}
