@@ -1,0 +1,52 @@
+{
+  "summary": "Frontend-only regression testing of the SIGNAL RE-ARMING BUG FIX in SinaisTab.jsx. Verified end-to-end that after both WIN and LOSS resolutions, a new signal correctly forms when a fresh 2+ streak appears at the end of the giros sequence. The reported user bug ('after one signal forms and 3 attempts pass, it's NOT forming another one after') is FIXED. All 3 flows plus scoreboard/clear checks PASS.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "tests_executed": [
+    {
+      "name": "FLOW 1 - WIN then re-arm",
+      "result": "PASS",
+      "steps_and_observations": "Clear → click 3(Baixo red), 20(Médio black), 17(Médio black) → signal fires target=BAIXO, dom=black, numbers=[2,4,6,8,10,11], 3 tentativas restantes. Click 2 (in signal) → WIN counter 0→1, signal cleared to 'Aguardando sequência...'. Click 25(Alto) → no new signal (streak=1). Click 30(Alto) → NEW signal fires target=BAIXO, dom=black, numbers=[2,4,6,8,10,11] again. CORE BUG FIX CONFIRMED."
+    },
+    {
+      "name": "FLOW 2 - LOSS then re-arm",
+      "result": "PASS",
+      "steps_and_observations": "Clear → 3,20,17 → signal BAIXO black [2,4,6,8,10,11] active. Miss 1: 25 → 2 restantes. Miss 2: 30 → 1 restante. Miss 3: 27 → LOSS counter 0→1 AND simultaneously new signal fires target=MÉDIO, dom=red (reds=3,25,30,27=4, blacks=20,17=2), numbers=[14,16,18,19,21,23]. Re-arm after 3rd miss (LOSS) works correctly on the same effect tick."
+    },
+    {
+      "name": "FLOW 3 - Multiple WIN→signal cycles",
+      "result": "PASS",
+      "steps_and_observations": "Continuing from FLOW 2 signal MÉDIO red [14,16,18,19,21,23]. Clicked 15 (miss, still active 2 restantes) then 16 (in signal) → WIN counter 1→2 AND immediate re-arm to new signal target=ALTO, dom=red (reds=3,25,30,27,16=5, blacks=20,17,15=3), numbers=[25,27,30,32,34,36]. Demonstrated a full 3rd cycle of trigger→WIN→trigger and correct scoreboard progression (WIN:2 LOSS:1)."
+    },
+    {
+      "name": "Scoreboard accumulation across cycles",
+      "result": "PASS",
+      "steps_and_observations": "Scoreboard started WIN:0 LOSS:0 → after FLOW 1 WIN:1 LOSS:0 → after FLOW 2 LOSS WIN:1 LOSS:1 → after FLOW 3 WIN WIN:2 LOSS:1. Counters persisted across CLEAR (LIMPAR) as expected (state only, not sessionStorage)."
+    },
+    {
+      "name": "CLEAR (LIMPAR) button between flows",
+      "result": "PASS",
+      "steps_and_observations": "LIMPAR successfully emptied giros between FLOW 1 and FLOW 2. Signal reset to idle text 'Mínimo 3 giros para detectar padrão'. Note: scoreboard persists across clears (by design — clearing giros should not reset lifetime WIN/LOSS score)."
+    }
+  ],
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "detectTrigger (lines 43-58) correctly finds the streak of same category at END (streakLen>=2) and returns the category BEFORE the streak. This is the corrected logic and it works.",
+    "The useEffect (lines 131-169) correctly calls tryCreateSignal(giros) inside BOTH the WIN branch (line 155) and the LOSS branch (line 161), enabling immediate re-arming with the newly-appended number included in the sequence. Bug is fixed.",
+    "File is 475 lines — approaching the soft 700-line limit but still acceptable. Consider extracting GatilhoCard/HistoryCard/RefAnalysisCard into separate component files in the future for maintainability.",
+    "sessionStorage 'sinais_auth' persists across page reloads (line 87). Note: giros are stored in localStorage under 'radar_giros' and shared with RadarTab via 300ms polling (line 102) — this is intentional cross-tab sync."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "N/A (skipped per request)", "frontend": "100% (5/5 scenarios PASS)" },
+  "test_credentials": "Admin CPF 154.831.997-07 / admin123. Sinais tab password: 13052017. Both working.",
+  "seed_data_creation": "None — all input via keypad + LIMPAR button.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Bug fix VALIDATED. detectTrigger correctly detects trailing streaks and returns category BEFORE streak. tryCreateSignal is called after both WIN (line 155) and LOSS (line 161) in the useEffect, so signals re-arm automatically without needing user interaction. Verified end-to-end that scoreboard advances WIN:0→1→1→2 and LOSS:0→0→1→1 across the three flows. Key data-testids: sinais-btn-{0..36}, sinais-btn-clear, gatilho-signal-active, gatilho-signal-idle, gatilho-scoreboard. VERMELHOS=[1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36].",
+  "rca of the issue": "Root cause (as stated by main agent): the previous detectTrigger implementation checked for a category CHANGE at the end (lastCat !== prevCat). After a signal was resolved (WIN or LOSS), the state of giros still had the same trailing categories, so on the very next spin no category CHANGE was detected and no new signal formed. Fix: detectTrigger was rewritten to search for a STREAK of ≥2 same categories at the end and return the category before the streak. Combined with tryCreateSignal being invoked from both the WIN and LOSS branches of the effect, the system now re-arms correctly on the very next qualifying spin. Reproduction and verification steps documented in FLOW 1 / FLOW 2 / FLOW 3 above."
+}
