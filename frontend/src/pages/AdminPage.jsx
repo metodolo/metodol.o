@@ -21,7 +21,13 @@ import {
   Trash2,
   Ban,
   ShieldOff,
+  Settings,
+  Plus,
+  Power,
+  Edit2,
 } from "lucide-react";
+
+const STRATEGIES_KEY = 'sinais_strategies';
 
 const AdminPage = () => {
   const { isAdmin, user } = useAuth();
@@ -49,6 +55,41 @@ const AdminPage = () => {
 
   // Search state
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Strategies state
+  const [strategies, setStrategies] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(STRATEGIES_KEY)) || []; } catch { return []; }
+  });
+  const [stratForm, setStratForm] = useState({ name: '', triggerNums: '', entryNums: '' });
+  const [editingStratId, setEditingStratId] = useState(null);
+
+  const saveStrategies = (s) => { setStrategies(s); localStorage.setItem(STRATEGIES_KEY, JSON.stringify(s)); };
+  const parseLine = (txt) => txt.split(/[,\s]+/).map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n >= 0 && n <= 36);
+
+  const addStrategy = () => {
+    if (!stratForm.triggerNums.trim() || !stratForm.entryNums.trim()) return;
+    saveStrategies([...strategies, {
+      id: Date.now().toString(), name: stratForm.name.trim() || 'Sem nome',
+      triggerNums: parseLine(stratForm.triggerNums), entryNums: parseLine(stratForm.entryNums), active: true,
+    }]);
+    setStratForm({ name: '', triggerNums: '', entryNums: '' });
+  };
+
+  const updateStrategy = () => {
+    saveStrategies(strategies.map(s => s.id === editingStratId ? {
+      ...s, name: stratForm.name.trim() || s.name,
+      triggerNums: parseLine(stratForm.triggerNums), entryNums: parseLine(stratForm.entryNums),
+    } : s));
+    setEditingStratId(null); setStratForm({ name: '', triggerNums: '', entryNums: '' });
+  };
+
+  const deleteStrategy = (id) => saveStrategies(strategies.filter(s => s.id !== id));
+  const toggleStrategy = (id) => saveStrategies(strategies.map(s => s.id === id ? { ...s, active: !s.active } : s));
+
+  const startEdit = (st) => {
+    setEditingStratId(st.id);
+    setStratForm({ name: st.name, triggerNums: st.triggerNums.join(', '), entryNums: st.entryNums.join(', ') });
+  };
 
   // Redirect if not admin
   useEffect(() => {
@@ -330,6 +371,18 @@ const AdminPage = () => {
           >
             <Ban className="w-4 h-4" />
             Lista Negra ({blacklist.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("strategies")}
+            className={`flex-1 py-3 px-4 rounded-lg font-bold text-sm flex items-center justify-center gap-2 border-2 ${
+              activeTab === "strategies" 
+                ? "bg-black text-white border-[#D4AF37]" 
+                : "bg-[#222] text-gray-400 border-transparent hover:border-[#333]"
+            }`}
+            data-testid="tab-strategies"
+          >
+            <Settings className="w-4 h-4" />
+            Estratégias ({strategies.length})
           </button>
         </div>
 
@@ -658,6 +711,70 @@ const AdminPage = () => {
                 </div>
               )}
             </div>
+          </div>
+        ) : activeTab === "strategies" ? (
+          /* Strategies Tab */
+          <div className="space-y-4" data-testid="strategies-panel">
+            <div className="bg-[#111] border-2 border-[#D4AF37] rounded-xl p-4">
+              <h3 className="text-[#D4AF37] font-bold text-sm mb-3">
+                {editingStratId ? 'EDITAR ESTRATÉGIA' : 'NOVA ESTRATÉGIA'}
+              </h3>
+              <div className="space-y-3">
+                <input type="text" placeholder="Nome (ex: 8/3)" value={stratForm.name}
+                  onChange={e => setStratForm({...stratForm, name: e.target.value})}
+                  className="w-full p-2 bg-black border border-[#555] rounded-lg text-white text-sm focus:border-[#D4AF37] outline-none"
+                  data-testid="strat-name-input" />
+                <div>
+                  <label className="text-gray-400 text-xs block mb-1">Números Gatilho (todos devem estar nos 14 giros)</label>
+                  <input type="text" placeholder="Ex: 2, 8, 11, 17, 20" value={stratForm.triggerNums}
+                    onChange={e => setStratForm({...stratForm, triggerNums: e.target.value})}
+                    className="w-full p-2 bg-black border border-[#555] rounded-lg text-white text-sm focus:border-[#D4AF37] outline-none"
+                    data-testid="strat-trigger-input" />
+                </div>
+                <div>
+                  <label className="text-gray-400 text-xs block mb-1">Números de Entrada (apostar quando gatilho disparar)</label>
+                  <input type="text" placeholder="Ex: 2, 8, 11, 17, 20, 26, 28" value={stratForm.entryNums}
+                    onChange={e => setStratForm({...stratForm, entryNums: e.target.value})}
+                    className="w-full p-2 bg-black border border-[#555] rounded-lg text-white text-sm focus:border-[#D4AF37] outline-none"
+                    data-testid="strat-entry-input" />
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={editingStratId ? updateStrategy : addStrategy}
+                    className="flex-1 py-2 bg-[rgba(212,175,55,0.2)] border-2 border-[#D4AF37] rounded-lg text-[#D4AF37] font-bold text-sm hover:bg-[rgba(212,175,55,0.3)]"
+                    data-testid="strat-save-btn">
+                    {editingStratId ? 'ATUALIZAR' : 'ADICIONAR'}
+                  </button>
+                  {editingStratId && (
+                    <button onClick={() => { setEditingStratId(null); setStratForm({ name: '', triggerNums: '', entryNums: '' }); }}
+                      className="px-4 py-2 bg-black border border-[#555] rounded-lg text-gray-400 font-bold text-sm">CANCELAR</button>
+                  )}
+                </div>
+              </div>
+            </div>
+            {strategies.map(st => (
+              <div key={st.id} className={`bg-[#111] border-2 rounded-xl p-4 ${st.active ? 'border-[#D4AF37]' : 'border-[#333] opacity-60'}`}
+                data-testid={`strategy-${st.id}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-white font-bold">{st.name}</span>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => toggleStrategy(st.id)}
+                      className={`p-1.5 rounded-lg border transition-colors ${st.active ? 'border-[#00ff95] text-[#00ff95]' : 'border-[#555] text-gray-500'}`}
+                      data-testid={`strat-toggle-${st.id}`} title={st.active ? 'Desativar' : 'Ativar'}>
+                      <Power className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => startEdit(st)}
+                      className="p-1.5 rounded-lg border border-[#555] text-gray-400 hover:text-white hover:border-white transition-colors"
+                      data-testid={`strat-edit-${st.id}`}><Edit2 className="w-4 h-4" /></button>
+                    <button onClick={() => deleteStrategy(st.id)}
+                      className="p-1.5 rounded-lg border border-[#555] text-gray-400 hover:text-red-400 hover:border-red-400 transition-colors"
+                      data-testid={`strat-delete-${st.id}`}><Trash2 className="w-4 h-4" /></button>
+                  </div>
+                </div>
+                <div className="text-xs text-gray-500 mb-1"><span className="text-gray-400 font-bold">Gatilhos:</span> {st.triggerNums.join(', ')}</div>
+                <div className="text-xs text-gray-500"><span className="text-gray-400 font-bold">Entradas:</span> {st.entryNums.join(', ')}</div>
+              </div>
+            ))}
+            {strategies.length === 0 && <div className="text-center py-10 text-gray-500">Nenhuma estratégia criada</div>}
           </div>
         ) : (
           /* Users list */

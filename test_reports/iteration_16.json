@@ -1,0 +1,25 @@
+{
+  "summary": "Frontend-only end-to-end testing of the multi-strategy signal system. All 9 requested test cases passed in a single browser session: (1) admin login and navigation to /admin, (2) Estratégias tab created 'Test A' (triggers 5,10,15; entries 2,8,11,17) with toggle/edit/delete buttons visible, (3) 'Test B' (triggers 1,3; entries 20,25) created and both strategies persisted in localStorage['sinais_strategies'], (4) Em Construção authenticated with 13052017 showing both StrategyCards, (5) after 5,10 Test A shows 'Aguardando gatilho...' idle state, (6) after 1,3 Test B fires ENTRADA CONFIRMADA with 20,25 while Test A remains idle, (7) after +15 Test A ALSO fires ENTRADA CONFIRMADA with 2,8,11,17 — both signals active simultaneously, (8) +8 increments Test A GREEN to 1 (scores in sessionStorage['gatilho_scores']), (9) +20 increments Test B GREEN to 1, (10) toggling Test B OFF in admin hides its card in Em Construção within ~1s polling cycle while Test A remains, (11) deleting Test A removes it from the admin list.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "SinaisTab.jsx (407 lines) and AdminPage.jsx (996 lines) — AdminPage exceeds the 700-line threshold. Recommend extracting each tab (Users, Pending, Blacklist, Strategies) into its own component file.",
+    "Strategy id uses Date.now().toString() — creating two strategies in rapid succession could theoretically collide. Consider crypto.randomUUID() for safety.",
+    "checkAllPresent is defined at module scope — good. But signals ref-based sync + score updates are entangled inside one effect; consider extracting to a custom hook for testability.",
+    "Backend still returns 401 for two protected endpoints on unauthenticated initial load (visible in console). Pre-existing from iteration 15 — worth verifying calls are gated behind auth."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped per request)", "frontend": "100%"},
+  "test_credentials": "Admin CPF 154.831.997-07 / admin123; Sinais password 13052017",
+  "seed_data_creation": "Created 'Test A' and 'Test B' strategies via UI (localStorage). Deleted Test A at end of test; Test B remains deactivated in localStorage['sinais_strategies'] for potential retest cleanup.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Multi-strategy system is fully working. STRATEGIES_KEY='sinais_strategies' (localStorage) is polled every 1s by SinaisTab. Signals stored per strategy id in signalsRef; scores in sessionStorage['gatilho_scores'] keyed by strategy id. Both RadarTab and SinaisTab exist simultaneously in DOM — always filter by offsetParent when selecting sinais-btn-N via evaluate. Login uses data-testid='submit-btn' (not get_by_role since ENTRAR text appears on both submit and google-login buttons).",
+  "rca of the issue": "No issues found — implementation matches PRD."
+}
