@@ -1,9 +1,10 @@
 /**
  * Sinais Tab (Em Construção) - Independent tracker synced with RadarTab
- * Password protected. Shares giros with RadarTab via localStorage.
- * Shows reference number analysis by opposite color.
+ * Password protected. Admin can configure trigger/entry numbers via gear icon.
  */
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { Settings } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
 import {
   VERMELHOS,
   countColors,
@@ -14,6 +15,7 @@ import {
 
 const SENHA = "13052017";
 const STORAGE_KEY = "radar_giros";
+const CONFIG_KEY = "sinais_config";
 
 const NUMBER_INFO = {
   0: { refs: '5/1/4/8' }, 1: { refs: '2/6' }, 2: { refs: '1/3/7' }, 3: { refs: '2/4/8' },
@@ -28,49 +30,16 @@ const NUMBER_INFO = {
   36: { refs: '2/4' },
 };
 
-// --- Gatilho de Entrada helpers ---
-const BAIXO_NUMS = Array.from({ length: 12 }, (_, i) => i + 1);
-const MEDIO_NUMS = Array.from({ length: 12 }, (_, i) => i + 13);
-const ALTO_NUMS = Array.from({ length: 12 }, (_, i) => i + 25);
-
-function getCategory(n) {
-  if (n === 0) return null;
-  if (n >= 25) return 'ALTO';
-  if (n >= 13) return 'MÉDIO';
-  return 'BAIXO';
-}
-
-function detectTrigger(giros) {
-  const cats = giros.map(n => getCategory(n)).filter(c => c !== null);
-  if (cats.length < 3) return null;
-  // Find streak of same category at the end
-  const lastCat = cats[cats.length - 1];
-  let streakLen = 1;
-  for (let i = cats.length - 2; i >= 0; i--) {
-    if (cats[i] === lastCat) streakLen++;
-    else break;
-  }
-  if (streakLen < 2) return null;
-  // Target = category BEFORE the streak
-  const beforeIdx = cats.length - 1 - streakLen;
-  if (beforeIdx < 0) return null;
-  return cats[beforeIdx];
-}
-
-function getRangeNumbers(category) {
-  if (category === 'BAIXO') return BAIXO_NUMS;
-  if (category === 'MÉDIO') return MEDIO_NUMS;
-  return ALTO_NUMS;
-}
-
-function getFilteredByColor(category, dominantColor) {
-  const range = getRangeNumbers(category);
-  return range.filter(n =>
-    dominantColor === 'red' ? VERMELHOS.includes(n) : !VERMELHOS.includes(n)
-  );
+function loadConfig() {
+  try {
+    const raw = localStorage.getItem(CONFIG_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch { /* ignore */ }
+  return { triggerNums: [], entryNums: [], attempts: 2, strategyName: '' };
 }
 
 const SinaisTab = ({ viewMode = "vertical" }) => {
+  const { isAdmin } = useAuth();
   const [authenticated, setAuthenticated] = useState(() => sessionStorage.getItem('sinais_auth') === 'true');
   const [senhaInput, setSenhaInput] = useState("");
   const [senhaError, setSenhaError] = useState(false);
@@ -80,6 +49,14 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
   const [limiteGiros, setLimiteGiros] = useState(14);
   const painelRef = useRef(null);
   const isHorizontal = viewMode === "horizontal";
+
+  // Config state
+  const [config, setConfig] = useState(loadConfig);
+  const [showConfig, setShowConfig] = useState(false);
+  const [editTrigger, setEditTrigger] = useState('');
+  const [editEntry, setEditEntry] = useState('');
+  const [editAttempts, setEditAttempts] = useState(2);
+  const [editName, setEditName] = useState('');
 
   const handleLogin = () => {
     if (senhaInput === SENHA) {
@@ -91,13 +68,11 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
     }
   };
 
-  // Sync: write giros to localStorage when changed locally
   const writeGiros = useCallback((newGiros) => {
     setGiros(newGiros);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(newGiros));
   }, []);
 
-  // Sync: poll localStorage for changes from RadarTab
   useEffect(() => {
     const interval = setInterval(() => {
       try {
@@ -112,7 +87,7 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
     return () => clearInterval(interval);
   }, []);
 
-  // --- Gatilho de Entrada state ---
+  // --- Signal state ---
   const [signal, _setSignal] = useState(null);
   const signalRef = useRef(null);
   const updateSignal = useCallback((val) => { signalRef.current = val; _setSignal(val); }, []);
@@ -121,20 +96,11 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
   });
   const prevGirosKeyRef = useRef(giros.join(','));
 
-  // Persist scoreboard
   useEffect(() => {
     sessionStorage.setItem('gatilho_score', JSON.stringify(scoreboard));
   }, [scoreboard]);
 
-  const tryCreateSignal = useCallback((currentGiros) => {
-    const trigger = detectTrigger(currentGiros);
-    if (!trigger) return;
-    const { red: r, black: b } = countColors(currentGiros);
-    const domColor = r > b ? 'red' : 'black';
-    const nums = getFilteredByColor(trigger, domColor);
-    if (nums.length > 0) updateSignal({ target: trigger, numbers: nums, attemptsUsed: 0 });
-  }, [updateSignal]);
-
+  // Signal processing: trigger when new giro is in triggerNums
   useEffect(() => {
     const currKey = giros.join(',');
     const prevKey = prevGirosKeyRef.current;
@@ -154,32 +120,38 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
       return;
     }
 
+    const { triggerNums, entryNums, attempts } = config;
+    if (triggerNums.length === 0 || entryNums.length === 0) return;
+
     const sig = signalRef.current;
     if (sig) {
-      if (sig.numbers.includes(lastNum)) {
-        // Correct category AND correct color → WIN
+      // Active signal: check hit/miss
+      if (entryNums.includes(lastNum)) {
         setScoreboard(p => ({ wins: p.wins + 1, reds: p.reds }));
         updateSignal(null);
-        tryCreateSignal(giros);
-      } else if (lastNum !== 0 && getCategory(lastNum) === sig.target) {
-        // Correct category but WRONG color → immediate LOSS
-        setScoreboard(p => ({ wins: p.wins, reds: p.reds + 1 }));
-        updateSignal(null);
-        tryCreateSignal(giros);
+        // Check if this giro is also a trigger for a new signal
+        if (triggerNums.includes(lastNum)) {
+          updateSignal({ numbers: entryNums, attemptsUsed: 0, triggerNum: lastNum });
+        }
       } else {
         const next = sig.attemptsUsed + 1;
-        if (next >= 3) {
+        if (next >= attempts) {
           setScoreboard(p => ({ wins: p.wins, reds: p.reds + 1 }));
           updateSignal(null);
-          tryCreateSignal(giros);
+          if (triggerNums.includes(lastNum)) {
+            updateSignal({ numbers: entryNums, attemptsUsed: 0, triggerNum: lastNum });
+          }
         } else {
           updateSignal({ ...sig, attemptsUsed: next });
         }
       }
     } else {
-      tryCreateSignal(giros);
+      // No signal: check if new number is a trigger
+      if (triggerNums.includes(lastNum)) {
+        updateSignal({ numbers: entryNums, attemptsUsed: 0, triggerNum: lastNum });
+      }
     }
-  }, [giros, updateSignal, tryCreateSignal]);
+  }, [giros, updateSignal, config]);
 
   const addNumber = (n) => {
     const newGiros = [...giros, n];
@@ -213,21 +185,16 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
     return blinkSet;
   };
 
-  // Calculate top 2 reference numbers filtered by MINORITY color
   const getTopRefs = () => {
     if (giros.length === 0) return [];
     const moreBlack = black >= red;
-    // minority color: if more black → minority is red; if more red → minority is black
-
-    // Get refs from ALL numbers in history, but only count refs that are the MINORITY color
     const refCounts = {};
     for (const n of giros) {
       const info = NUMBER_INFO[n];
       if (!info || !info.refs) continue;
       const refs = info.refs.split('/').map(r => parseInt(r)).filter(r => !isNaN(r));
       for (const r of refs) {
-        // Only count this ref if it's the minority color
-        if (r === 0) continue; // skip zero
+        if (r === 0) continue;
         const refIsRed = VERMELHOS.includes(r);
         const isMinority = moreBlack ? refIsRed : !refIsRed;
         if (isMinority) {
@@ -235,10 +202,33 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
         }
       }
     }
-
-    // Sort by count descending and take top 2
     const sorted = Object.entries(refCounts).sort((a, b) => b[1] - a[1]);
     return sorted.slice(0, 2).map(([num, count]) => ({ num: parseInt(num), count }));
+  };
+
+  // --- Config panel helpers ---
+  const openConfig = () => {
+    setEditTrigger(config.triggerNums.join(', '));
+    setEditEntry(config.entryNums.join(', '));
+    setEditAttempts(config.attempts || 2);
+    setEditName(config.strategyName || '');
+    setShowConfig(true);
+  };
+
+  const saveConfig = () => {
+    const parseLine = (txt) => txt.split(/[,\s]+/).map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n >= 0 && n <= 36);
+    const newCfg = {
+      triggerNums: parseLine(editTrigger),
+      entryNums: parseLine(editEntry),
+      attempts: editAttempts,
+      strategyName: editName.trim(),
+    };
+    setConfig(newCfg);
+    localStorage.setItem(CONFIG_KEY, JSON.stringify(newCfg));
+    setShowConfig(false);
+    // Reset signal and scoreboard on config change
+    updateSignal(null);
+    setScoreboard({ wins: 0, reds: 0 });
   };
 
   // Password screen
@@ -268,7 +258,7 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
   const topRefs = getTopRefs();
   const moreBlack = black >= red;
 
-  // Components
+  // --- Sub-components ---
   const CounterHeader = ({ compact }) => (
     <div className={`flex justify-between items-center bg-[rgba(17,17,17,0.8)] rounded-xl border-2 border-[#D4AF37] gap-2 ${compact ? "p-2" : "p-4"}`}>
       <div className="flex-1 text-center">
@@ -388,24 +378,34 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
             ))}
           </div>
         ) : (
-          <div className="text-center text-gray-600 text-sm py-2">
-            Sem dados suficientes
-          </div>
+          <div className="text-center text-gray-600 text-sm py-2">Sem dados suficientes</div>
         )}
       </div>
     );
   };
 
   const GatilhoCard = ({ compact }) => {
-    const remaining = signal ? 3 - signal.attemptsUsed : 0;
+    const remaining = signal ? config.attempts - signal.attemptsUsed : 0;
+    const hasConfig = config.triggerNums.length > 0 && config.entryNums.length > 0;
 
     return (
       <div className={`card-glass border-2 border-[#D4AF37] ${compact ? "!p-2" : ""}`} data-testid="gatilho-card">
-        <span className="label-accent" style={{ color: '#fff', borderColor: '#D4AF37', fontSize: compact ? '0.7rem' : '0.9rem' }}>
-          GATILHOS DE ENTRADA
-        </span>
+        <div className="flex justify-between items-center">
+          <span className="label-accent" style={{ margin: 0, color: '#fff', borderColor: '#D4AF37', fontSize: compact ? '0.7rem' : '0.9rem' }}>
+            GATILHOS DE ENTRADA{config.strategyName ? ` — ${config.strategyName}` : ''}
+          </span>
+          {isAdmin && (
+            <button onClick={openConfig} className="text-[#D4AF37] hover:text-white transition-colors p-1" data-testid="gatilho-config-btn">
+              <Settings className="w-5 h-5" />
+            </button>
+          )}
+        </div>
 
-        {signal ? (
+        {!hasConfig ? (
+          <div className="text-center text-gray-600 text-sm py-4 mt-2" data-testid="gatilho-no-config">
+            {isAdmin ? 'Configure a estratégia no ícone de engrenagem' : 'Estratégia não configurada'}
+          </div>
+        ) : signal ? (
           <div className="gatilho-signal-box bg-[rgba(0,0,0,0.6)] border-2 border-[#D4AF37] rounded-xl p-3 mt-2"
             data-testid="gatilho-signal-active">
             <div className="text-center text-[#D4AF37] font-bold mb-2" style={{ fontSize: compact ? '0.75rem' : '0.9rem' }}>
@@ -431,22 +431,86 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
           </div>
         ) : (
           <div className="text-center text-gray-600 text-sm py-2 mt-2" data-testid="gatilho-signal-idle">
-            {giros.length < 3 ? 'Mínimo 3 giros para detectar padrão' : 'Aguardando sequência...'}
+            Aguardando gatilho...
           </div>
         )}
 
         <div className="flex gap-4 justify-center mt-2" data-testid="gatilho-scoreboard">
           <div className="flex items-center gap-1">
-            <span className="font-bold" style={{ color: '#00ff41', fontSize: compact ? '0.7rem' : '0.85rem' }}>WIN:</span>
+            <span className="font-bold" style={{ color: '#00ff41', fontSize: compact ? '0.7rem' : '0.85rem' }}>GREEN:</span>
             <span className="text-white font-bold px-2 py-0.5 rounded" style={{ background: 'rgba(0,255,65,0.15)', border: '1px solid rgba(0,255,65,0.4)', fontSize: compact ? '0.7rem' : '0.85rem' }}>
               {scoreboard.wins}
             </span>
           </div>
           <div className="flex items-center gap-1">
-            <span className="font-bold" style={{ color: '#ff3131', fontSize: compact ? '0.7rem' : '0.85rem' }}>LOSS:</span>
+            <span className="font-bold" style={{ color: '#ff3131', fontSize: compact ? '0.7rem' : '0.85rem' }}>RED:</span>
             <span className="text-white font-bold px-2 py-0.5 rounded" style={{ background: 'rgba(255,49,49,0.15)', border: '1px solid rgba(255,49,49,0.4)', fontSize: compact ? '0.7rem' : '0.85rem' }}>
               {scoreboard.reds}
             </span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Config modal
+  const ConfigModal = () => {
+    if (!showConfig) return null;
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80" data-testid="gatilho-config-modal">
+        <div className="card-glass border-2 border-[#D4AF37] p-5 w-full max-w-md mx-4" style={{ maxHeight: '90vh', overflowY: 'auto' }}>
+          <div className="text-[#D4AF37] font-bold text-lg mb-4 text-center">CONFIGURAR ESTRATÉGIA</div>
+
+          <div className="mb-4">
+            <label className="text-gray-300 text-xs font-bold block mb-1">NOME DA ESTRATÉGIA</label>
+            <input type="text" value={editName} onChange={e => setEditName(e.target.value)}
+              placeholder="Ex: 8/3"
+              className="w-full p-2 bg-black border-2 border-[#555] rounded-lg text-white text-sm focus:border-[#D4AF37] outline-none"
+              data-testid="config-name-input" />
+          </div>
+
+          <div className="mb-4">
+            <label className="text-gray-300 text-xs font-bold block mb-1">NÚMEROS GATILHO <span className="text-gray-500">(separe por vírgula)</span></label>
+            <input type="text" value={editTrigger} onChange={e => setEditTrigger(e.target.value)}
+              placeholder="Ex: 2, 8, 11, 17, 20, 26, 28, 29, 35"
+              className="w-full p-2 bg-black border-2 border-[#555] rounded-lg text-white text-sm focus:border-[#D4AF37] outline-none"
+              data-testid="config-trigger-input" />
+            <div className="text-[10px] text-gray-500 mt-1">Quando qualquer um desses números sair, dispara a entrada</div>
+          </div>
+
+          <div className="mb-4">
+            <label className="text-gray-300 text-xs font-bold block mb-1">NÚMEROS DE ENTRADA <span className="text-gray-500">(separe por vírgula)</span></label>
+            <input type="text" value={editEntry} onChange={e => setEditEntry(e.target.value)}
+              placeholder="Ex: 2, 8, 11, 17, 20, 26, 28, 29, 35"
+              className="w-full p-2 bg-black border-2 border-[#555] rounded-lg text-white text-sm focus:border-[#D4AF37] outline-none"
+              data-testid="config-entry-input" />
+            <div className="text-[10px] text-gray-500 mt-1">Números para apostar quando o gatilho disparar</div>
+          </div>
+
+          <div className="mb-5">
+            <label className="text-gray-300 text-xs font-bold block mb-1">TENTATIVAS</label>
+            <div className="flex gap-2">
+              {[2, 3].map(v => (
+                <button key={v} onClick={() => setEditAttempts(v)}
+                  className={`flex-1 py-2 rounded-lg font-bold text-sm border-2 transition-colors ${editAttempts === v ? 'bg-[rgba(212,175,55,0.2)] border-[#D4AF37] text-[#D4AF37]' : 'bg-black border-[#555] text-gray-400'}`}
+                  data-testid={`config-attempts-${v}`}>
+                  {v} Tentativas
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <button onClick={saveConfig}
+              className="flex-1 py-3 bg-[rgba(212,175,55,0.2)] border-2 border-[#D4AF37] rounded-lg text-[#D4AF37] font-bold hover:bg-[rgba(212,175,55,0.3)] transition-colors"
+              data-testid="config-save-btn">
+              SALVAR
+            </button>
+            <button onClick={() => setShowConfig(false)}
+              className="flex-1 py-3 bg-black border-2 border-[#555] rounded-lg text-gray-400 font-bold hover:border-gray-400 transition-colors"
+              data-testid="config-cancel-btn">
+              CANCELAR
+            </button>
           </div>
         </div>
       </div>
@@ -457,6 +521,7 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
   if (isHorizontal) {
     return (
       <div className="flex gap-2 h-full min-h-0" data-testid="sinais-tab">
+        <ConfigModal />
         <div className="flex flex-col gap-1 shrink-0" style={{ width: "280px" }}>
           <CounterHeader compact />
           <Keyboard compact />
@@ -474,6 +539,7 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
   // Vertical layout
   return (
     <div className="space-y-3" data-testid="sinais-tab">
+      <ConfigModal />
       <CounterHeader compact={false} />
       <Keyboard compact={false} />
       <ActionButtons compact={false} />
