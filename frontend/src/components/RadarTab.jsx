@@ -179,12 +179,20 @@ const RadarTab = ({ viewMode = "vertical" }) => {
   const painelRef = useRef(null);
   const isHorizontal = viewMode === "horizontal";
   const [fbPatterns, setFbPatterns] = useState([]);
+  const [fbScore, setFbScore] = useState(() => {
+    try { const s = sessionStorage.getItem('fb_score'); return s ? JSON.parse(s) : { wins: 0, reds: 0 }; } catch { return { wins: 0, reds: 0 }; }
+  });
   const [addCount, setAddCount] = useState(0);
 
   // Save giros to localStorage when changed
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(giros));
   }, [giros]);
+
+  // Persist FB score
+  useEffect(() => {
+    sessionStorage.setItem('fb_score', JSON.stringify(fbScore));
+  }, [fbScore]);
 
   // Sync: poll localStorage for changes from SinaisTab
   useEffect(() => {
@@ -209,12 +217,24 @@ const RadarTab = ({ viewMode = "vertical" }) => {
     const newNum = giros[giros.length - 1];
 
     setFbPatterns(prev => {
-      // Decrement attempts, check hit. Remove if countdown=0 OR hit.
-      let updated = prev.map(p => ({
+      // Decrement attempts, check hit
+      const mapped = prev.map(p => ({
         ...p,
         attemptsLeft: p.attemptsLeft - 1,
         hit: p.entry.includes(newNum),
-      })).filter(p => p.attemptsLeft > 0 && !p.hit);
+      }));
+
+      // Count wins (hit) and reds (expired) before filtering
+      let newWins = 0, newReds = 0;
+      for (const p of mapped) {
+        if (p.hit) newWins++;
+        else if (p.attemptsLeft <= 0) newReds++;
+      }
+      if (newWins > 0 || newReds > 0) {
+        setFbScore(s => ({ wins: s.wins + newWins, reds: s.reds + newReds }));
+      }
+
+      let updated = mapped.filter(p => p.attemptsLeft > 0 && !p.hit);
 
       // Detect new pattern from last 3 numbers
       if (giros.length >= 3) {
@@ -647,6 +667,16 @@ const RadarTab = ({ viewMode = "vertical" }) => {
               Padrões FB aparecerão aqui
             </div>
           )}
+        </div>
+        <div className="flex gap-4 justify-center mt-2" data-testid="fb-scoreboard">
+          <div className="flex items-center gap-1">
+            <span className="font-bold" style={{ color: '#00ff41', fontSize: compact ? '0.7rem' : '0.85rem' }}>GREEN:</span>
+            <span className="text-white font-bold px-2 py-0.5 rounded" style={{ background: 'rgba(0,255,65,0.15)', border: '1px solid rgba(0,255,65,0.4)', fontSize: compact ? '0.7rem' : '0.85rem' }}>{fbScore.wins}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="font-bold" style={{ color: '#ff3131', fontSize: compact ? '0.7rem' : '0.85rem' }}>RED:</span>
+            <span className="text-white font-bold px-2 py-0.5 rounded" style={{ background: 'rgba(255,49,49,0.15)', border: '1px solid rgba(255,49,49,0.4)', fontSize: compact ? '0.7rem' : '0.85rem' }}>{fbScore.reds}</span>
+          </div>
         </div>
       </div>
     );

@@ -1,0 +1,30 @@
+{
+  "summary": "Frontend-only test for two UI changes: (1) SinaisTab single idle card + combined scoreboard vs triggered strategy cards; (2) RadarTab ESTRATÉGIA FB GREEN/RED scoreboard. All 5 scenarios PASSED in one browser session.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "RadarTab.jsx is ~750 lines (>700 threshold) — consider splitting into subcomponents (History, Regions, Ocultos, FB, Juncao) for maintainability.",
+    "SinaisTab.jsx renders SignalsArea/StrategyCard as functions defined inside parent render — could cause unnecessary re-mounts; consider hoisting or using React.memo (minor perf, no functional issue).",
+    "gatilho-scoreboard-total sums scores across ALL strategies including inactive/deleted ones (scores keyed by strategyId persist in sessionStorage even after strategy delete). Consider filtering by activeStrategies IDs when computing totalScore."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped)", "frontend": "100% (5/5)"},
+  "test_credentials": "Admin CPF 154.831.997-07 / admin123, Sinais senha 13052017",
+  "seed_data_creation": "Created 2 strategies via Admin UI: 'Strat A' (trigger 5,10 → entry 2,8) and 'Strat B' (trigger 1,3 → entry 20,25). Stored in localStorage 'sinais_strategies'.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Verified in one session: (1) With no giros → single card [data-testid=gatilho-idle] with combined [data-testid=gatilho-scoreboard-total] shows GREEN:0 RED:0, no per-strategy cards. (2) After entering 5,10 → only signal-active-{stratA_id} visible; Strat B not rendered as idle card; main idle hidden. (3) After entering 1,3 → both signal-active-{A} and signal-active-{B} visible simultaneously. (4) Radar tab fb-card contains fb-scoreboard showing GREEN:0 RED:0 at bottom. Screenshots at .screenshots/sinais_idle.png, sinais_A_triggered.png, sinais_both_triggered.png, radar_fb.png.",
+  "test_results": {
+    "strategies_created_via_admin": "PASS",
+    "test1_single_idle_card_with_combined_scoreboard": "PASS",
+    "test2_only_triggered_A_shown_no_idle_B": "PASS",
+    "test3_both_A_and_B_active_simultaneously": "PASS",
+    "test4_fb_scoreboard_visible_on_radar": "PASS"
+  }
+}

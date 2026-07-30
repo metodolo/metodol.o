@@ -365,6 +365,42 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
     );
   };
 
+  // Compute which strategies have active signals
+  const triggeredStrategies = activeStrategies.filter(s => signals[s.id]);
+  const totalScore = Object.values(scores).reduce((acc, s) => ({ wins: acc.wins + s.wins, reds: acc.reds + s.reds }), { wins: 0, reds: 0 });
+
+  const SignalsArea = ({ compact }) => {
+    if (activeStrategies.length === 0) {
+      return (
+        <div className={`card-glass border-2 border-[#D4AF37] text-center text-gray-600 text-sm ${compact ? '!p-2 py-4' : 'py-6'}`} data-testid="no-strategies">
+          Nenhuma estratégia ativa. Configure no painel Admin.
+        </div>
+      );
+    }
+    // Show triggered strategy cards, or a single idle card
+    if (triggeredStrategies.length > 0) {
+      return <>{triggeredStrategies.map(s => <StrategyCard key={s.id} strat={s} compact={compact} />)}</>;
+    }
+    return (
+      <div className={`card-glass border-2 border-[#D4AF37] ${compact ? "!p-2" : ""}`} data-testid="gatilho-idle">
+        <span className="label-accent" style={{ margin: 0, color: '#fff', borderColor: '#D4AF37', fontSize: compact ? '0.7rem' : '0.9rem' }}>
+          GATILHOS DE ENTRADA
+        </span>
+        <div className="text-center text-gray-600 text-sm py-2 mt-1">Aguardando gatilho...</div>
+        <div className="flex gap-4 justify-center mt-2" data-testid="gatilho-scoreboard-total">
+          <div className="flex items-center gap-1">
+            <span className="font-bold" style={{ color: '#00ff41', fontSize: compact ? '0.7rem' : '0.85rem' }}>GREEN:</span>
+            <span className="text-white font-bold px-2 py-0.5 rounded" style={{ background: 'rgba(0,255,65,0.15)', border: '1px solid rgba(0,255,65,0.4)', fontSize: compact ? '0.7rem' : '0.85rem' }}>{totalScore.wins}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="font-bold" style={{ color: '#ff3131', fontSize: compact ? '0.7rem' : '0.85rem' }}>RED:</span>
+            <span className="text-white font-bold px-2 py-0.5 rounded" style={{ background: 'rgba(255,49,49,0.15)', border: '1px solid rgba(255,49,49,0.4)', fontSize: compact ? '0.7rem' : '0.85rem' }}>{totalScore.reds}</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // Horizontal layout
   if (isHorizontal) {
     return (
@@ -377,11 +413,7 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
         <div className="flex flex-col gap-1 min-h-0 overflow-y-auto" style={{ flex: 1, scrollbarWidth: 'thin', scrollbarColor: '#D4AF37 #111' }}>
           <HistoryCard compact />
           <RefAnalysisCard compact />
-          {activeStrategies.length > 0 ? activeStrategies.map(s => <StrategyCard key={s.id} strat={s} compact />) : (
-            <div className="card-glass border-2 border-[#D4AF37] !p-2 text-center text-gray-600 text-sm py-4" data-testid="no-strategies">
-              Nenhuma estratégia ativa. Configure no painel Admin.
-            </div>
-          )}
+          <SignalsArea compact />
         </div>
       </div>
     );
@@ -394,11 +426,7 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
       <ActionButtons compact={false} />
       <HistoryCard compact={false} />
       <RefAnalysisCard compact={false} />
-      {activeStrategies.length > 0 ? activeStrategies.map(s => <StrategyCard key={s.id} strat={s} compact={false} />) : (
-        <div className="card-glass border-2 border-[#D4AF37] text-center text-gray-600 text-sm py-6" data-testid="no-strategies">
-          Nenhuma estratégia ativa. Configure no painel Admin.
-        </div>
-      )}
+      <SignalsArea compact={false} />
     </div>
   );
 };
