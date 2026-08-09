@@ -1,0 +1,1041 @@
+/**
+ * Admin Page
+ */
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { adminApi } from "../services/api";
+import {
+  ArrowLeft,
+  Users,
+  Check,
+  X,
+  CreditCard,
+  Clock,
+  Wifi,
+  WifiOff,
+  Loader2,
+  RefreshCw,
+  UserPlus,
+  Mail,
+  Trash2,
+  Ban,
+  ShieldOff,
+  Settings,
+  Plus,
+  Power,
+  Edit2,
+} from "lucide-react";
+
+const STRATEGIES_KEY = 'sinais_strategies';
+
+const AdminPage = () => {
+  const { isAdmin, user } = useAuth();
+  const navigate = useNavigate();
+  const [users, setUsers] = useState([]);
+  const [pendingSubscriptions, setPendingSubscriptions] = useState([]);
+  const [blacklist, setBlacklist] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [actionLoading, setActionLoading] = useState(null);
+  const [activeTab, setActiveTab] = useState("users"); // users, pending, or blacklist
+  
+  // Form state for new pending subscription
+  const [newEmail, setNewEmail] = useState("");
+  const [newSubType, setNewSubType] = useState("trial");
+  const [newTrialDays, setNewTrialDays] = useState(7);
+  const [newNotes, setNewNotes] = useState("");
+  const [formLoading, setFormLoading] = useState(false);
+  
+  // Form state for blacklist
+  const [blacklistType, setBlacklistType] = useState("email");
+  const [blacklistValue, setBlacklistValue] = useState("");
+  const [blacklistReason, setBlacklistReason] = useState("");
+  const [blacklistLoading, setBlacklistLoading] = useState(false);
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Strategies state
+  const [strategies, setStrategies] = useState([]);
+  const [stratForm, setStratForm] = useState({ name: '', triggerNums: '', entryNums: '' });
+  const [editingStratId, setEditingStratId] = useState(null);
+
+  const getAuthHeaders = () => {
+    const token = document.cookie.split(';').map(c => c.trim()).find(c => c.startsWith('session_token='));
+    const sessionToken = token ? token.split('=')[1] : localStorage.getItem('session_token');
+    return { 'Authorization': `Bearer ${sessionToken}`, 'Content-Type': 'application/json' };
+  };
+
+  const loadStrategies = async () => {
+    try {
+      const data = await adminApi.listStrategies();
+      setStrategies(Array.isArray(data) ? data : []);
+    } catch (e) { console.error('Failed to load strategies', e); }
+  };
+
+  useEffect(() => { loadStrategies(); }, []);
+
+  const parseLine = (txt) => txt.split(/[,\s]+/).map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n >= 0 && n <= 36);
+
+  const addStrategy = async () => {
+    if (!stratForm.triggerNums.trim() || !stratForm.entryNums.trim()) return;
+    try {
+      await adminApi.createStrategy({
+        name: stratForm.name.trim() || 'Sem nome',
+        triggerNums: parseLine(stratForm.triggerNums),
+        entryNums: parseLine(stratForm.entryNums),
+        active: true
+      });
+      setStratForm({ name: '', triggerNums: '', entryNums: '' });
+      loadStrategies();
+    } catch (e) {
+      console.error(e);
+      setError(e.message || 'Erro ao adicionar estratégia');
+    }
+  };
+
+  const updateStrategy = async () => {
+    try {
+      await adminApi.updateStrategy(editingStratId, {
+        name: stratForm.name.trim(),
+        triggerNums: parseLine(stratForm.triggerNums),
+        entryNums: parseLine(stratForm.entryNums)
+      });
+      setEditingStratId(null); setStratForm({ name: '', triggerNums: '', entryNums: '' });
+      loadStrategies();
+    } catch (e) {
+      console.error(e);
+      setError(e.message || 'Erro ao atualizar estratégia');
+    }
+  };
+
+  const deleteStrategy = async (id) => {
+    try {
+      await adminApi.deleteStrategy(id);
+      loadStrategies();
+    } catch (e) {
+      console.error(e);
+      setError(e.message || 'Erro ao remover estratégia');
+    }
+  };
+
+  const toggleStrategy = async (id) => {
+    const st = strategies.find(s => s.id === id);
+    if (!st) return;
+    try {
+      await adminApi.updateStrategy(id, { active: !st.active });
+      loadStrategies();
+    } catch (e) {
+      console.error(e);
+      setError(e.message || 'Erro ao alterar estratégia');
+    }
+  };
+
+  const startEdit = (st) => {
+    setEditingStratId(st.id);
+    setStratForm({ name: st.name, triggerNums: st.triggerNums.join(', '), entryNums: st.entryNums.join(', ') });
+  };
+
+  // Redirect if not admin
+  useEffect(() => {
+    if (!isAdmin) {
+      navigate("/");
+    }
+  }, [isAdmin, navigate]);
+
+  // Load users
+  const loadUsers = async () => {
+    setLoading(true);
+    try {
+      const data = await adminApi.listUsers();
+      setUsers(data.users);
+      setError("");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load pending subscriptions
+  const loadPendingSubscriptions = async () => {
+    try {
+      const data = await adminApi.listPendingSubscriptions();
+      setPendingSubscriptions(data.pending_subscriptions || []);
+    } catch (err) {
+      console.error("Error loading pending subscriptions:", err);
+    }
+  };
+
+  // Load blacklist
+  const loadBlacklist = async () => {
+    try {
+      const data = await adminApi.listBlacklist();
+      setBlacklist(data.blacklist || []);
+    } catch (err) {
+      console.error("Error loading blacklist:", err);
+    }
+  };
+
+  // Load all data
+  const loadAllData = async () => {
+    setLoading(true);
+    try {
+      await Promise.all([loadUsers(), loadPendingSubscriptions(), loadBlacklist()]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadAllData();
+  }, []);
+
+  // Format seconds to hours
+  const formatTime = (seconds) => {
+    const hours = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    return `${hours}h ${mins}m`;
+  };
+
+  // Update user
+  const updateUser = async (userId, data) => {
+    setActionLoading(userId);
+    try {
+      await adminApi.updateUser(userId, data);
+      await loadUsers();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Simulate payment
+  const simulatePayment = async (userId) => {
+    setActionLoading(userId);
+    try {
+      await adminApi.simulatePayment(userId);
+      await loadUsers();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Invalidate sessions
+  const invalidateSessions = async (userId) => {
+    setActionLoading(userId);
+    try {
+      await adminApi.invalidateSessions(userId);
+      await loadUsers();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Create pending subscription
+  const createPendingSubscription = async (e) => {
+    e.preventDefault();
+    if (!newEmail.trim()) {
+      setError("Por favor, insira um email válido");
+      return;
+    }
+    
+    setFormLoading(true);
+    try {
+      await adminApi.createPendingSubscription(newEmail.trim(), newSubType, newTrialDays, newNotes.trim());
+      // Reset form
+      setNewEmail("");
+      setNewSubType("trial");
+      setNewTrialDays(7);
+      setNewNotes("");
+      // Reload list
+      await loadPendingSubscriptions();
+      setError("");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  // Delete pending subscription
+  const deletePendingSubscription = async (pendingId) => {
+    setActionLoading(pendingId);
+    try {
+      await adminApi.deletePendingSubscription(pendingId);
+      await loadPendingSubscriptions();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Add to blacklist
+  const addToBlacklist = async (e) => {
+    e.preventDefault();
+    if (!blacklistValue.trim()) {
+      setError("Por favor, insira um valor válido");
+      return;
+    }
+    
+    setBlacklistLoading(true);
+    try {
+      await adminApi.addToBlacklist(blacklistType, blacklistValue.trim(), blacklistReason.trim());
+      // Reset form
+      setBlacklistValue("");
+      setBlacklistReason("");
+      // Reload lists
+      await Promise.all([loadBlacklist(), loadUsers()]);
+      setError("");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBlacklistLoading(false);
+    }
+  };
+
+  // Remove from blacklist
+  const removeFromBlacklist = async (blacklistId) => {
+    setActionLoading(blacklistId);
+    try {
+      await adminApi.removeFromBlacklist(blacklistId);
+      await loadBlacklist();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Limit options
+  const limitOptions = [
+    { label: "1h", value: 3600 },
+    { label: "2h", value: 7200 },
+    { label: "4h", value: 14400 },
+    { label: "8h", value: 28800 },
+    { label: "Ilimitado", value: 86400 },
+  ];
+
+  // Subscription options
+  const subscriptionOptions = [
+    { label: "Nenhum", value: "none", color: "gray" },
+    { label: "Teste", value: "trial", color: "yellow" },
+    { label: "Mensal", value: "monthly", color: "blue" },
+    { label: "Anual", value: "yearly", color: "purple" },
+    { label: "Vitalício", value: "lifetime", color: "green" },
+  ];
+
+  // Trial days options
+  const trialDaysOptions = [3, 7, 14, 30];
+
+  // Update subscription
+  const updateSubscription = async (userId, status, trialDays = null) => {
+    setActionLoading(userId);
+    try {
+      const data = { subscription_status: status };
+      if (status === "trial" && trialDays) {
+        data.trial_days = trialDays;
+      }
+      await adminApi.updateUser(userId, data);
+      await loadUsers();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  return (
+    <div className="min-h-screen pb-10">
+      {/* Watermark */}
+      <div className="watermark-bg" />
+
+      <div className="app-container max-w-[900px] mx-auto p-4">
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-4">
+          <button
+            onClick={() => navigate("/")}
+            className="p-2 bg-[#222] rounded-lg hover:bg-[#333] transition-colors"
+            data-testid="back-btn"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <Users className="w-6 h-6 text-[#00ff95]" />
+            Painel Admin
+          </h1>
+          <button
+            onClick={loadAllData}
+            className="ml-auto p-2 bg-[#222] rounded-lg hover:bg-[#333] transition-colors"
+            data-testid="refresh-btn"
+          >
+            <RefreshCw className={`w-5 h-5 ${loading ? "animate-spin" : ""}`} />
+          </button>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-2 mb-4">
+          <button
+            onClick={() => setActiveTab("users")}
+            className={`flex-1 py-3 px-4 rounded-lg font-bold text-sm flex items-center justify-center gap-2 border-2 ${
+              activeTab === "users" 
+                ? "bg-black text-white border-[#D4AF37]" 
+                : "bg-[#222] text-gray-400 border-transparent hover:border-[#333]"
+            }`}
+            data-testid="tab-users"
+          >
+            <Users className="w-4 h-4" />
+            Usuários ({users.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("pending")}
+            className={`flex-1 py-3 px-4 rounded-lg font-bold text-sm flex items-center justify-center gap-2 border-2 ${
+              activeTab === "pending" 
+                ? "bg-black text-white border-[#D4AF37]" 
+                : "bg-[#222] text-gray-400 border-transparent hover:border-[#333]"
+            }`}
+            data-testid="tab-pending"
+          >
+            <UserPlus className="w-4 h-4" />
+            Pré-Cadastros ({pendingSubscriptions.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("blacklist")}
+            className={`flex-1 py-3 px-4 rounded-lg font-bold text-sm flex items-center justify-center gap-2 border-2 ${
+              activeTab === "blacklist" 
+                ? "bg-black text-white border-[#D4AF37]" 
+                : "bg-[#222] text-gray-400 border-transparent hover:border-[#333]"
+            }`}
+            data-testid="tab-blacklist"
+          >
+            <Ban className="w-4 h-4" />
+            Lista Negra ({blacklist.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("strategies")}
+            className={`flex-1 py-3 px-4 rounded-lg font-bold text-sm flex items-center justify-center gap-2 border-2 ${
+              activeTab === "strategies" 
+                ? "bg-black text-white border-[#D4AF37]" 
+                : "bg-[#222] text-gray-400 border-transparent hover:border-[#333]"
+            }`}
+            data-testid="tab-strategies"
+          >
+            <Settings className="w-4 h-4" />
+            Estratégias ({strategies.length})
+          </button>
+        </div>
+
+        {/* Error */}
+        {error && (
+          <div className="bg-red-500/20 border border-red-500 text-red-400 px-4 py-3 rounded-lg mb-4 text-sm flex justify-between items-center">
+            <span>{error}</span>
+            <button onClick={() => setError("")} className="text-red-400 hover:text-red-300">✕</button>
+          </div>
+        )}
+
+        {/* Loading */}
+        {loading ? (
+          <div className="text-center py-20">
+            <Loader2 className="w-10 h-10 animate-spin text-[#00ff95] mx-auto" />
+          </div>
+        ) : activeTab === "pending" ? (
+          /* Pending Subscriptions Tab */
+          <div className="space-y-4">
+            {/* Add new pending subscription form */}
+            <div className="card-glass p-4">
+              <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-[#D4AF37]">
+                <UserPlus className="w-5 h-5" />
+                Adicionar Pré-Cadastro
+              </h3>
+              <form onSubmit={createPendingSubscription} className="space-y-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Email do futuro usuário</label>
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-5 h-5 text-gray-500" />
+                    <input
+                      type="email"
+                      value={newEmail}
+                      onChange={(e) => setNewEmail(e.target.value)}
+                      placeholder="exemplo@email.com"
+                      className="flex-1 bg-[#1a1a1a] border border-[#333] rounded-lg px-3 py-2 text-white focus:border-[#D4AF37] focus:outline-none"
+                      data-testid="input-new-email"
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">Tipo de Assinatura</label>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { label: "Teste", value: "trial", color: "yellow" },
+                      { label: "Mensal", value: "monthly", color: "blue" },
+                      { label: "Anual", value: "yearly", color: "purple" },
+                      { label: "Vitalício", value: "lifetime", color: "green" },
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setNewSubType(opt.value)}
+                        className={`px-3 py-2 rounded text-sm font-bold ${
+                          newSubType === opt.value
+                            ? opt.color === "yellow" ? "bg-yellow-500 text-black" :
+                              opt.color === "blue" ? "bg-blue-500 text-white" :
+                              opt.color === "purple" ? "bg-purple-500 text-white" :
+                              "bg-green-500 text-white"
+                            : opt.color === "yellow" ? "bg-yellow-500/20 text-yellow-400" :
+                              opt.color === "blue" ? "bg-blue-500/20 text-blue-400" :
+                              opt.color === "purple" ? "bg-purple-500/20 text-purple-400" :
+                              "bg-green-500/20 text-green-400"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {newSubType === "trial" && (
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-2">Dias de Teste</label>
+                    <div className="flex gap-2">
+                      {[3, 7, 14, 30].map((days) => (
+                        <button
+                          key={days}
+                          type="button"
+                          onClick={() => setNewTrialDays(days)}
+                          className={`px-3 py-2 rounded text-sm font-bold ${
+                            newTrialDays === days
+                              ? "bg-yellow-500 text-black"
+                              : "bg-yellow-500/20 text-yellow-400"
+                          }`}
+                        >
+                          {days} dias
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Observações (opcional)</label>
+                  <input
+                    type="text"
+                    value={newNotes}
+                    onChange={(e) => setNewNotes(e.target.value)}
+                    placeholder="Ex: Cliente VIP, indicação do João..."
+                    className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-3 py-2 text-white focus:border-[#D4AF37] focus:outline-none"
+                    data-testid="input-new-notes"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={formLoading || !newEmail.trim()}
+                  className="w-full py-3 bg-[#D4AF37] text-black font-bold rounded-lg hover:bg-[#c9a030] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  data-testid="btn-add-pending"
+                >
+                  {formLoading ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <>
+                      <UserPlus className="w-5 h-5" />
+                      Adicionar Pré-Cadastro
+                    </>
+                  )}
+                </button>
+              </form>
+            </div>
+
+            {/* List of pending subscriptions */}
+            <div className="card-glass p-4">
+              <h3 className="text-lg font-bold mb-4 text-white">
+                Pré-Cadastros Pendentes ({pendingSubscriptions.length})
+              </h3>
+              
+              {pendingSubscriptions.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  Nenhum pré-cadastro pendente.
+                  <br />
+                  <span className="text-sm">Adicione emails acima para configurar assinaturas antes do cadastro.</span>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {pendingSubscriptions.map((ps) => (
+                    <div
+                      key={ps.id}
+                      className="bg-[#1a1a1a] border border-[#333] rounded-lg p-3 flex flex-wrap items-center gap-3"
+                      data-testid={`pending-${ps.id}`}
+                    >
+                      <div className="flex-1 min-w-[200px]">
+                        <div className="font-bold text-white flex items-center gap-2">
+                          <Mail className="w-4 h-4 text-gray-400" />
+                          {ps.email}
+                        </div>
+                        {ps.notes && (
+                          <div className="text-xs text-gray-500 mt-1">{ps.notes}</div>
+                        )}
+                        <div className="text-xs text-gray-500 mt-1">
+                          Criado em: {new Date(ps.created_at).toLocaleDateString("pt-BR")}
+                        </div>
+                      </div>
+                      
+                      <span
+                        className={`px-3 py-1 rounded text-sm font-bold ${
+                          ps.subscription_type === "trial" ? "bg-yellow-500/20 text-yellow-400" :
+                          ps.subscription_type === "monthly" ? "bg-blue-500/20 text-blue-400" :
+                          ps.subscription_type === "yearly" ? "bg-purple-500/20 text-purple-400" :
+                          "bg-green-500/20 text-green-400"
+                        }`}
+                      >
+                        {ps.subscription_type === "trial" ? `Teste (${ps.trial_days || 7} dias)` :
+                         ps.subscription_type === "monthly" ? "Mensal" :
+                         ps.subscription_type === "yearly" ? "Anual" :
+                         "Vitalício"}
+                      </span>
+                      
+                      <button
+                        onClick={() => deletePendingSubscription(ps.id)}
+                        disabled={actionLoading === ps.id}
+                        className="p-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30"
+                        data-testid={`delete-pending-${ps.id}`}
+                      >
+                        {actionLoading === ps.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : activeTab === "blacklist" ? (
+          /* Blacklist Tab */
+          <div className="space-y-4">
+            {/* Add to blacklist form */}
+            <div className="card-glass p-4">
+              <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-[#D4AF37]">
+                <Ban className="w-5 h-5" />
+                Bloquear Email ou CPF
+              </h3>
+              <form onSubmit={addToBlacklist} className="space-y-4">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-2">Tipo</label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setBlacklistType("email")}
+                      className={`flex-1 py-2 px-4 rounded font-bold text-sm ${
+                        blacklistType === "email"
+                          ? "bg-red-500 text-white"
+                          : "bg-red-500/20 text-red-400"
+                      }`}
+                    >
+                      Email
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBlacklistType("cpf")}
+                      className={`flex-1 py-2 px-4 rounded font-bold text-sm ${
+                        blacklistType === "cpf"
+                          ? "bg-red-500 text-white"
+                          : "bg-red-500/20 text-red-400"
+                      }`}
+                    >
+                      CPF
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">
+                    {blacklistType === "email" ? "Email para bloquear" : "CPF para bloquear"}
+                  </label>
+                  <input
+                    type={blacklistType === "email" ? "email" : "text"}
+                    value={blacklistValue}
+                    onChange={(e) => setBlacklistValue(e.target.value)}
+                    placeholder={blacklistType === "email" ? "exemplo@email.com" : "000.000.000-00"}
+                    className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-4 py-3 text-white focus:border-[#D4AF37] focus:outline-none"
+                    data-testid="input-blacklist-value"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Motivo (opcional)</label>
+                  <input
+                    type="text"
+                    value={blacklistReason}
+                    onChange={(e) => setBlacklistReason(e.target.value)}
+                    placeholder="Ex: Fraude, Teste indevido..."
+                    className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-4 py-3 text-white focus:border-[#D4AF37] focus:outline-none"
+                    data-testid="input-blacklist-reason"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={blacklistLoading || !blacklistValue.trim()}
+                  className="w-full py-3 bg-red-500 text-white font-bold rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  data-testid="btn-add-blacklist"
+                >
+                  {blacklistLoading ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <>
+                      <Ban className="w-5 h-5" />
+                      Bloquear
+                    </>
+                  )}
+                </button>
+              </form>
+            </div>
+
+            {/* Blacklist entries */}
+            <div className="card-glass p-4">
+              <h3 className="text-lg font-bold mb-4 text-white">
+                Bloqueados ({blacklist.length})
+              </h3>
+              
+              {blacklist.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  Nenhum email ou CPF bloqueado.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {blacklist.map((item) => (
+                    <div
+                      key={item.id}
+                      className="bg-[#1a1a1a] border border-red-500/30 rounded-lg p-3 flex flex-wrap items-center gap-3"
+                      data-testid={`blacklist-${item.id}`}
+                    >
+                      <div className="flex-1 min-w-[200px]">
+                        <div className="font-bold text-white flex items-center gap-2">
+                          <ShieldOff className="w-4 h-4 text-red-400" />
+                          {item.value}
+                        </div>
+                        {item.reason && (
+                          <div className="text-xs text-gray-500 mt-1">Motivo: {item.reason}</div>
+                        )}
+                        <div className="text-xs text-gray-500 mt-1">
+                          Bloqueado em: {new Date(item.created_at).toLocaleDateString("pt-BR")}
+                        </div>
+                      </div>
+                      
+                      <span className={`px-3 py-1 rounded text-sm font-bold ${
+                        item.type === "email" 
+                          ? "bg-orange-500/20 text-orange-400"
+                          : "bg-purple-500/20 text-purple-400"
+                      }`}>
+                        {item.type.toUpperCase()}
+                      </span>
+                      
+                      <button
+                        onClick={() => removeFromBlacklist(item.id)}
+                        disabled={actionLoading === item.id}
+                        className="p-2 bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30"
+                        title="Desbloquear"
+                        data-testid={`unblock-${item.id}`}
+                      >
+                        {actionLoading === item.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Check className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : activeTab === "strategies" ? (
+          /* Strategies Tab */
+          <div className="space-y-4" data-testid="strategies-panel">
+            <div className="bg-[#111] border-2 border-[#D4AF37] rounded-xl p-4">
+              <h3 className="text-[#D4AF37] font-bold text-sm mb-3">
+                {editingStratId ? 'EDITAR ESTRATÉGIA' : 'NOVA ESTRATÉGIA'}
+              </h3>
+              <div className="space-y-3">
+                <input type="text" placeholder="Nome (ex: 8/3)" value={stratForm.name}
+                  onChange={e => setStratForm({...stratForm, name: e.target.value})}
+                  className="w-full p-2 bg-black border border-[#555] rounded-lg text-white text-sm focus:border-[#D4AF37] outline-none"
+                  data-testid="strat-name-input" />
+                <div>
+                  <label className="text-gray-400 text-xs block mb-1">Números Gatilho (todos devem estar nos 14 giros)</label>
+                  <input type="text" placeholder="Ex: 2, 8, 11, 17, 20" value={stratForm.triggerNums}
+                    onChange={e => setStratForm({...stratForm, triggerNums: e.target.value})}
+                    className="w-full p-2 bg-black border border-[#555] rounded-lg text-white text-sm focus:border-[#D4AF37] outline-none"
+                    data-testid="strat-trigger-input" />
+                </div>
+                <div>
+                  <label className="text-gray-400 text-xs block mb-1">Números de Entrada (apostar quando gatilho disparar)</label>
+                  <input type="text" placeholder="Ex: 2, 8, 11, 17, 20, 26, 28" value={stratForm.entryNums}
+                    onChange={e => setStratForm({...stratForm, entryNums: e.target.value})}
+                    className="w-full p-2 bg-black border border-[#555] rounded-lg text-white text-sm focus:border-[#D4AF37] outline-none"
+                    data-testid="strat-entry-input" />
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={editingStratId ? updateStrategy : addStrategy}
+                    className="flex-1 py-2 bg-[rgba(212,175,55,0.2)] border-2 border-[#D4AF37] rounded-lg text-[#D4AF37] font-bold text-sm hover:bg-[rgba(212,175,55,0.3)]"
+                    data-testid="strat-save-btn">
+                    {editingStratId ? 'ATUALIZAR' : 'ADICIONAR'}
+                  </button>
+                  {editingStratId && (
+                    <button onClick={() => { setEditingStratId(null); setStratForm({ name: '', triggerNums: '', entryNums: '' }); }}
+                      className="px-4 py-2 bg-black border border-[#555] rounded-lg text-gray-400 font-bold text-sm">CANCELAR</button>
+                  )}
+                </div>
+              </div>
+            </div>
+            {strategies.map(st => (
+              <div key={st.id} className={`bg-[#111] border-2 rounded-xl p-4 ${st.active ? 'border-[#D4AF37]' : 'border-[#333] opacity-60'}`}
+                data-testid={`strategy-${st.id}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-white font-bold">{st.name}</span>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => toggleStrategy(st.id)}
+                      className={`p-1.5 rounded-lg border transition-colors ${st.active ? 'border-[#00ff95] text-[#00ff95]' : 'border-[#555] text-gray-500'}`}
+                      data-testid={`strat-toggle-${st.id}`} title={st.active ? 'Desativar' : 'Ativar'}>
+                      <Power className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => startEdit(st)}
+                      className="p-1.5 rounded-lg border border-[#555] text-gray-400 hover:text-white hover:border-white transition-colors"
+                      data-testid={`strat-edit-${st.id}`}><Edit2 className="w-4 h-4" /></button>
+                    <button onClick={() => deleteStrategy(st.id)}
+                      className="p-1.5 rounded-lg border border-[#555] text-gray-400 hover:text-red-400 hover:border-red-400 transition-colors"
+                      data-testid={`strat-delete-${st.id}`}><Trash2 className="w-4 h-4" /></button>
+                  </div>
+                </div>
+                <div className="text-xs text-gray-500 mb-1"><span className="text-gray-400 font-bold">Gatilhos:</span> {st.triggerNums.join(', ')}</div>
+                <div className="text-xs text-gray-500"><span className="text-gray-400 font-bold">Entradas:</span> {st.entryNums.join(', ')}</div>
+              </div>
+            ))}
+            {strategies.length === 0 && <div className="text-center py-10 text-gray-500">Nenhuma estratégia criada</div>}
+          </div>
+        ) : (
+          /* Users list */
+          <div className="space-y-4" data-testid="users-list">
+            {/* Search bar */}
+            <div className="relative">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Pesquisar por nome ou email..."
+                className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-4 py-3 pl-10 text-white focus:border-[#D4AF37] focus:outline-none text-sm"
+                data-testid="search-users"
+              />
+              <Users className="w-4 h-4 text-gray-500 absolute left-3 top-1/2 -translate-y-1/2" />
+            </div>
+            {[...users]
+              .sort((a, b) => (a.name || "").localeCompare(b.name || "", "pt-BR", { sensitivity: "base" }))
+              .filter((u) => {
+                if (!searchQuery.trim()) return true;
+                const q = searchQuery.toLowerCase();
+                return (u.name || "").toLowerCase().includes(q) || (u.email || "").toLowerCase().includes(q);
+              })
+              .map((u) => (
+              <div
+                key={u.id}
+                className={`card-glass p-4 ${u.id === user?.id ? "border-[#ccff00]" : ""}`}
+                data-testid={`user-card-${u.id}`}
+              >
+                {/* User info */}
+                <div className="flex flex-wrap items-center gap-4 mb-4">
+                  <div className="flex-1 min-w-[200px]">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold">{u.name || "Sem nome"}</span>
+                      {u.role === "admin" && (
+                        <span className="text-xs bg-[#ccff00] text-black px-2 py-0.5 rounded">ADMIN</span>
+                      )}
+                    </div>
+                    <div className="text-sm text-gray-400">{u.email}</div>
+                    {u.cpf && <div className="text-sm text-gray-500">{u.cpf}</div>}
+                  </div>
+
+                  {/* Status badges */}
+                  <div className="flex flex-wrap gap-2">
+                    {/* Active status */}
+                    <span
+                      className={`px-2 py-1 rounded text-xs ${
+                        u.is_active ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
+                      }`}
+                    >
+                      {u.is_active ? "Ativo" : "Inativo"}
+                    </span>
+
+                    {/* Subscription */}
+                    <span
+                      className={`px-2 py-1 rounded text-xs ${
+                        u.subscription_status === "active"
+                          ? "bg-[#00ff95]/20 text-[#00ff95]"
+                          : u.subscription_status === "trial"
+                          ? "bg-yellow-500/20 text-yellow-400"
+                          : "bg-gray-500/20 text-gray-400"
+                      }`}
+                    >
+                      {u.subscription_status || "none"}
+                    </span>
+
+                    {/* API enabled */}
+                    <span
+                      className={`px-2 py-1 rounded text-xs flex items-center gap-1 ${
+                        u.api_enabled ? "bg-blue-500/20 text-blue-400" : "bg-gray-500/20 text-gray-400"
+                      }`}
+                    >
+                      {u.api_enabled ? <Wifi className="w-3 h-3" /> : <WifiOff className="w-3 h-3" />}
+                      API
+                    </span>
+                  </div>
+                </div>
+
+                {/* Usage info */}
+                <div className="flex flex-wrap gap-4 mb-4 text-sm">
+                  <div className="flex items-center gap-1 text-gray-400">
+                    <Clock className="w-4 h-4" />
+                    Usado hoje: {formatTime(u.seconds_used_today)} / {formatTime(u.daily_seconds_limit)}
+                  </div>
+                  {u.device_label && (
+                    <div className="text-gray-500 truncate max-w-[300px]">
+                      Dispositivo: {u.device_label?.substring(0, 50)}...
+                    </div>
+                  )}
+                  {u.last_activity && (
+                    <div className="text-gray-500">
+                      Última atividade: {new Date(u.last_activity).toLocaleString("pt-BR")}
+                    </div>
+                  )}
+                </div>
+
+                {/* Actions */}
+                <div className="flex flex-wrap gap-2 pt-4 border-t border-[#333]">
+                  {/* Toggle active */}
+                  <button
+                    onClick={() => updateUser(u.id, { is_active: !u.is_active })}
+                    disabled={actionLoading === u.id}
+                    className={`px-3 py-2 rounded text-sm font-bold flex items-center gap-1 ${
+                      u.is_active ? "bg-red-500/20 text-red-400" : "bg-green-500/20 text-green-400"
+                    }`}
+                  >
+                    {u.is_active ? <X className="w-4 h-4" /> : <Check className="w-4 h-4" />}
+                    {u.is_active ? "Desativar" : "Ativar"}
+                  </button>
+
+                  {/* Toggle API */}
+                  <button
+                    onClick={() => updateUser(u.id, { api_enabled: !u.api_enabled })}
+                    disabled={actionLoading === u.id}
+                    className={`px-3 py-2 rounded text-sm font-bold flex items-center gap-1 ${
+                      u.api_enabled ? "bg-gray-500/20 text-gray-400" : "bg-blue-500/20 text-blue-400"
+                    }`}
+                  >
+                    {u.api_enabled ? <WifiOff className="w-4 h-4" /> : <Wifi className="w-4 h-4" />}
+                    {u.api_enabled ? "Desativar API" : "Ativar API"}
+                  </button>
+
+                  {/* Invalidate sessions */}
+                  <button
+                    onClick={() => invalidateSessions(u.id)}
+                    disabled={actionLoading === u.id}
+                    className="px-3 py-2 rounded text-sm font-bold bg-orange-500/20 text-orange-400"
+                  >
+                    Derrubar Sessões
+                  </button>
+
+                  {/* Limit selector */}
+                  <select
+                    value={u.daily_seconds_limit}
+                    onChange={(e) => updateUser(u.id, { daily_seconds_limit: parseInt(e.target.value) })}
+                    disabled={actionLoading === u.id}
+                    className="px-3 py-2 rounded text-sm bg-[#222] text-white border border-[#333]"
+                  >
+                    {limitOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        Limite: {opt.label}
+                      </option>
+                    ))}
+                  </select>
+
+                  {actionLoading === u.id && <Loader2 className="w-5 h-5 animate-spin text-[#00ff95]" />}
+                </div>
+
+                {/* Subscription Management */}
+                <div className="mt-4 pt-4 border-t border-[#333]">
+                  <div className="text-sm font-bold text-gray-400 mb-2 flex items-center gap-2">
+                    <CreditCard className="w-4 h-4" />
+                    Gerenciar Assinatura
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {/* Subscription type buttons */}
+                    {subscriptionOptions.map((opt) => (
+                      <button
+                        key={opt.value}
+                        onClick={() => updateSubscription(u.id, opt.value)}
+                        disabled={actionLoading === u.id}
+                        className={`px-3 py-2 rounded text-sm font-bold ${
+                          u.subscription_status === opt.value
+                            ? opt.color === "gray" ? "bg-gray-500 text-white" :
+                              opt.color === "yellow" ? "bg-yellow-500 text-black" :
+                              opt.color === "blue" ? "bg-blue-500 text-white" :
+                              opt.color === "purple" ? "bg-purple-500 text-white" :
+                              "bg-green-500 text-white"
+                            : opt.color === "gray" ? "bg-gray-500/20 text-gray-400" :
+                              opt.color === "yellow" ? "bg-yellow-500/20 text-yellow-400" :
+                              opt.color === "blue" ? "bg-blue-500/20 text-blue-400" :
+                              opt.color === "purple" ? "bg-purple-500/20 text-purple-400" :
+                              "bg-green-500/20 text-green-400"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Trial days selector (only show if subscription is trial) */}
+                  {u.subscription_status === "trial" && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className="text-sm text-gray-400">Dias de teste:</span>
+                      {trialDaysOptions.map((days) => (
+                        <button
+                          key={days}
+                          onClick={() => updateSubscription(u.id, "trial", days)}
+                          disabled={actionLoading === u.id}
+                          className="px-2 py-1 rounded text-xs font-bold bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30"
+                        >
+                          {days} dias
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Subscription info */}
+                  {u.subscription_end && (
+                    <div className="mt-2 text-xs text-gray-500">
+                      Expira em: {new Date(u.subscription_end).toLocaleDateString("pt-BR")}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            {users.length === 0 && (
+              <div className="text-center py-10 text-gray-500">Nenhum usuário encontrado</div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default AdminPage;

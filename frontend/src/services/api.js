@@ -225,6 +225,34 @@ export const adminApi = {
   deleteStrategy: async (strategyId) => {
     return apiRequest(`/strategies/${strategyId}`, { method: "DELETE" });
   },
+
+  // List strategies
+  listStrategies: async () => {
+    return apiRequest("/strategies");
+  },
+
+  // Create strategy
+  createStrategy: async (data) => {
+    return apiRequest("/strategies", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Update strategy
+  updateStrategy: async (strategyId, data) => {
+    return apiRequest(`/strategies/${strategyId}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Delete strategy
+  deleteStrategy: async (strategyId) => {
+    return apiRequest(`/strategies/${strategyId}`, {
+      method: "DELETE",
+    });
+  },
 };
 
 // ============== Health API ==============
