@@ -1,0 +1,34 @@
+{
+  "summary": "Frontend-only test for SinaisTab trigger re-fire bug fix. All 7 scenarios PASSED in a single browser session. The critical bug (signal not re-firing when the same trigger number reappears) is FIXED.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "SinaisTab.jsx lines 123-151: Signal logic is now clean and correct - each new giro either resolves an active signal (hit/miss) or, if no active signal, fires a new one when lastNum is in triggerNums. Matches spec exactly.",
+    "prevGirosKeyRef guard (lines 99-115) correctly prevents duplicate processing on state re-renders and clears signals when giros array shrinks (undo/clear).",
+    "Edge case (minor, carried over): undo after a resolved signal could produce stale behavior since scores aren't rolled back — low impact, not part of this bug fix.",
+    "SinaisTab.jsx is ~427 lines, healthy size.",
+    "sessionStorage 'gatilho_scores' accumulates entries for deleted strategies (carried from prior iterations). Total scoreboard sums across all keys."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped)", "frontend": "100% (7/7)"},
+  "test_credentials": "Admin CPF 154.831.997-07 / admin123, Sinais senha 13052017",
+  "seed_data_creation": "Seeded via localStorage: sinais_strategies=[{id:'s1', name:'Test', triggerNums:[5], entryNums:[34,20,15], active:true}]",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Bug fix verified. Test flow (giros [5]->[5,34]->[5,34,5]->[5,34,5,1,3,7]->[5,34,5,1,3,7,5]->[5,34,5,1,3,7,5,20]->[5,34,5,1,3,7,5,20,1]): T1 Enter 5 -> signal fires with entries 34,20,15 and '3 tentativas restantes'. T2 Enter 34 (hit) -> signal disappears, GREEN:1. T3 CRITICAL Enter 5 again -> signal fires again (bug was here, now working). T4 Enter 1,3,7 (3 misses) -> signal disappears, RED:1. T5 Enter 5 3rd time -> signal fires (GREEN:1 RED:1). T6 Enter 20 (hit) -> GREEN:2. T7 Enter 1 (non-trigger) -> no signal. All confirmed via [data-testid=signal-active-s1] presence, activeText contents, and [data-testid=gatilho-scoreboard-total] innerText.",
+  "test_results": {
+    "T1_signal_fires_on_first_trigger": "PASS",
+    "T2_GREEN_hit_signal_disappears": "PASS",
+    "T3_CRITICAL_signal_refires_on_same_trigger": "PASS",
+    "T4_RED_after_3_misses_signal_disappears": "PASS",
+    "T5_signal_refires_after_RED": "PASS",
+    "T6_second_GREEN_on_hit_20": "PASS",
+    "T7_no_signal_on_non_trigger_number": "PASS"
+  }
+}

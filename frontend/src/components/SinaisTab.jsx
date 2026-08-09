@@ -32,12 +32,6 @@ const NUMBER_INFO = {
 
 const MAX_ATTEMPTS = 3;
 
-function checkAllPresent(giros, triggerNums) {
-  if (triggerNums.length === 0) return false;
-  const girosSet = new Set(giros);
-  return triggerNums.every(n => girosSet.has(n));
-}
-
 const SinaisTab = ({ viewMode = "vertical" }) => {
   const [authenticated, setAuthenticated] = useState(() => sessionStorage.getItem('sinais_auth') === 'true');
   const [senhaInput, setSenhaInput] = useState("");
@@ -65,7 +59,6 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
   });
   const scoresRef = useRef(scores);
   const prevGirosKeyRef = useRef(giros.join(','));
-  const prevTriggeredRef = useRef(new Set()); // track which strategies had trigger met last giro
 
   useEffect(() => { scoresRef.current = scores; sessionStorage.setItem('gatilho_scores', JSON.stringify(scores)); }, [scores]);
 
@@ -124,14 +117,12 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
     const currentSignals = { ...signalsRef.current };
     const currentScores = { ...scoresRef.current };
     let scoresChanged = false;
-    const newTriggered = new Set();
 
     const activeStrategies = strategies.filter(s => s.active && s.triggerNums.length > 0 && s.entryNums.length > 0);
 
     for (const strat of activeStrategies) {
       const sig = currentSignals[strat.id];
       if (!currentScores[strat.id]) currentScores[strat.id] = { wins: 0, reds: 0 };
-      const isMet = checkAllPresent(giros, strat.triggerNums);
 
       if (sig) {
         // Active signal: check hit/miss
@@ -149,17 +140,13 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
             currentSignals[strat.id] = { ...sig, attemptsUsed: next };
           }
         }
-        // Keep tracking as triggered while signal was active
-        if (isMet) newTriggered.add(strat.id);
       }
 
-      // If no active signal, only fire when trigger NEWLY transitions to met
+      // If no active signal, fire when latest number IS a trigger number
       if (!currentSignals[strat.id]) {
-        const wasMet = prevTriggeredRef.current.has(strat.id);
-        if (isMet && !wasMet) {
+        if (strat.triggerNums.includes(lastNum)) {
           currentSignals[strat.id] = { entryNums: strat.entryNums, attemptsUsed: 0 };
         }
-        if (isMet) newTriggered.add(strat.id);
       }
     }
 
@@ -170,7 +157,6 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
 
     updateSignals(currentSignals);
     if (scoresChanged) setScores(currentScores);
-    prevTriggeredRef.current = newTriggered;
   }, [giros, strategies, updateSignals]);
 
   const addNumber = (n) => {
@@ -332,7 +318,6 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
     const sig = signals[strat.id];
     const score = scores[strat.id] || { wins: 0, reds: 0 };
     const remaining = sig ? MAX_ATTEMPTS - sig.attemptsUsed : 0;
-    const triggerMet = checkAllPresent(giros, strat.triggerNums);
 
     return (
       <div className={`card-glass border-2 border-[#D4AF37] ${compact ? "!p-2" : ""}`} data-testid={`gatilho-card-${strat.id}`}>
@@ -354,8 +339,8 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
             </div>
           </div>
         ) : (
-          <div className="text-center text-sm py-2 mt-1" style={{ color: triggerMet ? '#D4AF37' : '#555' }} data-testid={`signal-idle-${strat.id}`}>
-            {triggerMet ? 'Gatilho formado — aguardando...' : 'Aguardando gatilho...'}
+          <div className="text-center text-sm py-2 mt-1" style={{ color: '#555' }} data-testid={`signal-idle-${strat.id}`}>
+            Aguardando gatilho...
           </div>
         )}
 
