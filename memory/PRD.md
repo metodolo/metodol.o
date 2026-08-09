@@ -31,13 +31,7 @@ React + Vite, FastAPI, Supabase Auth, MongoDB
 - Estratégia FB duplicate Win counting fix
 - pymongo Railway deployment fix (cleaned requirements.txt)
 - Admin login fix (passlib → direct bcrypt for Python 3.12)
-- Railway deployment guide for strategies API fix (RAILWAY_FIX_GUIDE.md)
-
-## Railway Deployment Issue (Current)
-- User deploys to Railway via personal GitHub (metodolo/metodol.o)
-- Issue: server.py in GitHub missing MongoDB connection + strategy routes
-- Fix guide provided at /app/memory/RAILWAY_FIX_GUIDE.md
-- User action needed: copy code blocks, add pymongo to requirements.txt, set MONGO_URL + DB_NAME in Railway variables
+- **Strategy API auth fix**: Migrated strategy CRUD from raw fetch() to centralized adminApi pattern (consistent auth via localStorage token) — fixes silent failures when adding strategies
 
 ## Upcoming
 - P2: Persist daily runs/numbers for historical analysis
