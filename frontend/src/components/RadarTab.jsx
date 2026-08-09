@@ -265,17 +265,21 @@ const RadarTab = ({ viewMode = "vertical" }) => {
 
   // Undo last
   const undo = () => {
+    const scrollY = window.scrollY;
     setGiros((prev) => prev.slice(0, -1));
     setFbPatterns([]);
+    requestAnimationFrame(() => window.scrollTo(0, scrollY));
   };
 
   // Clear all
   const limpar = () => {
+    const scrollY = window.scrollY;
     setGiros([]);
     setTerminalSelecionado(null);
     setFbPatterns([]);
     fbPatternsRef.current = [];
     setFbScore({ wins: 0, reds: 0 });
+    requestAnimationFrame(() => window.scrollTo(0, scrollY));
   };
 
   // Change limit
@@ -736,6 +740,7 @@ const RadarTab = ({ viewMode = "vertical" }) => {
     <div className="space-y-3" data-testid="radar-tab">
       <CounterHeader compact={false} />
       <Keyboard compact={false} />
+      <ActionButtons compact={false} />
       <HistoryCard compact={false} />
       <RegionsCard compact={false} />
       <OcultosCard compact={false} />

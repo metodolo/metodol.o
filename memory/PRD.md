@@ -31,7 +31,14 @@ React + Vite, FastAPI, Supabase Auth, MongoDB
 - Estratégia FB duplicate Win counting fix
 - pymongo Railway deployment fix (cleaned requirements.txt)
 - Admin login fix (passlib → direct bcrypt for Python 3.12)
-- **Strategy API auth fix**: Migrated strategy CRUD from raw fetch() to centralized adminApi pattern (consistent auth via localStorage token) — fixes silent failures when adding strategies
+- **Strategy API auth fix**: Migrated strategy CRUD from raw fetch() to centralized adminApi pattern
+- **Scroll fix**: CORRIGIR/LIMPAR buttons no longer jump to top of page (scroll position preserved)
+- **Action buttons placement**: Added CORRIGIR/LIMPAR right after keyboard in vertical layout for easier access
+
+## Deployment Notes
+- Emergent preview: working 100%
+- Railway: user needs to Save to GitHub → merge conflict branch → Railway auto-deploys
+- GitHub repo: metodolo/metodol.o
 
 ## Upcoming
 - P2: Persist daily runs/numbers for historical analysis
