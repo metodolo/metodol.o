@@ -242,7 +242,7 @@ const AdminPage = () => {
   const createPendingSubscription = async (e) => {
     e.preventDefault();
     if (!newEmail.trim()) {
-      setError("Por favor, insira um email vÃ¡lido");
+      setError("Por favor, insira um email válido");
       return;
     }
     
@@ -392,7 +392,7 @@ const AdminPage = () => {
             data-testid="tab-users"
           >
             <Users className="w-4 h-4" />
-            UsuÃ¡rios ({users.length})
+            Usuários ({users.length})
           </button>
           <button
             onClick={() => setActiveTab("pending")}
@@ -404,7 +404,7 @@ const AdminPage = () => {
             data-testid="tab-pending"
           >
             <UserPlus className="w-4 h-4" />
-            PrÃ©-Cadastros ({pendingSubscriptions.length})
+            Pré-Cadastros ({pendingSubscriptions.length})
           </button>
           <button
             onClick={() => setActiveTab("blacklist")}
@@ -428,7 +428,7 @@ const AdminPage = () => {
             data-testid="tab-strategies"
           >
             <Settings className="w-4 h-4" />
-            EstratÃ©gias ({strategies.length})
+            Estratégias ({strategies.length})
           </button>
         </div>
 
@@ -524,7 +524,7 @@ const AdminPage = () => {
                 )}
 
                 <div>
-                  <label className="block text-sm text-gray-400 mb-1">ObservaÃ§Ãµes (opcional)</label>
+                  <label className="block text-sm text-gray-400 mb-1">observações (opcional)</label>
                   <input
                     type="text"
                     value={newNotes}
@@ -597,7 +597,7 @@ const AdminPage = () => {
                         {ps.subscription_type === "trial" ? `Teste (${ps.trial_days || 7} dias)` :
                          ps.subscription_type === "monthly" ? "Mensal" :
                          ps.subscription_type === "yearly" ? "Anual" :
-                         "VitalÃ­cio"}
+                         "vitalício"}
                       </span>
                       
                       <button
@@ -771,7 +771,7 @@ const AdminPage = () => {
                   className="w-full p-2 bg-black border border-[#555] rounded-lg text-white text-sm focus:border-[#D4AF37] outline-none"
                   data-testid="strat-name-input" />
                 <div>
-                  <label className="text-gray-400 text-xs block mb-1">NÃºmeros Gatilho (todos devem estar nos 14 giros)</label>
+                  <label className="text-gray-400 text-xs block mb-1">Números Gatilho (todos devem estar nos 14 giros)</label>
                   <input type="text" placeholder="Ex: 2, 8, 11, 17, 20" value={stratForm.triggerNums}
                     onChange={e => setStratForm({...stratForm, triggerNums: e.target.value})}
                     className="w-full p-2 bg-black border border-[#555] rounded-lg text-white text-sm focus:border-[#D4AF37] outline-none"
