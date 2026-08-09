@@ -16,10 +16,6 @@ from datetime import datetime, timezone, timedelta
 import re
 import secrets
 import httpx
-from passlib.context import CryptContext
-import pytz
-import resend
-import mercadopago
 from pymongo import MongoClient
 from bson import ObjectId
 
@@ -35,8 +31,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Password hashing (using bcrypt directly for Python 3.12 compatibility)
+import bcrypt as _bcrypt
+import pytz
+import resend
+import mercadopago
 
 # Brazil timezone
 SAO_PAULO_TZ = pytz.timezone('America/Sao_Paulo')
@@ -105,10 +104,13 @@ SUBSCRIPTION_PLANS = {
 # ============== Helper Functions ==============
 
 def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+    return _bcrypt.hashpw(password.encode('utf-8'), _bcrypt.gensalt()).decode('utf-8')
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        return _bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+    except Exception:
+        return False
 
 def validate_cpf(cpf: str) -> bool:
     """Validate CPF format and checksum"""
@@ -1259,7 +1261,7 @@ async def admin_remove_from_blacklist(blacklist_id: str, request: Request):
 async def list_strategies(request: Request):
     """List all strategies - any authenticated user can read"""
     await get_current_user_from_request(request)
-    if not strategies_col:
+    if strategies_col is None:
         return []
     docs = list(strategies_col.find())
     result = []
@@ -1275,7 +1277,7 @@ async def create_strategy(request: Request):
     user, _ = await get_current_user_from_request(request)
     if user.get('role') != 'admin':
         raise HTTPException(status_code=403, detail="Apenas admin")
-    if not strategies_col:
+    if strategies_col is None:
         raise HTTPException(status_code=503, detail="MongoDB não configurado")
     body = await request.json()
     doc = {
@@ -1296,7 +1298,7 @@ async def update_strategy(strategy_id: str, request: Request):
     user, _ = await get_current_user_from_request(request)
     if user.get('role') != 'admin':
         raise HTTPException(status_code=403, detail="Apenas admin")
-    if not strategies_col:
+    if strategies_col is None:
         raise HTTPException(status_code=503, detail="MongoDB não configurado")
     body = await request.json()
     update = {}
@@ -1315,7 +1317,7 @@ async def delete_strategy(strategy_id: str, request: Request):
     user, _ = await get_current_user_from_request(request)
     if user.get('role') != 'admin':
         raise HTTPException(status_code=403, detail="Apenas admin")
-    if not strategies_col:
+    if strategies_col is None:
         raise HTTPException(status_code=503, detail="MongoDB não configurado")
     strategies_col.delete_one({'_id': ObjectId(strategy_id)})
     return {"message": "Removido"}
