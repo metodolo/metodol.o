@@ -213,6 +213,17 @@ export const adminApi = {
     return apiRequest(`/admin/blacklist/${blacklistId}`, {
       method: "DELETE",
     });
+  },listStrategies: async () => {
+    return apiRequest("/strategies");
+  },
+  createStrategy: async (data) => {
+    return apiRequest("/strategies", { method: "POST", body: JSON.stringify(data) });
+  },
+  updateStrategy: async (strategyId, data) => {
+    return apiRequest(`/strategies/${strategyId}`, { method: "PUT", body: JSON.stringify(data) });
+  },
+  deleteStrategy: async (strategyId) => {
+    return apiRequest(`/strategies/${strategyId}`, { method: "DELETE" });
   },
 };
 
