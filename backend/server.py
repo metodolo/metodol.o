@@ -108,7 +108,10 @@ def get_password_hash(password: str) -> str:
     return _bcrypt.hashpw(password.encode('utf-8'), _bcrypt.gensalt()).decode('utf-8')
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    try:
+        return _bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+    except Exception:
+        return False
 def validate_cpf(cpf: str) -> bool:
     """Validate CPF format and checksum"""
     cpf = re.sub(r'[^0-9]', '', cpf)
