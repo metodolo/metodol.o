@@ -15,7 +15,7 @@ import {
 
 const SENHA = "13052017";
 const STORAGE_KEY = "radar_giros";
-const STRATEGIES_KEY = "sinais_strategies";
+const API_URL = import.meta.env.VITE_BACKEND_URL;
 
 const NUMBER_INFO = {
   0: { refs: '5/1/4/8' }, 1: { refs: '2/6' }, 2: { refs: '1/3/7' }, 3: { refs: '2/4/8' },
@@ -43,10 +43,30 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
   const painelRef = useRef(null);
   const isHorizontal = viewMode === "horizontal";
 
-  // Strategies loaded from localStorage (set by Admin)
-  const [strategies, setStrategies] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(STRATEGIES_KEY)) || []; } catch { return []; }
-  });
+  // Strategies loaded from API (set by Admin, shared with all users)
+  const [strategies, setStrategies] = useState([]);
+
+  const getAuthHeaders = () => {
+    const token = document.cookie.split(';').map(c => c.trim()).find(c => c.startsWith('session_token='));
+    const sessionToken = token ? token.split('=')[1] : localStorage.getItem('session_token');
+    return { 'Authorization': `Bearer ${sessionToken}` };
+  };
+
+  // Fetch strategies from API and poll every 5 seconds
+  useEffect(() => {
+    const fetchStrategies = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/strategies`, { headers: getAuthHeaders(), credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          setStrategies(prev => JSON.stringify(prev) === JSON.stringify(data) ? prev : data);
+        }
+      } catch { /* ignore */ }
+    };
+    fetchStrategies();
+    const interval = setInterval(fetchStrategies, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Per-strategy signals: { [strategyId]: { entryNums, attemptsUsed } | null }
   const [signals, setSignals] = useState({});
@@ -80,17 +100,6 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
         setGiros(prev => JSON.stringify(prev) === JSON.stringify(parsed) ? prev : parsed);
       } catch { /* ignore */ }
     }, 300);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Poll strategies from localStorage (sync with Admin)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      try {
-        const parsed = JSON.parse(localStorage.getItem(STRATEGIES_KEY) || '[]');
-        setStrategies(prev => JSON.stringify(prev) === JSON.stringify(parsed) ? prev : parsed);
-      } catch { /* ignore */ }
-    }, 1000);
     return () => clearInterval(interval);
   }, []);
 

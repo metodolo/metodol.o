@@ -1,0 +1,33 @@
+{
+  "summary": "Verified MongoDB-backed strategies migration end-to-end. Backend pytest suite (6 tests) all pass. Frontend flows: admin login → Estratégias tab → create 'API Test' strategy → POST /api/strategies persists → EM CONSTRUÇÃO tab reads via API polling → strategy visible in PLACAR/scoreboard → trigger 5,10 registered on giro grid. Toggle active/inactive via PUT persists across GET. Delete via DELETE removes from list. No _id leaks in responses.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_strategies.py",
+    "/app/test_reports/pytest/strategies_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py Strategy Routes: MongoDB calls (find/insert_one/update_one/delete_one) are SYNCHRONOUS (pymongo) inside async FastAPI handlers — they block the event loop. Consider migrating to motor (AsyncIOMotorClient) for consistency with rest of async stack.",
+    "list_strategies calls await get_current_user_from_request(request) but ignores its return value while create/update/delete use `user, _ = await ...`. Any authenticated user (including inactive/expired subscriptions) can read strategies — acceptable per spec but worth confirming.",
+    "SinaisTab polls /api/strategies every 5s — for many concurrent users this adds constant DB load. Consider Server-Sent Events or WebSocket, or client-side cache with ETag / If-Modified-Since.",
+    "getAuthHeaders() in AdminPage.jsx / SinaisTab.jsx duplicated across files — extract to a shared util.",
+    "server.py has 1665 lines — exceeds 700-line guideline; strategy/auth/payment/blacklist routers should be split into separate modules."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_strategies.py (new)"
+  ],
+  "success_rate": {"backend": "100% (6/6)", "frontend": "100% (all requested flows verified)"},
+  "test_credentials": "Admin CPF 154.831.997-07 / admin123; Sinais password 13052017",
+  "seed_data_creation": "Test strategy 'API Test' created and cleaned up during each test run. Pre-existing '8/3' strategy in MongoDB (from prior curl test) left intact.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Strategy CRUD is fully API-backed via MongoDB collection 'strategies'. Endpoints: GET/POST/PUT/DELETE /api/strategies[/:id]. Admin-only for write. Any authenticated user for read. SinaisTab polls every 5s. Token stored in localStorage.session_token. Test file /app/backend/tests/test_strategies.py is a good regression harness."
+}

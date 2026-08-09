@@ -29,6 +29,8 @@ import {
 
 const STRATEGIES_KEY = 'sinais_strategies';
 
+const API_URL = import.meta.env.VITE_BACKEND_URL;
+
 const AdminPage = () => {
   const { isAdmin, user } = useAuth();
   const navigate = useNavigate();
@@ -57,34 +59,68 @@ const AdminPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
 
   // Strategies state
-  const [strategies, setStrategies] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(STRATEGIES_KEY)) || []; } catch { return []; }
-  });
+  const [strategies, setStrategies] = useState([]);
   const [stratForm, setStratForm] = useState({ name: '', triggerNums: '', entryNums: '' });
   const [editingStratId, setEditingStratId] = useState(null);
 
-  const saveStrategies = (s) => { setStrategies(s); localStorage.setItem(STRATEGIES_KEY, JSON.stringify(s)); };
+  const getAuthHeaders = () => {
+    const token = document.cookie.split(';').map(c => c.trim()).find(c => c.startsWith('session_token='));
+    const sessionToken = token ? token.split('=')[1] : localStorage.getItem('session_token');
+    return { 'Authorization': `Bearer ${sessionToken}`, 'Content-Type': 'application/json' };
+  };
+
+  const loadStrategies = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/strategies`, { headers: getAuthHeaders(), credentials: 'include' });
+      if (res.ok) setStrategies(await res.json());
+    } catch (e) { console.error('Failed to load strategies', e); }
+  };
+
+  useEffect(() => { loadStrategies(); }, []);
+
   const parseLine = (txt) => txt.split(/[,\s]+/).map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n >= 0 && n <= 36);
 
-  const addStrategy = () => {
+  const addStrategy = async () => {
     if (!stratForm.triggerNums.trim() || !stratForm.entryNums.trim()) return;
-    saveStrategies([...strategies, {
-      id: Date.now().toString(), name: stratForm.name.trim() || 'Sem nome',
-      triggerNums: parseLine(stratForm.triggerNums), entryNums: parseLine(stratForm.entryNums), active: true,
-    }]);
-    setStratForm({ name: '', triggerNums: '', entryNums: '' });
+    try {
+      await fetch(`${API_URL}/api/strategies`, {
+        method: 'POST', headers: getAuthHeaders(), credentials: 'include',
+        body: JSON.stringify({ name: stratForm.name.trim() || 'Sem nome', triggerNums: parseLine(stratForm.triggerNums), entryNums: parseLine(stratForm.entryNums), active: true })
+      });
+      setStratForm({ name: '', triggerNums: '', entryNums: '' });
+      loadStrategies();
+    } catch (e) { console.error(e); }
   };
 
-  const updateStrategy = () => {
-    saveStrategies(strategies.map(s => s.id === editingStratId ? {
-      ...s, name: stratForm.name.trim() || s.name,
-      triggerNums: parseLine(stratForm.triggerNums), entryNums: parseLine(stratForm.entryNums),
-    } : s));
-    setEditingStratId(null); setStratForm({ name: '', triggerNums: '', entryNums: '' });
+  const updateStrategy = async () => {
+    try {
+      await fetch(`${API_URL}/api/strategies/${editingStratId}`, {
+        method: 'PUT', headers: getAuthHeaders(), credentials: 'include',
+        body: JSON.stringify({ name: stratForm.name.trim(), triggerNums: parseLine(stratForm.triggerNums), entryNums: parseLine(stratForm.entryNums) })
+      });
+      setEditingStratId(null); setStratForm({ name: '', triggerNums: '', entryNums: '' });
+      loadStrategies();
+    } catch (e) { console.error(e); }
   };
 
-  const deleteStrategy = (id) => saveStrategies(strategies.filter(s => s.id !== id));
-  const toggleStrategy = (id) => saveStrategies(strategies.map(s => s.id === id ? { ...s, active: !s.active } : s));
+  const deleteStrategy = async (id) => {
+    try {
+      await fetch(`${API_URL}/api/strategies/${id}`, { method: 'DELETE', headers: getAuthHeaders(), credentials: 'include' });
+      loadStrategies();
+    } catch (e) { console.error(e); }
+  };
+
+  const toggleStrategy = async (id) => {
+    const st = strategies.find(s => s.id === id);
+    if (!st) return;
+    try {
+      await fetch(`${API_URL}/api/strategies/${id}`, {
+        method: 'PUT', headers: getAuthHeaders(), credentials: 'include',
+        body: JSON.stringify({ active: !st.active })
+      });
+      loadStrategies();
+    } catch (e) { console.error(e); }
+  };
 
   const startEdit = (st) => {
     setEditingStratId(st.id);

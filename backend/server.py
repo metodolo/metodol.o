@@ -20,6 +20,8 @@ from passlib.context import CryptContext
 import pytz
 import resend
 import mercadopago
+from pymongo import MongoClient
+from bson import ObjectId
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -61,6 +63,13 @@ MERCADO_PAGO_PUBLIC_KEY = os.environ.get('MERCADO_PAGO_PUBLIC_KEY')
 mp_sdk = None
 if MERCADO_PAGO_ACCESS_TOKEN:
     mp_sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
+
+# MongoDB connection for strategies
+MONGO_URL = os.environ.get('MONGO_URL')
+DB_NAME = os.environ.get('DB_NAME')
+mongo_client = MongoClient(MONGO_URL)
+mongo_db = mongo_client[DB_NAME]
+strategies_col = mongo_db['strategies']
 
 # Subscription plans configuration (prices in BRL)
 SUBSCRIPTION_PLANS = {
@@ -1233,6 +1242,67 @@ async def admin_remove_from_blacklist(blacklist_id: str, request: Request):
     sb.table('blacklist').delete().eq('id', blacklist_id).execute()
     
     return {"message": "Removido da lista negra"}
+
+
+
+# ============== Strategy Routes (MongoDB) ==============
+
+@api_router.get("/strategies")
+async def list_strategies(request: Request):
+    """List all strategies - any authenticated user can read"""
+    await get_current_user_from_request(request)
+    docs = list(strategies_col.find())
+    result = []
+    for d in docs:
+        d['id'] = str(d['_id'])
+        del d['_id']
+        result.append(d)
+    return result
+
+@api_router.post("/strategies")
+async def create_strategy(request: Request):
+    """Create a strategy - admin only"""
+    user, _ = await get_current_user_from_request(request)
+    if user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Apenas admin")
+    body = await request.json()
+    doc = {
+        'name': body.get('name', 'Sem nome'),
+        'triggerNums': body.get('triggerNums', []),
+        'entryNums': body.get('entryNums', []),
+        'active': body.get('active', True),
+        'created_at': datetime.now(timezone.utc).isoformat(),
+    }
+    result = strategies_col.insert_one(doc)
+    doc['id'] = str(result.inserted_id)
+    del doc['_id']
+    return doc
+
+@api_router.put("/strategies/{strategy_id}")
+async def update_strategy(strategy_id: str, request: Request):
+    """Update a strategy - admin only"""
+    user, _ = await get_current_user_from_request(request)
+    if user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Apenas admin")
+    body = await request.json()
+    update = {}
+    if 'name' in body: update['name'] = body['name']
+    if 'triggerNums' in body: update['triggerNums'] = body['triggerNums']
+    if 'entryNums' in body: update['entryNums'] = body['entryNums']
+    if 'active' in body: update['active'] = body['active']
+    if not update:
+        raise HTTPException(status_code=400, detail="Nada para atualizar")
+    strategies_col.update_one({'_id': ObjectId(strategy_id)}, {'$set': update})
+    return {"message": "Atualizado"}
+
+@api_router.delete("/strategies/{strategy_id}")
+async def delete_strategy(strategy_id: str, request: Request):
+    """Delete a strategy - admin only"""
+    user, _ = await get_current_user_from_request(request)
+    if user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Apenas admin")
+    strategies_col.delete_one({'_id': ObjectId(strategy_id)})
+    return {"message": "Removido"}
 
 
 # ============== Payment Routes (Mercado Pago) ==============
