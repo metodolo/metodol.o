@@ -1354,7 +1354,9 @@ async def create_payment_preference(body: CreatePaymentRequest, request: Request
     external_reference = f"{user['id']}_{body.plan_type}_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
     
     # Base URL for redirects (will be updated for production)
-    base_url = os.environ.get('FRONTEND_URL', 'https://metodol-o.vercel.app')
+    base_url = os.environ.get('FRONTEND_URL')
+    if not base_url:
+        raise HTTPException(status_code=500, detail="FRONTEND_URL não configurado")
     
     preference_data = {
         "items": [
