@@ -64,12 +64,20 @@ mp_sdk = None
 if MERCADO_PAGO_ACCESS_TOKEN:
     mp_sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
 
-# MongoDB connection for strategies
+# MongoDB connection for strategies (optional - graceful if not configured)
 MONGO_URL = os.environ.get('MONGO_URL')
 DB_NAME = os.environ.get('DB_NAME')
-mongo_client = MongoClient(MONGO_URL)
-mongo_db = mongo_client[DB_NAME]
-strategies_col = mongo_db['strategies']
+strategies_col = None
+if MONGO_URL and DB_NAME:
+    try:
+        mongo_client = MongoClient(MONGO_URL)
+        mongo_db = mongo_client[DB_NAME]
+        strategies_col = mongo_db['strategies']
+        logger.info(f"[MongoDB] Connected to {DB_NAME}")
+    except Exception as e:
+        logger.warning(f"[MongoDB] Failed to connect: {e}")
+else:
+    logger.warning("[MongoDB] MONGO_URL or DB_NAME not set - strategies disabled")
 
 # Subscription plans configuration (prices in BRL)
 SUBSCRIPTION_PLANS = {
