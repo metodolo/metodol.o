@@ -29,8 +29,6 @@ import {
 
 const STRATEGIES_KEY = 'sinais_strategies';
 
-const API_URL = import.meta.env.VITE_BACKEND_URL;
-
 const AdminPage = () => {
   const { isAdmin, user } = useAuth();
   const navigate = useNavigate();
@@ -71,8 +69,8 @@ const AdminPage = () => {
 
   const loadStrategies = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/strategies`, { headers: getAuthHeaders(), credentials: 'include' });
-      if (res.ok) setStrategies(await res.json());
+      const data = await adminApi.listStrategies();
+      setStrategies(Array.isArray(data) ? data : []);
     } catch (e) { console.error('Failed to load strategies', e); }
   };
 
@@ -83,43 +81,55 @@ const AdminPage = () => {
   const addStrategy = async () => {
     if (!stratForm.triggerNums.trim() || !stratForm.entryNums.trim()) return;
     try {
-      await fetch(`${API_URL}/api/strategies`, {
-        method: 'POST', headers: getAuthHeaders(), credentials: 'include',
-        body: JSON.stringify({ name: stratForm.name.trim() || 'Sem nome', triggerNums: parseLine(stratForm.triggerNums), entryNums: parseLine(stratForm.entryNums), active: true })
+      await adminApi.createStrategy({
+        name: stratForm.name.trim() || 'Sem nome',
+        triggerNums: parseLine(stratForm.triggerNums),
+        entryNums: parseLine(stratForm.entryNums),
+        active: true
       });
       setStratForm({ name: '', triggerNums: '', entryNums: '' });
       loadStrategies();
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+      setError(e.message || 'Erro ao adicionar estratÃ©gia');
+    }
   };
 
   const updateStrategy = async () => {
     try {
-      await fetch(`${API_URL}/api/strategies/${editingStratId}`, {
-        method: 'PUT', headers: getAuthHeaders(), credentials: 'include',
-        body: JSON.stringify({ name: stratForm.name.trim(), triggerNums: parseLine(stratForm.triggerNums), entryNums: parseLine(stratForm.entryNums) })
+      await adminApi.updateStrategy(editingStratId, {
+        name: stratForm.name.trim(),
+        triggerNums: parseLine(stratForm.triggerNums),
+        entryNums: parseLine(stratForm.entryNums)
       });
       setEditingStratId(null); setStratForm({ name: '', triggerNums: '', entryNums: '' });
       loadStrategies();
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+      setError(e.message || 'Erro ao atualizar estratÃ©gia');
+    }
   };
 
   const deleteStrategy = async (id) => {
     try {
-      await fetch(`${API_URL}/api/strategies/${id}`, { method: 'DELETE', headers: getAuthHeaders(), credentials: 'include' });
+      await adminApi.deleteStrategy(id);
       loadStrategies();
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+      setError(e.message || 'Erro ao remover estratÃ©gia');
+    }
   };
 
   const toggleStrategy = async (id) => {
     const st = strategies.find(s => s.id === id);
     if (!st) return;
     try {
-      await fetch(`${API_URL}/api/strategies/${id}`, {
-        method: 'PUT', headers: getAuthHeaders(), credentials: 'include',
-        body: JSON.stringify({ active: !st.active })
-      });
+      await adminApi.updateStrategy(id, { active: !st.active });
       loadStrategies();
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+      setError(e.message || 'Erro ao alterar estratÃ©gia');
+    }
   };
 
   const startEdit = (st) => {
@@ -232,7 +242,7 @@ const AdminPage = () => {
   const createPendingSubscription = async (e) => {
     e.preventDefault();
     if (!newEmail.trim()) {
-      setError("Por favor, insira um email válido");
+      setError("Por favor, insira um email vÃ¡lido");
       return;
     }
     
@@ -271,7 +281,7 @@ const AdminPage = () => {
   const addToBlacklist = async (e) => {
     e.preventDefault();
     if (!blacklistValue.trim()) {
-      setError("Por favor, insira um valor válido");
+      setError("Por favor, insira um valor vÃ¡lido");
       return;
     }
     
@@ -319,7 +329,7 @@ const AdminPage = () => {
     { label: "Teste", value: "trial", color: "yellow" },
     { label: "Mensal", value: "monthly", color: "blue" },
     { label: "Anual", value: "yearly", color: "purple" },
-    { label: "Vitalício", value: "lifetime", color: "green" },
+    { label: "VitalÃ­cio", value: "lifetime", color: "green" },
   ];
 
   // Trial days options
@@ -382,7 +392,7 @@ const AdminPage = () => {
             data-testid="tab-users"
           >
             <Users className="w-4 h-4" />
-            Usuários ({users.length})
+            UsuÃ¡rios ({users.length})
           </button>
           <button
             onClick={() => setActiveTab("pending")}
@@ -394,7 +404,7 @@ const AdminPage = () => {
             data-testid="tab-pending"
           >
             <UserPlus className="w-4 h-4" />
-            Pré-Cadastros ({pendingSubscriptions.length})
+            PrÃ©-Cadastros ({pendingSubscriptions.length})
           </button>
           <button
             onClick={() => setActiveTab("blacklist")}
@@ -418,7 +428,7 @@ const AdminPage = () => {
             data-testid="tab-strategies"
           >
             <Settings className="w-4 h-4" />
-            Estratégias ({strategies.length})
+            EstratÃ©gias ({strategies.length})
           </button>
         </div>
 
@@ -426,7 +436,7 @@ const AdminPage = () => {
         {error && (
           <div className="bg-red-500/20 border border-red-500 text-red-400 px-4 py-3 rounded-lg mb-4 text-sm flex justify-between items-center">
             <span>{error}</span>
-            <button onClick={() => setError("")} className="text-red-400 hover:text-red-300">✕</button>
+            <button onClick={() => setError("")} className="text-red-400 hover:text-red-300">âœ•</button>
           </div>
         )}
 
@@ -442,11 +452,11 @@ const AdminPage = () => {
             <div className="card-glass p-4">
               <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-[#D4AF37]">
                 <UserPlus className="w-5 h-5" />
-                Adicionar Pré-Cadastro
+                Adicionar PrÃ©-Cadastro
               </h3>
               <form onSubmit={createPendingSubscription} className="space-y-4">
                 <div>
-                  <label className="block text-sm text-gray-400 mb-1">Email do futuro usuário</label>
+                  <label className="block text-sm text-gray-400 mb-1">Email do futuro usuÃ¡rio</label>
                   <div className="flex items-center gap-2">
                     <Mail className="w-5 h-5 text-gray-500" />
                     <input
@@ -467,7 +477,7 @@ const AdminPage = () => {
                       { label: "Teste", value: "trial", color: "yellow" },
                       { label: "Mensal", value: "monthly", color: "blue" },
                       { label: "Anual", value: "yearly", color: "purple" },
-                      { label: "Vitalício", value: "lifetime", color: "green" },
+                      { label: "VitalÃ­cio", value: "lifetime", color: "green" },
                     ].map((opt) => (
                       <button
                         key={opt.value}
@@ -514,12 +524,12 @@ const AdminPage = () => {
                 )}
 
                 <div>
-                  <label className="block text-sm text-gray-400 mb-1">Observações (opcional)</label>
+                  <label className="block text-sm text-gray-400 mb-1">ObservaÃ§Ãµes (opcional)</label>
                   <input
                     type="text"
                     value={newNotes}
                     onChange={(e) => setNewNotes(e.target.value)}
-                    placeholder="Ex: Cliente VIP, indicação do João..."
+                    placeholder="Ex: Cliente VIP, indicaÃ§Ã£o do JoÃ£o..."
                     className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-3 py-2 text-white focus:border-[#D4AF37] focus:outline-none"
                     data-testid="input-new-notes"
                   />
@@ -536,7 +546,7 @@ const AdminPage = () => {
                   ) : (
                     <>
                       <UserPlus className="w-5 h-5" />
-                      Adicionar Pré-Cadastro
+                      Adicionar PrÃ©-Cadastro
                     </>
                   )}
                 </button>
@@ -546,12 +556,12 @@ const AdminPage = () => {
             {/* List of pending subscriptions */}
             <div className="card-glass p-4">
               <h3 className="text-lg font-bold mb-4 text-white">
-                Pré-Cadastros Pendentes ({pendingSubscriptions.length})
+                PrÃ©-Cadastros Pendentes ({pendingSubscriptions.length})
               </h3>
               
               {pendingSubscriptions.length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
-                  Nenhum pré-cadastro pendente.
+                  Nenhum prÃ©-cadastro pendente.
                   <br />
                   <span className="text-sm">Adicione emails acima para configurar assinaturas antes do cadastro.</span>
                 </div>
@@ -587,7 +597,7 @@ const AdminPage = () => {
                         {ps.subscription_type === "trial" ? `Teste (${ps.trial_days || 7} dias)` :
                          ps.subscription_type === "monthly" ? "Mensal" :
                          ps.subscription_type === "yearly" ? "Anual" :
-                         "Vitalício"}
+                         "VitalÃ­cio"}
                       </span>
                       
                       <button
@@ -753,7 +763,7 @@ const AdminPage = () => {
           <div className="space-y-4" data-testid="strategies-panel">
             <div className="bg-[#111] border-2 border-[#D4AF37] rounded-xl p-4">
               <h3 className="text-[#D4AF37] font-bold text-sm mb-3">
-                {editingStratId ? 'EDITAR ESTRATÉGIA' : 'NOVA ESTRATÉGIA'}
+                {editingStratId ? 'EDITAR ESTRATÃ‰GIA' : 'NOVA ESTRATÃ‰GIA'}
               </h3>
               <div className="space-y-3">
                 <input type="text" placeholder="Nome (ex: 8/3)" value={stratForm.name}
@@ -761,14 +771,14 @@ const AdminPage = () => {
                   className="w-full p-2 bg-black border border-[#555] rounded-lg text-white text-sm focus:border-[#D4AF37] outline-none"
                   data-testid="strat-name-input" />
                 <div>
-                  <label className="text-gray-400 text-xs block mb-1">Números Gatilho (todos devem estar nos 14 giros)</label>
+                  <label className="text-gray-400 text-xs block mb-1">NÃºmeros Gatilho (todos devem estar nos 14 giros)</label>
                   <input type="text" placeholder="Ex: 2, 8, 11, 17, 20" value={stratForm.triggerNums}
                     onChange={e => setStratForm({...stratForm, triggerNums: e.target.value})}
                     className="w-full p-2 bg-black border border-[#555] rounded-lg text-white text-sm focus:border-[#D4AF37] outline-none"
                     data-testid="strat-trigger-input" />
                 </div>
                 <div>
-                  <label className="text-gray-400 text-xs block mb-1">Números de Entrada (apostar quando gatilho disparar)</label>
+                  <label className="text-gray-400 text-xs block mb-1">NÃºmeros de Entrada (apostar quando gatilho disparar)</label>
                   <input type="text" placeholder="Ex: 2, 8, 11, 17, 20, 26, 28" value={stratForm.entryNums}
                     onChange={e => setStratForm({...stratForm, entryNums: e.target.value})}
                     className="w-full p-2 bg-black border border-[#555] rounded-lg text-white text-sm focus:border-[#D4AF37] outline-none"
@@ -810,7 +820,7 @@ const AdminPage = () => {
                 <div className="text-xs text-gray-500"><span className="text-gray-400 font-bold">Entradas:</span> {st.entryNums.join(', ')}</div>
               </div>
             ))}
-            {strategies.length === 0 && <div className="text-center py-10 text-gray-500">Nenhuma estratégia criada</div>}
+            {strategies.length === 0 && <div className="text-center py-10 text-gray-500">Nenhuma estratÃ©gia criada</div>}
           </div>
         ) : (
           /* Users list */
@@ -902,7 +912,7 @@ const AdminPage = () => {
                   )}
                   {u.last_activity && (
                     <div className="text-gray-500">
-                      Última atividade: {new Date(u.last_activity).toLocaleString("pt-BR")}
+                      Ãšltima atividade: {new Date(u.last_activity).toLocaleString("pt-BR")}
                     </div>
                   )}
                 </div>
@@ -939,7 +949,7 @@ const AdminPage = () => {
                     disabled={actionLoading === u.id}
                     className="px-3 py-2 rounded text-sm font-bold bg-orange-500/20 text-orange-400"
                   >
-                    Derrubar Sessões
+                    Derrubar SessÃµes
                   </button>
 
                   {/* Limit selector */}
@@ -1019,7 +1029,7 @@ const AdminPage = () => {
             ))}
 
             {users.length === 0 && (
-              <div className="text-center py-10 text-gray-500">Nenhum usuário encontrado</div>
+              <div className="text-center py-10 text-gray-500">Nenhum usuÃ¡rio encontrado</div>
             )}
           </div>
         )}
