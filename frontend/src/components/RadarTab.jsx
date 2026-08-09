@@ -747,7 +747,6 @@ const RadarTab = ({ viewMode = "vertical" }) => {
       <FamilyCard compact={false} />
       <JuncaoCard compact={false} />
       <EstrategiaFBCard compact={false} />
-      <ActionButtons compact={false} />
     </div>
   );
 };
