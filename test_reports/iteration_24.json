@@ -1,0 +1,26 @@
+{
+  "summary": "Deployment fix smoke test. Verified /app/backend/requirements.txt is clean and minimal (14 lines, all >= constraints) with NO emergentintegrations and NO invalid pinned versions. Backend: GET /api/health = 200, POST /api/auth/login/cpf with admin CPF 154.831.997-07/admin123 returns valid session_token, GET /api/strategies (Bearer) returns 200 with strategy '8/3' from MongoDB. Frontend: login flow works, Em Construção tab unlocks with password 13052017, roulette grid renders, Método L.O panel + '8/3' strategy present in DOM. No regressions vs iteration_23.",
+  "backend_issues": { "critical": [], "minor": [] },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Landing pre-auth", "issues": ["Console shows 2 x 401 on initial resource load (likely auth-check probe before login) — cosmetic only", "Recharts warnings: width/height 0 for chart container in hidden tab"]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_strategies.py"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "requirements.txt now clean/minimal (14 deps, no emergentintegrations, no invalid pins). Good for Railway build.",
+    "Using >= (open upper bound) can cause future non-reproducible builds — consider generating a pip-tools lockfile or pinning known-good upper bounds for prod stability.",
+    "supabase>=2.0.0 still listed — confirm it is actually used at runtime; otherwise drop to shrink image.",
+    "server.py still >1600 lines (from prior iter) — split routers still recommended."
+  ],
+  "updated_files": [],
+  "success_rate": { "backend": "100% (health + login + strategies)", "frontend": "100% (login + em construção + grid render)" },
+  "test_credentials": "Admin CPF 154.831.997-07 / admin123; Sinais password 13052017",
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "requirements.txt verified clean: fastapi/uvicorn/pydantic/passlib/bcrypt/httpx/pymongo/dnspython/pytz/resend/mercadopago/supabase/python-jose (all >=). Backend live at https://radar-blacklist-hub.preview.emergentagent.com/api. Login endpoint POST /api/auth/login/cpf accepts {cpf,password,device_id}, returns session_token. Strategies endpoint requires Bearer token."
+}
