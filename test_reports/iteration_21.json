@@ -1,0 +1,25 @@
+{
+  "summary": "Frontend-only verification of PLACAR per-strategy scoreboard in SinaisTab.jsx. All 5 scenarios from the review request PASSED in a single browser session.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "ScoreboardPerStrategy (SinaisTab.jsx L373-393) correctly renders each active strategy's individual G/R counts and is unconditionally shown both when idle and when signals are active.",
+    "data-testid='scoreboard-all' and 'score-row-{id}' attributes are present and reliable for automation.",
+    "Session-scoped 'gatilho_scores' still retains stale keys for deleted strategies (carryover from previous iterations) - low risk cosmetic only."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped)", "frontend": "100% (5/5)"},
+  "test_credentials": "Admin CPF 154.831.997-07 / admin123, Sinais senha 13052017",
+  "seed_data_creation": "Created 2 strategies via Admin UI: Strat A (trigger=5, entry=20,15) and Strat B (trigger=10, entry=25,30). Cleared localStorage/sessionStorage at start of test.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "PLACAR feature verified. Test observations: [TEST1] scoreboard-all visible at idle with rows ['Strat AG: 0R: 0','Strat BG: 0R: 0']; [TEST2] After 5 then 20: ['Strat AG: 1R: 0','Strat BG: 0R: 0']; [TEST3] After 10,1,3,7: ['Strat AG: 1R: 0','Strat BG: 0R: 1']; [TEST4] After LIMPAR: ['Strat AG: 0R: 0','Strat BG: 0R: 0'].",
+  "test_results": {
+    "placar_visible_idle_with_both_strategies_0_0": "PASS",
+    "strat_A_G1_after_5_then_20_B_unchanged": "PASS",
+    "strat_B_R1_after_10_then_3_misses_A_unchanged": "PASS",
+    "LIMPAR_resets_all_to_0_0": "PASS"
+  }
+}

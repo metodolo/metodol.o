@@ -360,7 +360,6 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
 
   // Compute which strategies have active signals
   const triggeredStrategies = activeStrategies.filter(s => signals[s.id]);
-  const totalScore = Object.values(scores).reduce((acc, s) => ({ wins: acc.wins + s.wins, reds: acc.reds + s.reds }), { wins: 0, reds: 0 });
 
   const SignalsArea = ({ compact }) => {
     if (activeStrategies.length === 0) {
@@ -370,27 +369,48 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
         </div>
       );
     }
-    // Show triggered strategy cards, or a single idle card
-    if (triggeredStrategies.length > 0) {
-      return <>{triggeredStrategies.map(s => <StrategyCard key={s.id} strat={s} compact={compact} />)}</>;
-    }
-    return (
-      <div className={`card-glass border-2 border-[#D4AF37] ${compact ? "!p-2" : ""}`} data-testid="gatilho-idle">
-        <span className="label-accent" style={{ margin: 0, color: '#fff', borderColor: '#D4AF37', fontSize: compact ? '0.7rem' : '0.9rem' }}>
-          GATILHOS DE ENTRADA
+
+    const ScoreboardPerStrategy = () => (
+      <div className={`card-glass border-2 border-[#D4AF37] ${compact ? "!p-2" : ""}`} data-testid="scoreboard-all">
+        <span className="label-accent" style={{ margin: 0, color: '#fff', borderColor: '#D4AF37', fontSize: compact ? '0.65rem' : '0.8rem' }}>
+          PLACAR
         </span>
-        <div className="text-center text-gray-600 text-sm py-2 mt-1">Aguardando gatilho...</div>
-        <div className="flex gap-4 justify-center mt-2" data-testid="gatilho-scoreboard-total">
-          <div className="flex items-center gap-1">
-            <span className="font-bold" style={{ color: '#00ff41', fontSize: compact ? '0.7rem' : '0.85rem' }}>GREEN:</span>
-            <span className="text-white font-bold px-2 py-0.5 rounded" style={{ background: 'rgba(0,255,65,0.15)', border: '1px solid rgba(0,255,65,0.4)', fontSize: compact ? '0.7rem' : '0.85rem' }}>{totalScore.wins}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="font-bold" style={{ color: '#ff3131', fontSize: compact ? '0.7rem' : '0.85rem' }}>RED:</span>
-            <span className="text-white font-bold px-2 py-0.5 rounded" style={{ background: 'rgba(255,49,49,0.15)', border: '1px solid rgba(255,49,49,0.4)', fontSize: compact ? '0.7rem' : '0.85rem' }}>{totalScore.reds}</span>
-          </div>
+        <div className="space-y-1 mt-2">
+          {activeStrategies.map(s => {
+            const sc = scores[s.id] || { wins: 0, reds: 0 };
+            return (
+              <div key={s.id} className="flex items-center justify-between bg-[rgba(0,0,0,0.3)] rounded-lg px-3 py-1.5" data-testid={`score-row-${s.id}`}>
+                <span className="text-white font-bold" style={{ fontSize: compact ? '0.7rem' : '0.8rem' }}>{s.name}</span>
+                <div className="flex gap-3">
+                  <span style={{ color: '#00ff41', fontSize: compact ? '0.7rem' : '0.8rem', fontWeight: 700 }}>G: {sc.wins}</span>
+                  <span style={{ color: '#ff3131', fontSize: compact ? '0.7rem' : '0.8rem', fontWeight: 700 }}>R: {sc.reds}</span>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
+    );
+
+    // Show triggered strategy cards, or a single idle card
+    if (triggeredStrategies.length > 0) {
+      return (
+        <>
+          {triggeredStrategies.map(s => <StrategyCard key={s.id} strat={s} compact={compact} />)}
+          <ScoreboardPerStrategy />
+        </>
+      );
+    }
+    return (
+      <>
+        <div className={`card-glass border-2 border-[#D4AF37] ${compact ? "!p-2" : ""}`} data-testid="gatilho-idle">
+          <span className="label-accent" style={{ margin: 0, color: '#fff', borderColor: '#D4AF37', fontSize: compact ? '0.7rem' : '0.9rem' }}>
+            GATILHOS DE ENTRADA
+          </span>
+          <div className="text-center text-gray-600 text-sm py-2 mt-1">Aguardando gatilho...</div>
+        </div>
+        <ScoreboardPerStrategy />
+      </>
     );
   };
 
