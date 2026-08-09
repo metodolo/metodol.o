@@ -173,8 +173,8 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
     writeGiros(newGiros.length > limiteGiros ? newGiros.slice(-limiteGiros) : newGiros);
   };
 
-  const undo = () => writeGiros(giros.slice(0, -1));
-  const limpar = () => writeGiros([]);
+  const undo = () => { const y = window.scrollY; writeGiros(giros.slice(0, -1)); requestAnimationFrame(() => window.scrollTo(0, y)); };
+  const limpar = () => { const y = window.scrollY; writeGiros([]); requestAnimationFrame(() => window.scrollTo(0, y)); };
   const setLimite = (valor) => { setLimiteGiros(valor); if (giros.length > valor) writeGiros(giros.slice(-valor)); };
 
   const { red, black } = countColors(giros);

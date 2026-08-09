@@ -29,8 +29,6 @@ import {
 
 const STRATEGIES_KEY = 'sinais_strategies';
 
-const API_URL = import.meta.env.VITE_BACKEND_URL;
-
 const AdminPage = () => {
   const { isAdmin, user } = useAuth();
   const navigate = useNavigate();
@@ -71,8 +69,8 @@ const AdminPage = () => {
 
   const loadStrategies = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/strategies`, { headers: getAuthHeaders(), credentials: 'include' });
-      if (res.ok) setStrategies(await res.json());
+      const data = await adminApi.listStrategies();
+      setStrategies(Array.isArray(data) ? data : []);
     } catch (e) { console.error('Failed to load strategies', e); }
   };
 
@@ -83,43 +81,55 @@ const AdminPage = () => {
   const addStrategy = async () => {
     if (!stratForm.triggerNums.trim() || !stratForm.entryNums.trim()) return;
     try {
-      await fetch(`${API_URL}/api/strategies`, {
-        method: 'POST', headers: getAuthHeaders(), credentials: 'include',
-        body: JSON.stringify({ name: stratForm.name.trim() || 'Sem nome', triggerNums: parseLine(stratForm.triggerNums), entryNums: parseLine(stratForm.entryNums), active: true })
+      await adminApi.createStrategy({
+        name: stratForm.name.trim() || 'Sem nome',
+        triggerNums: parseLine(stratForm.triggerNums),
+        entryNums: parseLine(stratForm.entryNums),
+        active: true
       });
       setStratForm({ name: '', triggerNums: '', entryNums: '' });
       loadStrategies();
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+      setError(e.message || 'Erro ao adicionar estratégia');
+    }
   };
 
   const updateStrategy = async () => {
     try {
-      await fetch(`${API_URL}/api/strategies/${editingStratId}`, {
-        method: 'PUT', headers: getAuthHeaders(), credentials: 'include',
-        body: JSON.stringify({ name: stratForm.name.trim(), triggerNums: parseLine(stratForm.triggerNums), entryNums: parseLine(stratForm.entryNums) })
+      await adminApi.updateStrategy(editingStratId, {
+        name: stratForm.name.trim(),
+        triggerNums: parseLine(stratForm.triggerNums),
+        entryNums: parseLine(stratForm.entryNums)
       });
       setEditingStratId(null); setStratForm({ name: '', triggerNums: '', entryNums: '' });
       loadStrategies();
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+      setError(e.message || 'Erro ao atualizar estratégia');
+    }
   };
 
   const deleteStrategy = async (id) => {
     try {
-      await fetch(`${API_URL}/api/strategies/${id}`, { method: 'DELETE', headers: getAuthHeaders(), credentials: 'include' });
+      await adminApi.deleteStrategy(id);
       loadStrategies();
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+      setError(e.message || 'Erro ao remover estratégia');
+    }
   };
 
   const toggleStrategy = async (id) => {
     const st = strategies.find(s => s.id === id);
     if (!st) return;
     try {
-      await fetch(`${API_URL}/api/strategies/${id}`, {
-        method: 'PUT', headers: getAuthHeaders(), credentials: 'include',
-        body: JSON.stringify({ active: !st.active })
-      });
+      await adminApi.updateStrategy(id, { active: !st.active });
       loadStrategies();
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+      setError(e.message || 'Erro ao alterar estratégia');
+    }
   };
 
   const startEdit = (st) => {
