@@ -22,6 +22,24 @@ React + Vite, FastAPI, Supabase Auth, MongoDB
 - **API-backed**: POST/PUT/DELETE admin-only, GET for all authenticated users
 - SinaisTab polls /api/strategies every 5s
 
+## Completed Features (Aug 2026)
+- Multi-strategy signal configuration in Admin panel
+- Array-based trigger numbers replacing Alto/Médio/Baixo
+- "Cor Oposta = LOSS imediato" logic
+- Individual Win/Red scoreboards per strategy
+- Signal trigger re-arming (fires on every trigger number appearance)
+- Estratégia FB duplicate Win counting fix
+- pymongo Railway deployment fix (cleaned requirements.txt)
+- Admin login fix (passlib → direct bcrypt for Python 3.12)
+- Railway deployment guide for strategies API fix (RAILWAY_FIX_GUIDE.md)
+
+## Railway Deployment Issue (Current)
+- User deploys to Railway via personal GitHub (metodolo/metodol.o)
+- Issue: server.py in GitHub missing MongoDB connection + strategy routes
+- Fix guide provided at /app/memory/RAILWAY_FIX_GUIDE.md
+- User action needed: copy code blocks, add pymongo to requirements.txt, set MONGO_URL + DB_NAME in Railway variables
+
 ## Upcoming
+- P2: Persist daily runs/numbers for historical analysis
 - P2: Automatic mode with external API
 - P3: Custom domain
