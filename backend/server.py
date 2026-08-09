@@ -1261,6 +1261,8 @@ async def admin_remove_from_blacklist(blacklist_id: str, request: Request):
 async def list_strategies(request: Request):
     """List all strategies - any authenticated user can read"""
     await get_current_user_from_request(request)
+    if strategies_col is None:
+        return []
     docs = list(strategies_col.find())
     result = []
     for d in docs:
@@ -1275,6 +1277,8 @@ async def create_strategy(request: Request):
     user, _ = await get_current_user_from_request(request)
     if user.get('role') != 'admin':
         raise HTTPException(status_code=403, detail="Apenas admin")
+    if strategies_col is None:
+        raise HTTPException(status_code=503, detail="MongoDB não configurado")
     body = await request.json()
     doc = {
         'name': body.get('name', 'Sem nome'),
@@ -1294,6 +1298,8 @@ async def update_strategy(strategy_id: str, request: Request):
     user, _ = await get_current_user_from_request(request)
     if user.get('role') != 'admin':
         raise HTTPException(status_code=403, detail="Apenas admin")
+    if strategies_col is None:
+        raise HTTPException(status_code=503, detail="MongoDB não configurado")
     body = await request.json()
     update = {}
     if 'name' in body: update['name'] = body['name']
@@ -1311,6 +1317,8 @@ async def delete_strategy(strategy_id: str, request: Request):
     user, _ = await get_current_user_from_request(request)
     if user.get('role') != 'admin':
         raise HTTPException(status_code=403, detail="Apenas admin")
+    if strategies_col is None:
+        raise HTTPException(status_code=503, detail="MongoDB não configurado")
     strategies_col.delete_one({'_id': ObjectId(strategy_id)})
     return {"message": "Removido"}
 
