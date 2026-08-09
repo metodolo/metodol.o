@@ -16,6 +16,10 @@ from datetime import datetime, timezone, timedelta
 import re
 import secrets
 import httpx
+
+import pytz
+import resend
+import mercadopago
 from pymongo import MongoClient
 from bson import ObjectId
 
@@ -31,11 +35,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Password hashing (using bcrypt directly for Python 3.12 compatibility)
+# Password hashing
 import bcrypt as _bcrypt
-import pytz
-import resend
-import mercadopago
 
 # Brazil timezone
 SAO_PAULO_TZ = pytz.timezone('America/Sao_Paulo')
@@ -111,7 +112,6 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return _bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
     except Exception:
         return False
-
 def validate_cpf(cpf: str) -> bool:
     """Validate CPF format and checksum"""
     cpf = re.sub(r'[^0-9]', '', cpf)
