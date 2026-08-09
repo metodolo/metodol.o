@@ -16,7 +16,7 @@ from datetime import datetime, timezone, timedelta
 import re
 import secrets
 import httpx
-from passlib.context import CryptContext
+
 import pytz
 import resend
 import mercadopago
@@ -36,7 +36,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+import bcrypt as _bcrypt
 
 # Brazil timezone
 SAO_PAULO_TZ = pytz.timezone('America/Sao_Paulo')
@@ -105,11 +105,10 @@ SUBSCRIPTION_PLANS = {
 # ============== Helper Functions ==============
 
 def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+    return _bcrypt.hashpw(password.encode('utf-8'), _bcrypt.gensalt()).decode('utf-8')
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
-
 def validate_cpf(cpf: str) -> bool:
     """Validate CPF format and checksum"""
     cpf = re.sub(r'[^0-9]', '', cpf)
