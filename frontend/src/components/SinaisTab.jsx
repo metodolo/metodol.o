@@ -101,7 +101,7 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
     prevGirosKeyRef.current = currKey;
     if (currKey === prevKey) return;
 
-    if (giros.length === 0) { updateSignals({}); return; }
+    if (giros.length === 0) { updateSignals({}); setScores({}); return; }
 
     const prevArr = prevKey ? prevKey.split(',').filter(Boolean).map(Number) : [];
     const lastNum = giros[giros.length - 1];
