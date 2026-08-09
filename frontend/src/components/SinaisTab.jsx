@@ -1,5 +1,5 @@
 /**
- * Sinais Tab (Em Construção) - Multi-strategy signal system
+ * Sinais Tab (Em ConstruÃ§Ã£o) - Multi-strategy signal system
  * Password protected. Strategies configured from Admin panel.
  * All active strategies monitor the 14-giro timeline simultaneously.
  * Trigger = ALL trigger numbers present in giros (any order).
@@ -209,8 +209,8 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
     return (
       <div className="flex items-center justify-center" style={{ minHeight: isHorizontal ? '100%' : '60vh' }} data-testid="sinais-tab">
         <div className="card-glass border-2 border-[#D4AF37] p-8 text-center" style={{ maxWidth: 350 }}>
-          <div className="text-[#D4AF37] font-bold text-xl mb-2">EM CONSTRUÇÃO</div>
-          <div className="text-gray-400 text-sm mb-6">Área restrita - digite a senha</div>
+          <div className="text-[#D4AF37] font-bold text-xl mb-2">EM CONSTRUÃ‡ÃƒO</div>
+          <div className="text-gray-400 text-sm mb-6">Ãrea restrita - digite a senha</div>
           <input type="password" value={senhaInput}
             onChange={(e) => { setSenhaInput(e.target.value); setSenhaError(false); }}
             onKeyDown={(e) => e.key === 'Enter' && handleLogin()} placeholder="Senha"
@@ -237,7 +237,7 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
         <span className={`font-black neon-red ${compact ? "text-2xl" : "text-4xl"}`}>{red}</span>
       </div>
       <div className="flex-[2] text-center">
-        <span className={compact ? "logo-metodo text-xl" : "logo-metodo"} style={compact ? { fontSize: "1.2rem" } : {}}>Método L.O</span>
+        <span className={compact ? "logo-metodo text-xl" : "logo-metodo"} style={compact ? { fontSize: "1.2rem" } : {}}>MÃ©todo L.O</span>
       </div>
       <div className="flex-1 text-center">
         <small className="text-gray-400 text-xs">PRETO</small><br />
@@ -278,7 +278,7 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
           ))}
         </div>
         <div className="flex justify-between items-center mb-2">
-          <span className="label-accent" style={{ margin: 0, color: '#fff', borderColor: '#D4AF37', fontSize: compact ? '0.7rem' : '0.9rem' }}>HISTÓRICO</span>
+          <span className="label-accent" style={{ margin: 0, color: '#fff', borderColor: '#D4AF37', fontSize: compact ? '0.7rem' : '0.9rem' }}>HISTÃ“RICO</span>
           <span className="bg-[#000] text-white px-2 py-0.5 rounded-lg font-bold text-xs border-2 border-[#D4AF37]">{giros.length} / {limiteGiros}</span>
         </div>
         <div ref={painelRef} className={`flex flex-row overflow-x-auto bg-[rgba(17,17,17,0.5)] border border-[#444] rounded-xl p-2 ${compact ? "min-h-[60px]" : "min-h-[100px]"}`}>
@@ -295,7 +295,7 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
               </div>
             );
           })}
-          {giros.length === 0 && <div className={`w-full text-center text-gray-500 ${compact ? "py-3 text-xs" : "py-8"}`}>Clique nos números para adicionar</div>}
+          {giros.length === 0 && <div className={`w-full text-center text-gray-500 ${compact ? "py-3 text-xs" : "py-8"}`}>Clique nos nÃºmeros para adicionar</div>}
         </div>
       </div>
     );
@@ -306,8 +306,8 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
     const colorLabel = moreBlack ? 'VERMELHOS' : 'PRETOS';
     return (
       <div className={`card-glass border-2 border-[#D4AF37] ${compact ? "!p-2" : ""}`} data-testid="ref-analysis">
-        <span className="label-accent" style={{ color: '#fff', borderColor: '#D4AF37', fontSize: compact ? '0.7rem' : '0.9rem' }}>ANÁLISE IGUALITÁRIOS</span>
-        <div className="text-[10px] text-gray-500 mb-2">Mesa com mais {moreBlack ? 'preto' : 'vermelho'} → contagem dos {colorLabel.toLowerCase()} nas referências</div>
+        <span className="label-accent" style={{ color: '#fff', borderColor: '#D4AF37', fontSize: compact ? '0.7rem' : '0.9rem' }}>ANÃLISE IGUALITÃRIOS</span>
+        <div className="text-[10px] text-gray-500 mb-2">Mesa com mais {moreBlack ? 'preto' : 'vermelho'} â†’ contagem dos {colorLabel.toLowerCase()} nas referÃªncias</div>
         {topRefs.length > 0 ? (
           <div className="flex gap-3 justify-center">
             {topRefs.map((r, i) => (
@@ -352,17 +352,6 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
             Aguardando gatilho...
           </div>
         )}
-
-        <div className="flex gap-4 justify-center mt-2" data-testid={`scoreboard-${strat.id}`}>
-          <div className="flex items-center gap-1">
-            <span className="font-bold" style={{ color: '#00ff41', fontSize: compact ? '0.7rem' : '0.85rem' }}>GREEN:</span>
-            <span className="text-white font-bold px-2 py-0.5 rounded" style={{ background: 'rgba(0,255,65,0.15)', border: '1px solid rgba(0,255,65,0.4)', fontSize: compact ? '0.7rem' : '0.85rem' }}>{score.wins}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="font-bold" style={{ color: '#ff3131', fontSize: compact ? '0.7rem' : '0.85rem' }}>RED:</span>
-            <span className="text-white font-bold px-2 py-0.5 rounded" style={{ background: 'rgba(255,49,49,0.15)', border: '1px solid rgba(255,49,49,0.4)', fontSize: compact ? '0.7rem' : '0.85rem' }}>{score.reds}</span>
-          </div>
-        </div>
       </div>
     );
   };
@@ -374,16 +363,25 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
     if (activeStrategies.length === 0) {
       return (
         <div className={`card-glass border-2 border-[#D4AF37] text-center text-gray-600 text-sm ${compact ? '!p-2 py-4' : 'py-6'}`} data-testid="no-strategies">
-          Nenhuma estratégia ativa. Configure no painel Admin.
+          Nenhuma estratÃ©gia ativa. Configure no painel Admin.
         </div>
       );
     }
 
-    const ScoreboardPerStrategy = () => (
+    const ScoreboardPerStrategy = () => {
+      const totalWins = activeStrategies.reduce((sum, s) => sum + (scores[s.id]?.wins || 0), 0);
+      const totalReds = activeStrategies.reduce((sum, s) => sum + (scores[s.id]?.reds || 0), 0);
+      return (
       <div className={`card-glass border-2 border-[#D4AF37] ${compact ? "!p-2" : ""}`} data-testid="scoreboard-all">
-        <span className="label-accent" style={{ margin: 0, color: '#fff', borderColor: '#D4AF37', fontSize: compact ? '0.65rem' : '0.8rem' }}>
-          PLACAR
-        </span>
+        <div className="flex items-center justify-between">
+          <span className="label-accent" style={{ margin: 0, color: '#fff', borderColor: '#D4AF37', fontSize: compact ? '0.65rem' : '0.8rem' }}>
+            PLACAR
+          </span>
+          <div className="flex gap-3 items-center">
+            <span className="font-bold" style={{ color: '#00ff41', fontSize: compact ? '0.7rem' : '0.85rem' }}>GREEN: <span className="text-white font-bold px-2 py-0.5 rounded" style={{ background: 'rgba(0,255,65,0.15)', border: '1px solid rgba(0,255,65,0.4)' }}>{totalWins}</span></span>
+            <span className="font-bold" style={{ color: '#ff3131', fontSize: compact ? '0.7rem' : '0.85rem' }}>RED: <span className="text-white font-bold px-2 py-0.5 rounded" style={{ background: 'rgba(255,49,49,0.15)', border: '1px solid rgba(255,49,49,0.4)' }}>{totalReds}</span></span>
+          </div>
+        </div>
         <div className="space-y-1 mt-2">
           {activeStrategies.map(s => {
             const sc = scores[s.id] || { wins: 0, reds: 0 };
@@ -399,7 +397,8 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
           })}
         </div>
       </div>
-    );
+      );
+    };
 
     // Show triggered strategy cards, or a single idle card
     if (triggeredStrategies.length > 0) {
