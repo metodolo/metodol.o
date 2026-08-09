@@ -1,0 +1,34 @@
+{
+  "summary": "Frontend-only test for SinaisTab signal lifecycle fix (prevTriggeredRef transition tracking) and RadarTab LIMPAR fbScore reset. All 7 scenarios PASSED in a single browser session.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "SinaisTab signal transition logic (lines 156-163) correctly uses prevTriggeredRef Set to detect false->true transition. After GREEN/RED resolution, the strategy id is still added to newTriggered (line 162), so it won't re-fire on subsequent giros while triggers remain present — matches spec.",
+    "Edge case (minor): if user resolves via RED then does undo, the trigger might be tracked as met from stale prevTriggeredRef but undo path may not correctly update tracking. Not tested, low impact.",
+    "RadarTab.limpar() correctly resets setFbScore({wins:0,reds:0}), fbPatternsRef.current=[], setFbPatterns([]) — verified in code and via LIMPAR click test.",
+    "RadarTab.jsx is ~750 lines — still over 700 threshold, could be split (carried from iteration 17).",
+    "gatilho-scoreboard-total sums scores keyed by strategy id, including entries left over for deleted/inactive strategies stored in sessionStorage 'gatilho_scores' (carried from iteration 17)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped)", "frontend": "100% (7/7)"},
+  "test_credentials": "Admin CPF 154.831.997-07 / admin123, Sinais senha 13052017",
+  "seed_data_creation": "Created 1 strategy via Admin UI (also verified via direct localStorage seed): {id:'test-strat-1', name:'Test', triggerNums:[5,10,15], entryNums:[2,8,20], active:true} stored in localStorage 'sinais_strategies'.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All bug fixes verified. Test flow: (T1) Enter 5,10,15 -> signal-active-test-strat-1 fires with '3 tentativas restantes' and entry balls 2,8,20. (T2) Enter 8 (hit) -> signal DISAPPEARS, gatilho-idle visible with GREEN:1. (T3) Enter 1 (non-trigger, triggers still in giros) -> no re-fire, still idle. (T4) Clear + 5,10,15 -> signal fires again; then 1,3,4 (3 misses) -> signal disappears with RED:1. (T5) Triggers 5,10,15 still in giros[5,10,15,1,3,4], enter 6 -> no re-fire (correct behavior per prevTriggeredRef). (T6) Clear + 5,10,15 -> signal fires again (new formation transition). (T7) Radar LIMPAR resets fb-scoreboard display to GREEN:0/RED:0 AND sessionStorage 'fb_score' to {wins:0,reds:0}. Used JS click via document.querySelectorAll+offsetParent filter to bypass hidden duplicate testids across tabs.",
+  "test_results": {
+    "T1_signal_fires_with_3_tentativas": "PASS",
+    "T2_GREEN_hit_signal_disappears": "PASS",
+    "T3_no_refire_after_GREEN_while_triggers_present": "PASS",
+    "T4_RED_after_3_misses_signal_disappears": "PASS",
+    "T5_no_refire_after_RED_while_triggers_present": "PASS",
+    "T6_refire_after_clear_and_new_formation": "PASS",
+    "T7_LIMPAR_resets_fb_scoreboard": "PASS"
+  }
+}

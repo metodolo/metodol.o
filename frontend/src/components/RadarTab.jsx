@@ -179,6 +179,7 @@ const RadarTab = ({ viewMode = "vertical" }) => {
   const painelRef = useRef(null);
   const isHorizontal = viewMode === "horizontal";
   const [fbPatterns, setFbPatterns] = useState([]);
+  const fbPatternsRef = useRef([]);
   const [fbScore, setFbScore] = useState(() => {
     try { const s = sessionStorage.getItem('fb_score'); return s ? JSON.parse(s) : { wins: 0, reds: 0 }; } catch { return { wins: 0, reds: 0 }; }
   });
@@ -212,41 +213,41 @@ const RadarTab = ({ viewMode = "vertical" }) => {
   // FB Strategy: detect and track patterns (fires on every new number added)
   useEffect(() => {
     if (addCount === 0) return;
-    if (giros.length === 0) { setFbPatterns([]); return; }
+    if (giros.length === 0) { fbPatternsRef.current = []; setFbPatterns([]); return; }
 
     const newNum = giros[giros.length - 1];
+    const prev = fbPatternsRef.current;
 
-    setFbPatterns(prev => {
-      // Decrement attempts, check hit
-      const mapped = prev.map(p => ({
-        ...p,
-        attemptsLeft: p.attemptsLeft - 1,
-        hit: p.entry.includes(newNum),
-      }));
+    // Process existing patterns - pure computation, no side effects
+    const mapped = prev.map(p => ({
+      ...p,
+      attemptsLeft: p.attemptsLeft - 1,
+      hit: p.entry.includes(newNum),
+    }));
 
-      // Count wins (hit) and reds (expired) before filtering
-      let newWins = 0, newReds = 0;
-      for (const p of mapped) {
-        if (p.hit) newWins++;
-        else if (p.attemptsLeft <= 0) newReds++;
+    let newWins = 0, newReds = 0;
+    for (const p of mapped) {
+      if (p.hit) newWins++;
+      else if (p.attemptsLeft <= 0) newReds++;
+    }
+
+    let updated = mapped.filter(p => p.attemptsLeft > 0 && !p.hit);
+
+    // Detect new pattern from last 3 numbers
+    if (giros.length >= 3) {
+      const [a, b, c] = giros.slice(-3);
+      const pattern = detectFBPattern(a, b, c);
+      if (pattern) {
+        const key = `${a}-${b}-${c}-${addCount}`;
+        updated.push({ ...pattern, attemptsLeft: 3, key });
       }
-      if (newWins > 0 || newReds > 0) {
-        setFbScore(s => ({ wins: s.wins + newWins, reds: s.reds + newReds }));
-      }
+    }
 
-      let updated = mapped.filter(p => p.attemptsLeft > 0 && !p.hit);
-
-      // Detect new pattern from last 3 numbers
-      if (giros.length >= 3) {
-        const [a, b, c] = giros.slice(-3);
-        const pattern = detectFBPattern(a, b, c);
-        if (pattern) {
-          const key = `${a}-${b}-${c}-${addCount}`;
-          updated.push({ ...pattern, attemptsLeft: 3, key });
-        }
-      }
-      return updated;
-    });
+    fbPatternsRef.current = updated;
+    setFbPatterns(updated);
+    if (newWins > 0 || newReds > 0) {
+      setFbScore(s => ({ wins: s.wins + newWins, reds: s.reds + newReds }));
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [addCount, giros]);
 
@@ -273,6 +274,8 @@ const RadarTab = ({ viewMode = "vertical" }) => {
     setGiros([]);
     setTerminalSelecionado(null);
     setFbPatterns([]);
+    fbPatternsRef.current = [];
+    setFbScore({ wins: 0, reds: 0 });
   };
 
   // Change limit

@@ -65,6 +65,7 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
   });
   const scoresRef = useRef(scores);
   const prevGirosKeyRef = useRef(giros.join(','));
+  const prevTriggeredRef = useRef(new Set()); // track which strategies had trigger met last giro
 
   useEffect(() => { scoresRef.current = scores; sessionStorage.setItem('gatilho_scores', JSON.stringify(scores)); }, [scores]);
 
@@ -123,12 +124,14 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
     const currentSignals = { ...signalsRef.current };
     const currentScores = { ...scoresRef.current };
     let scoresChanged = false;
+    const newTriggered = new Set();
 
     const activeStrategies = strategies.filter(s => s.active && s.triggerNums.length > 0 && s.entryNums.length > 0);
 
     for (const strat of activeStrategies) {
       const sig = currentSignals[strat.id];
       if (!currentScores[strat.id]) currentScores[strat.id] = { wins: 0, reds: 0 };
+      const isMet = checkAllPresent(giros, strat.triggerNums);
 
       if (sig) {
         // Active signal: check hit/miss
@@ -146,13 +149,17 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
             currentSignals[strat.id] = { ...sig, attemptsUsed: next };
           }
         }
+        // Keep tracking as triggered while signal was active
+        if (isMet) newTriggered.add(strat.id);
       }
 
-      // If no active signal, check if trigger condition is newly met
+      // If no active signal, only fire when trigger NEWLY transitions to met
       if (!currentSignals[strat.id]) {
-        if (checkAllPresent(giros, strat.triggerNums)) {
+        const wasMet = prevTriggeredRef.current.has(strat.id);
+        if (isMet && !wasMet) {
           currentSignals[strat.id] = { entryNums: strat.entryNums, attemptsUsed: 0 };
         }
+        if (isMet) newTriggered.add(strat.id);
       }
     }
 
@@ -163,6 +170,7 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
 
     updateSignals(currentSignals);
     if (scoresChanged) setScores(currentScores);
+    prevTriggeredRef.current = newTriggered;
   }, [giros, strategies, updateSignals]);
 
   const addNumber = (n) => {
