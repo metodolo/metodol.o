@@ -1,5 +1,5 @@
 """
-RADAR V22 + Método L.O - Main Server
+RADAR V22 + MÃ©todo L.O - Main Server
 FastAPI backend with Supabase REST API
 """
 from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, BackgroundTasks
@@ -81,19 +81,19 @@ else:
 # Subscription plans configuration (prices in BRL)
 SUBSCRIPTION_PLANS = {
     "monthly": {
-        "title": "Método L.O - Plano Mensal",
+        "title": "MÃ©todo L.O - Plano Mensal",
         "description": "Acesso completo por 30 dias",
         "price": 200.00,
         "days": 30
     },
     "annual": {
-        "title": "Método L.O - Plano Anual",
-        "description": "Acesso completo por 1 ano (2 meses grátis!)",
+        "title": "MÃ©todo L.O - Plano Anual",
+        "description": "Acesso completo por 1 ano (2 meses grÃ¡tis!)",
         "price": 970.00,
         "days": 365
     },
     "lifetime": {
-        "title": "Método L.O - Acesso Vitalício",
+        "title": "MÃ©todo L.O - Acesso VitalÃ­cio",
         "description": "Acesso completo para sempre",
         "price": 1997.00,
         "days": 36500  # 100 years
@@ -148,17 +148,17 @@ async def send_new_user_notification(user_email: str, user_name: str, user_cpf: 
         return
     
     try:
-        now_br = datetime.now(SAO_PAULO_TZ).strftime('%d/%m/%Y às %H:%M')
+        now_br = datetime.now(SAO_PAULO_TZ).strftime('%d/%m/%Y Ã s %H:%M')
         
         html_content = f"""
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #1a1a1a; color: #ffffff;">
             <div style="text-align: center; padding: 20px; border-bottom: 2px solid #D4AF37;">
-                <h1 style="color: #D4AF37; margin: 0;">Método L.O</h1>
+                <h1 style="color: #D4AF37; margin: 0;">MÃ©todo L.O</h1>
                 <p style="color: #888; margin-top: 10px;">Novo Cadastro Realizado</p>
             </div>
             
             <div style="padding: 30px 20px;">
-                <h2 style="color: #00ff95; margin-bottom: 20px;">🆕 Novo Usuário Cadastrado!</h2>
+                <h2 style="color: #00ff95; margin-bottom: 20px;">ðŸ†• Novo UsuÃ¡rio Cadastrado!</h2>
                 
                 <table style="width: 100%; border-collapse: collapse;">
                     <tr>
@@ -167,14 +167,14 @@ async def send_new_user_notification(user_email: str, user_name: str, user_cpf: 
                     </tr>
                     <tr>
                         <td style="padding: 10px; border-bottom: 1px solid #333; color: #888;">Nome:</td>
-                        <td style="padding: 10px; border-bottom: 1px solid #333; color: #fff;">{user_name or 'Não informado'}</td>
+                        <td style="padding: 10px; border-bottom: 1px solid #333; color: #fff;">{user_name or 'NÃ£o informado'}</td>
                     </tr>
                     <tr>
                         <td style="padding: 10px; border-bottom: 1px solid #333; color: #888;">CPF:</td>
                         <td style="padding: 10px; border-bottom: 1px solid #333; color: #fff;">{user_cpf or 'Login via Google'}</td>
                     </tr>
                     <tr>
-                        <td style="padding: 10px; border-bottom: 1px solid #333; color: #888;">Método de Cadastro:</td>
+                        <td style="padding: 10px; border-bottom: 1px solid #333; color: #888;">MÃ©todo de Cadastro:</td>
                         <td style="padding: 10px; border-bottom: 1px solid #333; color: #fff;">{auth_method}</td>
                     </tr>
                     <tr>
@@ -184,19 +184,19 @@ async def send_new_user_notification(user_email: str, user_name: str, user_cpf: 
                 </table>
                 
                 <div style="margin-top: 30px; padding: 20px; background-color: #222; border-radius: 8px; border-left: 4px solid #D4AF37;">
-                    <p style="margin: 0; color: #D4AF37;"><strong>⚠️ Ação Necessária:</strong></p>
+                    <p style="margin: 0; color: #D4AF37;"><strong>âš ï¸ AÃ§Ã£o NecessÃ¡ria:</strong></p>
                     <p style="margin: 10px 0 0 0; color: #ccc;">
-                        Acesse o Painel Admin para escolher o plano deste usuário:
-                        <br>• Teste (3, 7, 14 ou 30 dias)
-                        <br>• Mensal
-                        <br>• Anual
-                        <br>• Vitalício
+                        Acesse o Painel Admin para escolher o plano deste usuÃ¡rio:
+                        <br>â€¢ Teste (3, 7, 14 ou 30 dias)
+                        <br>â€¢ Mensal
+                        <br>â€¢ Anual
+                        <br>â€¢ VitalÃ­cio
                     </p>
                 </div>
             </div>
             
             <div style="text-align: center; padding: 20px; border-top: 1px solid #333; color: #666; font-size: 12px;">
-                <p>Este é um email automático do sistema Método L.O</p>
+                <p>Este Ã© um email automÃ¡tico do sistema MÃ©todo L.O</p>
             </div>
         </div>
         """
@@ -204,7 +204,7 @@ async def send_new_user_notification(user_email: str, user_name: str, user_cpf: 
         params = {
             "from": SENDER_EMAIL,
             "to": [ADMIN_EMAIL],
-            "subject": f"🆕 Novo Cadastro - {user_email}",
+            "subject": f"ðŸ†• Novo Cadastro - {user_email}",
             "html": html_content
         }
         
@@ -223,7 +223,7 @@ async def get_emergent_user_data(session_id: str) -> dict:
             headers={"X-Session-ID": session_id}
         )
         if response.status_code != 200:
-            raise HTTPException(status_code=401, detail="Sessão OAuth inválida")
+            raise HTTPException(status_code=401, detail="SessÃ£o OAuth invÃ¡lida")
         return response.json()
 
 
@@ -259,26 +259,26 @@ async def get_current_user_from_request(request: Request):
             session_token = auth_header[7:]
     
     if not session_token:
-        raise HTTPException(status_code=401, detail="Não autenticado")
+        raise HTTPException(status_code=401, detail="NÃ£o autenticado")
     
     sb = get_supabase_admin()
     
     # Find session
     result = sb.table('active_sessions').select('*').eq('session_token', session_token).execute()
     if not result.data:
-        raise HTTPException(status_code=401, detail="Sessão inválida")
+        raise HTTPException(status_code=401, detail="SessÃ£o invÃ¡lida")
     
     session = result.data[0]
     
     # Check expiry
     expires_at = datetime.fromisoformat(session['expires_at'].replace('Z', '+00:00'))
     if expires_at < datetime.now(timezone.utc):
-        raise HTTPException(status_code=401, detail="Sessão expirada")
+        raise HTTPException(status_code=401, detail="SessÃ£o expirada")
     
     # Get user
     user_result = sb.table('users').select('*').eq('id', session['user_id']).execute()
     if not user_result.data:
-        raise HTTPException(status_code=401, detail="Usuário não encontrado")
+        raise HTTPException(status_code=401, detail="UsuÃ¡rio nÃ£o encontrado")
     
     user = user_result.data[0]
     if not user.get('is_active', True):
@@ -453,7 +453,7 @@ async def apply_pending_subscription(sb, user_id: str, email: str):
 async def register_cpf(request: CPFRegisterRequest):
     """Register a new user with CPF"""
     if not validate_cpf(request.cpf):
-        raise HTTPException(status_code=400, detail="CPF inválido")
+        raise HTTPException(status_code=400, detail="CPF invÃ¡lido")
     
     formatted_cpf = format_cpf(request.cpf)
     cpf_clean = re.sub(r'[^0-9]', '', request.cpf)
@@ -466,17 +466,17 @@ async def register_cpf(request: CPFRegisterRequest):
     # Check if CPF exists
     existing = sb.table('users').select('id').eq('cpf', formatted_cpf).execute()
     if existing.data:
-        raise HTTPException(status_code=400, detail="CPF já cadastrado")
+        raise HTTPException(status_code=400, detail="CPF jÃ¡ cadastrado")
     
     # Check if email exists
     existing = sb.table('users').select('id').eq('email', request.email).execute()
     if existing.data:
-        raise HTTPException(status_code=400, detail="Email já cadastrado")
+        raise HTTPException(status_code=400, detail="Email jÃ¡ cadastrado")
     
     # Check if email is pre-registered (whitelist mode)
     pending = sb.table('pending_subscriptions').select('id').eq('email', request.email.lower()).execute()
     if not pending.data:
-        raise HTTPException(status_code=403, detail="Acesso restrito. Seu email não está autorizado. Entre em contato com o administrador.")
+        raise HTTPException(status_code=403, detail="Acesso restrito. Seu email nÃ£o estÃ¡ autorizado. Entre em contato com o administrador.")
     
     # Create user
     password_hash = get_password_hash(request.password)
@@ -516,9 +516,9 @@ async def register_cpf(request: CPFRegisterRequest):
             auth_method="CPF/Senha"
         )
     
-    message = "Usuário criado com sucesso"
+    message = "UsuÃ¡rio criado com sucesso"
     if applied_pending:
-        message = f"Usuário criado com assinatura {applied_pending['subscription_type']} pré-configurada"
+        message = f"UsuÃ¡rio criado com assinatura {applied_pending['subscription_type']} prÃ©-configurada"
     
     return {"message": message, "user_id": user['id']}
 
@@ -609,7 +609,7 @@ async def login_google(request: GoogleAuthRequest, response: Response):
     picture = emergent_data.get("picture")
     
     if not email:
-        raise HTTPException(status_code=400, detail="Email não fornecido pelo Google")
+        raise HTTPException(status_code=400, detail="Email nÃ£o fornecido pelo Google")
     
     sb = get_supabase_admin()
     
@@ -625,7 +625,7 @@ async def login_google(request: GoogleAuthRequest, response: Response):
         # Check if email is pre-registered (whitelist mode)
         pending = sb.table('pending_subscriptions').select('id').eq('email', email.lower()).execute()
         if not pending.data:
-            raise HTTPException(status_code=403, detail="Acesso restrito. Seu email não está autorizado. Entre em contato com o administrador.")
+            raise HTTPException(status_code=403, detail="Acesso restrito. Seu email nÃ£o estÃ¡ autorizado. Entre em contato com o administrador.")
         
         # Create new user
         user_data = {
@@ -777,7 +777,7 @@ async def change_password(request: Request, body: ChangePasswordRequest):
     # Verify current password
     user_data = sb.table('users').select('password_hash').eq('id', user['id']).execute()
     if not user_data.data:
-        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+        raise HTTPException(status_code=404, detail="UsuÃ¡rio nÃ£o encontrado")
     
     if not verify_password(body.current_password, user_data.data[0]['password_hash']):
         raise HTTPException(status_code=401, detail="Senha atual incorreta")
@@ -872,7 +872,7 @@ async def send_heartbeat(request: Request, body: HeartbeatRequest):
             "seconds_used": total_seconds,
             "seconds_limit": daily_limit,
             "seconds_remaining": 0,
-            "message": "Limite diário de uso atingido"
+            "message": "Limite diÃ¡rio de uso atingido"
         }
     
     # Record heartbeat
@@ -1038,7 +1038,7 @@ async def admin_update_user(user_id: str, body: AdminUserUpdate, request: Reques
         else:
             sb.table('feature_flags').insert({'user_id': user_id, 'api_enabled': body.api_enabled}).execute()
     
-    return {"message": "Usuário atualizado com sucesso"}
+    return {"message": "UsuÃ¡rio atualizado com sucesso"}
 
 
 @api_router.post("/admin/users/{user_id}/simulate-payment")
@@ -1079,7 +1079,7 @@ async def admin_invalidate_sessions(user_id: str, request: Request):
     sb = get_supabase_admin()
     sb.table('active_sessions').delete().eq('user_id', user_id).execute()
     
-    return {"message": "Sessões invalidadas"}
+    return {"message": "SessÃµes invalidadas"}
 
 
 # ============== Pending Subscriptions Routes ==============
@@ -1099,7 +1099,7 @@ async def admin_list_pending_subscriptions(request: Request):
         if 'PGRST205' in str(e) or 'pending_subscriptions' in str(e):
             raise HTTPException(
                 status_code=503, 
-                detail="Tabela de pré-cadastros não encontrada. Execute o script SQL: /app/backend/sql/03_pending_subscriptions.sql no Supabase."
+                detail="Tabela de prÃ©-cadastros nÃ£o encontrada. Execute o script SQL: /app/backend/sql/03_pending_subscriptions.sql no Supabase."
             )
         raise
 
@@ -1117,12 +1117,12 @@ async def admin_create_pending_subscription(body: PendingSubscriptionCreate, req
         # Check if email already has a pending subscription
         existing_pending = sb.table('pending_subscriptions').select('id').eq('email', body.email.lower()).execute()
         if existing_pending.data:
-            raise HTTPException(status_code=400, detail="Este email já tem uma assinatura pendente configurada")
+            raise HTTPException(status_code=400, detail="Este email jÃ¡ tem uma assinatura pendente configurada")
         
         # Check if user already exists
         existing_user = sb.table('users').select('id').eq('email', body.email.lower()).execute()
         if existing_user.data:
-            raise HTTPException(status_code=400, detail="Este email já está cadastrado no sistema. Use o painel de usuários para gerenciar.")
+            raise HTTPException(status_code=400, detail="Este email jÃ¡ estÃ¡ cadastrado no sistema. Use o painel de usuÃ¡rios para gerenciar.")
         
         # Create pending subscription
         pending_data = {
@@ -1136,14 +1136,14 @@ async def admin_create_pending_subscription(body: PendingSubscriptionCreate, req
         
         result = sb.table('pending_subscriptions').insert(pending_data).execute()
         
-        return {"message": "Pré-cadastro criado com sucesso", "pending_subscription": result.data[0] if result.data else None}
+        return {"message": "PrÃ©-cadastro criado com sucesso", "pending_subscription": result.data[0] if result.data else None}
     except HTTPException:
         raise
     except Exception as e:
         if 'PGRST205' in str(e) or 'pending_subscriptions' in str(e):
             raise HTTPException(
                 status_code=503, 
-                detail="Tabela de pré-cadastros não encontrada. Execute o script SQL: /app/backend/sql/03_pending_subscriptions.sql no Supabase."
+                detail="Tabela de prÃ©-cadastros nÃ£o encontrada. Execute o script SQL: /app/backend/sql/03_pending_subscriptions.sql no Supabase."
             )
         raise
 
@@ -1158,7 +1158,7 @@ async def admin_delete_pending_subscription(pending_id: str, request: Request):
     sb = get_supabase_admin()
     sb.table('pending_subscriptions').delete().eq('id', pending_id).execute()
     
-    return {"message": "Pré-cadastro removido"}
+    return {"message": "PrÃ©-cadastro removido"}
 
 
 # ============== Blacklist Routes ==============
@@ -1176,7 +1176,7 @@ async def admin_list_blacklist(request: Request):
         return {"blacklist": result.data or []}
     except Exception as e:
         if 'PGRST205' in str(e):
-            return {"blacklist": [], "message": "Tabela não existe. Execute o SQL 06_blacklist.sql"}
+            return {"blacklist": [], "message": "Tabela nÃ£o existe. Execute o SQL 06_blacklist.sql"}
         raise
 
 
@@ -1194,7 +1194,7 @@ async def admin_add_to_blacklist(body: BlacklistRequest, request: Request):
     value = body.value.lower().strip() if body.type == 'email' else re.sub(r'[^0-9]', '', body.value)
     
     if not value:
-        raise HTTPException(status_code=400, detail="Valor inválido")
+        raise HTTPException(status_code=400, detail="Valor invÃ¡lido")
     
     sb = get_supabase_admin()
     
@@ -1202,7 +1202,7 @@ async def admin_add_to_blacklist(body: BlacklistRequest, request: Request):
         # Check if already exists
         existing = sb.table('blacklist').select('id').eq('type', body.type).eq('value', value).execute()
         if existing.data:
-            raise HTTPException(status_code=400, detail="Este valor já está na lista negra")
+            raise HTTPException(status_code=400, detail="Este valor jÃ¡ estÃ¡ na lista negra")
         
         # Add to blacklist
         result = sb.table('blacklist').insert({
@@ -1231,13 +1231,13 @@ async def admin_add_to_blacklist(body: BlacklistRequest, request: Request):
                 sb.table('users').update({'is_active': False}).eq('id', user_id).execute()
                 sb.table('active_sessions').delete().eq('user_id', user_id).execute()
         
-        return {"message": f"{body.type.upper()} adicionado à lista negra", "blacklist_entry": result.data[0] if result.data else None}
+        return {"message": f"{body.type.upper()} adicionado Ã  lista negra", "blacklist_entry": result.data[0] if result.data else None}
     
     except HTTPException:
         raise
     except Exception as e:
         if 'PGRST205' in str(e):
-            raise HTTPException(status_code=503, detail="Tabela blacklist não existe. Execute o SQL 06_blacklist.sql")
+            raise HTTPException(status_code=503, detail="Tabela blacklist nÃ£o existe. Execute o SQL 06_blacklist.sql")
         raise
 
 
@@ -1302,7 +1302,7 @@ async def create_strategy(request: Request):
         result = sb.table('strategies').insert(doc).execute()
         return result.data[0] if result.data else doc
     if strategies_col is None:
-        raise HTTPException(status_code=503, detail="Banco de dados não configurado")
+        raise HTTPException(status_code=503, detail="Banco de dados nÃ£o configurado")
     result = strategies_col.insert_one(doc)
     doc['id'] = str(result.inserted_id)
     del doc['_id']
@@ -1327,7 +1327,7 @@ async def update_strategy(strategy_id: str, request: Request):
         sb.table('strategies').update(update).eq('id', strategy_id).execute()
         return {"message": "Atualizado"}
     if strategies_col is None:
-        raise HTTPException(status_code=503, detail="Banco de dados não configurado")
+        raise HTTPException(status_code=503, detail="Banco de dados nÃ£o configurado")
     strategies_col.update_one({'_id': ObjectId(strategy_id)}, {'$set': update})
     return {"message": "Atualizado"}
 
@@ -1342,7 +1342,7 @@ async def delete_strategy(strategy_id: str, request: Request):
         sb.table('strategies').delete().eq('id', strategy_id).execute()
         return {"message": "Removido"}
     if strategies_col is None:
-        raise HTTPException(status_code=503, detail="Banco de dados não configurado")
+        raise HTTPException(status_code=503, detail="Banco de dados nÃ£o configurado")
     strategies_col.delete_one({'_id': ObjectId(strategy_id)})
     return {"message": "Removido"}
 
@@ -1384,13 +1384,13 @@ async def get_payment_plans():
 async def create_payment_preference(body: CreatePaymentRequest, request: Request):
     """Create a Mercado Pago payment preference"""
     if not mp_sdk:
-        raise HTTPException(status_code=503, detail="Mercado Pago não configurado")
+        raise HTTPException(status_code=503, detail="Mercado Pago nÃ£o configurado")
     
     user, _ = await get_current_user_from_request(request)
     
     plan = SUBSCRIPTION_PLANS.get(body.plan_type)
     if not plan:
-        raise HTTPException(status_code=400, detail="Plano inválido")
+        raise HTTPException(status_code=400, detail="Plano invÃ¡lido")
     
     # Create unique reference for this payment
     external_reference = f"{user['id']}_{body.plan_type}_{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
@@ -1398,7 +1398,7 @@ async def create_payment_preference(body: CreatePaymentRequest, request: Request
     # Base URL for redirects (will be updated for production)
     base_url = os.environ.get('FRONTEND_URL')
     if not base_url:
-        raise HTTPException(status_code=500, detail="FRONTEND_URL não configurado")
+        raise HTTPException(status_code=500, detail="FRONTEND_URL nÃ£o configurado")
     
     preference_data = {
         "items": [
@@ -1465,7 +1465,7 @@ async def create_payment_preference(body: CreatePaymentRequest, request: Request
             }
         else:
             logger.error(f"Mercado Pago error: {result}")
-            raise HTTPException(status_code=400, detail="Erro ao criar preferência de pagamento")
+            raise HTTPException(status_code=400, detail="Erro ao criar preferÃªncia de pagamento")
     
     except HTTPException:
         raise
@@ -1581,17 +1581,17 @@ async def send_payment_notification(user_email: str, user_name: str, plan_type: 
     
     try:
         plan = SUBSCRIPTION_PLANS.get(plan_type, {})
-        now_br = datetime.now(SAO_PAULO_TZ).strftime('%d/%m/%Y às %H:%M')
+        now_br = datetime.now(SAO_PAULO_TZ).strftime('%d/%m/%Y Ã s %H:%M')
         
         html_content = f"""
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #1a1a1a; color: #ffffff;">
             <div style="text-align: center; padding: 20px; border-bottom: 2px solid #D4AF37;">
-                <h1 style="color: #D4AF37; margin: 0;">Método L.O</h1>
-                <p style="color: #888; margin-top: 10px;">💰 Pagamento Confirmado!</p>
+                <h1 style="color: #D4AF37; margin: 0;">MÃ©todo L.O</h1>
+                <p style="color: #888; margin-top: 10px;">ðŸ’° Pagamento Confirmado!</p>
             </div>
             
             <div style="padding: 30px 20px;">
-                <h2 style="color: #00ff95; margin-bottom: 20px;">✅ Novo Pagamento Recebido!</h2>
+                <h2 style="color: #00ff95; margin-bottom: 20px;">âœ… Novo Pagamento Recebido!</h2>
                 
                 <table style="width: 100%; border-collapse: collapse;">
                     <tr>
@@ -1600,7 +1600,7 @@ async def send_payment_notification(user_email: str, user_name: str, plan_type: 
                     </tr>
                     <tr>
                         <td style="padding: 10px; border-bottom: 1px solid #333; color: #888;">Nome:</td>
-                        <td style="padding: 10px; border-bottom: 1px solid #333; color: #fff;">{user_name or 'Não informado'}</td>
+                        <td style="padding: 10px; border-bottom: 1px solid #333; color: #fff;">{user_name or 'NÃ£o informado'}</td>
                     </tr>
                     <tr>
                         <td style="padding: 10px; border-bottom: 1px solid #333; color: #888;">Plano:</td>
@@ -1618,7 +1618,7 @@ async def send_payment_notification(user_email: str, user_name: str, plan_type: 
             </div>
             
             <div style="text-align: center; padding: 20px; border-top: 1px solid #333; color: #666; font-size: 12px;">
-                <p>Este é um email automático do sistema Método L.O</p>
+                <p>Este Ã© um email automÃ¡tico do sistema MÃ©todo L.O</p>
             </div>
         </div>
         """
@@ -1626,7 +1626,7 @@ async def send_payment_notification(user_email: str, user_name: str, plan_type: 
         params = {
             "from": SENDER_EMAIL,
             "to": [ADMIN_EMAIL],
-            "subject": f"💰 Pagamento Confirmado - R$ {amount:.2f} - {user_email}",
+            "subject": f"ðŸ’° Pagamento Confirmado - R$ {amount:.2f} - {user_email}",
             "html": html_content
         }
         
@@ -1646,7 +1646,7 @@ async def check_payment_status(external_reference: str, request: Request):
     result = sb.table('payment_attempts').select('*').eq('external_reference', external_reference).execute()
     
     if not result.data:
-        raise HTTPException(status_code=404, detail="Pagamento não encontrado")
+        raise HTTPException(status_code=404, detail="Pagamento nÃ£o encontrado")
     
     payment = result.data[0]
     
