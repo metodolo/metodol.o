@@ -1,453 +1,269 @@
 /**
- * Sinais Tab (Em ConstruÃ§Ã£o) - Multi-strategy signal system
- * Password protected. Strategies configured from Admin panel.
- * All active strategies monitor the 14-giro timeline simultaneously.
- * Trigger = ALL trigger numbers present in giros (any order).
+ * Sinais Tab (Em ConstruÃ§Ã£o) - HistÃ³rico com filtro por regiÃµes
+ * Password protected. Up to 2000 numbers history with region filtering.
  */
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   VERMELHOS,
-  countColors,
-  getParity,
-  getHighLow,
+  REGIOES_MAPEADAS,
   getBgColor,
 } from "../engine/radarEngine";
 
 const SENHA = "13052017";
-const STORAGE_KEY = "radar_giros";
-const API_URL = import.meta.env.VITE_BACKEND_URL;
-
-const NUMBER_INFO = {
-  0: { refs: '5/1/4/8' }, 1: { refs: '2/6' }, 2: { refs: '1/3/7' }, 3: { refs: '2/4/8' },
-  4: { refs: '1/3/8' }, 5: { refs: '1/2/6' }, 6: { refs: '1/5/7/9' }, 7: { refs: '1/2/6/7' },
-  8: { refs: '1/3/5' }, 9: { refs: '4/2' }, 10: { refs: '5/1' }, 11: { refs: '3/9' },
-  12: { refs: '1/2/6/8' }, 13: { refs: '3/5/9' }, 14: { refs: '4/2' }, 15: { refs: '1/5/8' },
-  16: { refs: '6/2' }, 17: { refs: '1/3/7' }, 18: { refs: '2/4/7' }, 19: { refs: '4/6' },
-  20: { refs: '1/3/5' }, 21: { refs: '2/4' }, 22: { refs: '7/9' }, 23: { refs: '1/8' },
-  24: { refs: '5/7' }, 25: { refs: '2/6/8' }, 26: { refs: '3/0' }, 27: { refs: '2/4/6' },
-  28: { refs: '1/3/7' }, 29: { refs: '7/9' }, 30: { refs: '2/8' }, 31: { refs: '3/5/9' },
-  32: { refs: '4/6/0' }, 33: { refs: '1/5/7' }, 34: { refs: '6/8' }, 35: { refs: '1/3' },
-  36: { refs: '2/4' },
-};
-
-const MAX_ATTEMPTS = 3;
+const HISTORY_KEY = "sinais_history_2k";
 
 const SinaisTab = ({ viewMode = "vertical" }) => {
   const [authenticated, setAuthenticated] = useState(() => sessionStorage.getItem('sinais_auth') === 'true');
   const [senhaInput, setSenhaInput] = useState("");
   const [senhaError, setSenhaError] = useState(false);
-  const [giros, setGiros] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch { return []; }
+  const [history, setHistory] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; } catch { return []; }
   });
-  const [limiteGiros, setLimiteGiros] = useState(14);
+  const [selectedRegions, setSelectedRegions] = useState([]);
   const painelRef = useRef(null);
   const isHorizontal = viewMode === "horizontal";
 
-  // Strategies loaded from API (set by Admin, shared with all users)
-  const [strategies, setStrategies] = useState([]);
-
-  const getAuthHeaders = () => {
-    const token = document.cookie.split(';').map(c => c.trim()).find(c => c.startsWith('session_token='));
-    const sessionToken = token ? token.split('=')[1] : localStorage.getItem('session_token');
-    return { 'Authorization': `Bearer ${sessionToken}` };
-  };
-
-  // Fetch strategies from API and poll every 5 seconds
+  // Save history to localStorage
   useEffect(() => {
-    const fetchStrategies = async () => {
-      try {
-        const res = await fetch(`${API_URL}/api/strategies`, { headers: getAuthHeaders(), credentials: 'include' });
-        if (res.ok) {
-          const data = await res.json();
-          setStrategies(prev => JSON.stringify(prev) === JSON.stringify(data) ? prev : data);
-        }
-      } catch { /* ignore */ }
-    };
-    fetchStrategies();
-    const interval = setInterval(fetchStrategies, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Per-strategy signals: { [strategyId]: { entryNums, attemptsUsed } | null }
-  const [signals, setSignals] = useState({});
-  const signalsRef = useRef({});
-  const updateSignals = useCallback((val) => { signalsRef.current = val; setSignals(val); }, []);
-
-  // Per-strategy scoreboards: { [strategyId]: { wins, reds } }
-  const [scores, setScores] = useState(() => {
-    try { return JSON.parse(sessionStorage.getItem('gatilho_scores')) || {}; } catch { return {}; }
-  });
-  const scoresRef = useRef(scores);
-  const prevGirosKeyRef = useRef(giros.join(','));
-
-  useEffect(() => { scoresRef.current = scores; sessionStorage.setItem('gatilho_scores', JSON.stringify(scores)); }, [scores]);
-
-  const handleLogin = () => {
-    if (senhaInput === SENHA) { setAuthenticated(true); sessionStorage.setItem('sinais_auth', 'true'); setSenhaError(false); }
-    else setSenhaError(true);
-  };
-
-  const writeGiros = useCallback((newGiros) => {
-    setGiros(newGiros);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newGiros));
-  }, []);
-
-  // Poll giros from localStorage (sync with RadarTab)
-  useEffect(() => {
-    const interval = setInterval(() => {
-      try {
-        const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-        setGiros(prev => JSON.stringify(prev) === JSON.stringify(parsed) ? prev : parsed);
-      } catch { /* ignore */ }
-    }, 300);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Multi-strategy signal processing
-  useEffect(() => {
-    const currKey = giros.join(',');
-    const prevKey = prevGirosKeyRef.current;
-    prevGirosKeyRef.current = currKey;
-    if (currKey === prevKey) return;
-
-    if (giros.length === 0) { updateSignals({}); setScores({}); return; }
-
-    const prevArr = prevKey ? prevKey.split(',').filter(Boolean).map(Number) : [];
-    const lastNum = giros[giros.length - 1];
-    const prevLast = prevArr.length > 0 ? prevArr[prevArr.length - 1] : undefined;
-    const isNew = giros.length > prevArr.length ||
-      (giros.length === prevArr.length && lastNum !== prevLast);
-
-    if (!isNew) {
-      if (giros.length < prevArr.length) updateSignals({});
-      return;
-    }
-
-    const currentSignals = { ...signalsRef.current };
-    const currentScores = { ...scoresRef.current };
-    let scoresChanged = false;
-
-    const activeStrategies = strategies.filter(s => s.active && s.triggerNums.length > 0 && s.entryNums.length > 0);
-
-    for (const strat of activeStrategies) {
-      const sig = currentSignals[strat.id];
-      if (!currentScores[strat.id]) currentScores[strat.id] = { wins: 0, reds: 0 };
-
-      if (sig) {
-        // Active signal: check hit/miss
-        if (strat.entryNums.includes(lastNum)) {
-          currentScores[strat.id] = { ...currentScores[strat.id], wins: currentScores[strat.id].wins + 1 };
-          currentSignals[strat.id] = null;
-          scoresChanged = true;
-        } else {
-          const next = sig.attemptsUsed + 1;
-          if (next >= MAX_ATTEMPTS) {
-            currentScores[strat.id] = { ...currentScores[strat.id], reds: currentScores[strat.id].reds + 1 };
-            currentSignals[strat.id] = null;
-            scoresChanged = true;
-          } else {
-            currentSignals[strat.id] = { ...sig, attemptsUsed: next };
-          }
-        }
-      }
-
-      // If no active signal, fire when latest number IS a trigger number
-      if (!currentSignals[strat.id]) {
-        if (strat.triggerNums.includes(lastNum)) {
-          currentSignals[strat.id] = { entryNums: strat.entryNums, attemptsUsed: 0 };
-        }
-      }
-    }
-
-    // Clean up signals for removed/deactivated strategies
-    for (const id of Object.keys(currentSignals)) {
-      if (!activeStrategies.find(s => s.id === id)) delete currentSignals[id];
-    }
-
-    updateSignals(currentSignals);
-    if (scoresChanged) setScores(currentScores);
-  }, [giros, strategies, updateSignals]);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  }, [history]);
 
   const addNumber = (n) => {
-    const newGiros = [...giros, n];
-    writeGiros(newGiros.length > limiteGiros ? newGiros.slice(-limiteGiros) : newGiros);
+    setHistory(prev => {
+      const updated = [...prev, n];
+      return updated.length > 2000 ? updated.slice(-2000) : updated;
+    });
   };
 
-  const undo = () => { const y = window.scrollY; writeGiros(giros.slice(0, -1)); requestAnimationFrame(() => window.scrollTo(0, y)); };
-  const limpar = () => { const y = window.scrollY; writeGiros([]); requestAnimationFrame(() => window.scrollTo(0, y)); };
-  const setLimite = (valor) => { setLimiteGiros(valor); if (giros.length > valor) writeGiros(giros.slice(-valor)); };
-
-  const { red, black } = countColors(giros);
-  const keyboard = Array.from({ length: 36 }, (_, i) => i + 1);
-
-  const getRepeatedIndices = () => {
-    const reversed = [...giros].reverse();
-    const seen = new Set(); const repeated = new Set();
-    for (const n of reversed) { if (seen.has(n)) repeated.add(n); seen.add(n); }
-    const markedNums = new Set(); const blinkSet = new Set();
-    reversed.forEach((n, idx) => { if (repeated.has(n) && !markedNums.has(n)) { blinkSet.add(idx); markedNums.add(n); } });
-    return blinkSet;
+  const undo = () => {
+    const y = window.scrollY;
+    setHistory(prev => prev.slice(0, -1));
+    requestAnimationFrame(() => window.scrollTo(0, y));
   };
 
-  const getTopRefs = () => {
-    if (giros.length === 0) return [];
-    const moreBlack = black >= red;
-    const refCounts = {};
-    for (const n of giros) {
-      const info = NUMBER_INFO[n];
-      if (!info || !info.refs) continue;
-      for (const r of info.refs.split('/').map(r => parseInt(r)).filter(r => !isNaN(r))) {
-        if (r === 0) continue;
-        if (moreBlack ? VERMELHOS.includes(r) : !VERMELHOS.includes(r)) refCounts[r] = (refCounts[r] || 0) + 1;
-      }
-    }
-    return Object.entries(refCounts).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([num, count]) => ({ num: parseInt(num), count }));
+  const limpar = () => {
+    const y = window.scrollY;
+    setHistory([]);
+    setSelectedRegions([]);
+    requestAnimationFrame(() => window.scrollTo(0, y));
   };
 
-  // Password screen
+  const toggleRegion = (regionName) => {
+    setSelectedRegions(prev =>
+      prev.includes(regionName)
+        ? prev.filter(r => r !== regionName)
+        : [...prev, regionName]
+    );
+  };
+
+  // Get all numbers that belong to selected regions
+  const highlightedNumbers = new Set();
+  selectedRegions.forEach(r => {
+    (REGIOES_MAPEADAS[r] || []).forEach(n => highlightedNumbers.add(n));
+  });
+
+  const hasFilter = selectedRegions.length > 0;
+
+  // Login screen
   if (!authenticated) {
     return (
-      <div className="flex items-center justify-center" style={{ minHeight: isHorizontal ? '100%' : '60vh' }} data-testid="sinais-tab">
-        <div className="card-glass border-2 border-[#D4AF37] p-8 text-center" style={{ maxWidth: 350 }}>
-          <div className="text-[#D4AF37] font-bold text-xl mb-2">EM CONSTRUÃ‡ÃƒO</div>
-          <div className="text-gray-400 text-sm mb-6">Ãrea restrita - digite a senha</div>
-          <input type="password" value={senhaInput}
-            onChange={(e) => { setSenhaInput(e.target.value); setSenhaError(false); }}
-            onKeyDown={(e) => e.key === 'Enter' && handleLogin()} placeholder="Senha"
-            className="w-full p-3 bg-black border-2 border-[#D4AF37] rounded-lg text-white text-center mb-4"
-            data-testid="sinais-password-input" />
-          {senhaError && <div className="text-red-500 text-sm mb-3">Senha incorreta</div>}
-          <button onClick={handleLogin}
-            className="w-full py-3 bg-black border-2 border-[#D4AF37] rounded-lg text-[#D4AF37] font-bold hover:bg-[rgba(212,175,55,0.1)]"
-            data-testid="sinais-password-submit">ENTRAR</button>
-        </div>
+      <div className="flex flex-col items-center justify-center py-20 gap-4">
+        <div className="text-[#D4AF37] font-bold text-lg">ÃREA RESTRITA</div>
+        <input
+          type="password"
+          value={senhaInput}
+          onChange={e => setSenhaInput(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              if (senhaInput === SENHA) {
+                setAuthenticated(true);
+                sessionStorage.setItem('sinais_auth', 'true');
+              } else {
+                setSenhaError(true);
+              }
+            }
+          }}
+          placeholder="Digite a senha"
+          className="bg-black border-2 border-[#D4AF37] rounded-lg px-4 py-3 text-white text-center text-lg focus:outline-none"
+          data-testid="sinais-password"
+        />
+        <button
+          onClick={() => {
+            if (senhaInput === SENHA) {
+              setAuthenticated(true);
+              sessionStorage.setItem('sinais_auth', 'true');
+            } else {
+              setSenhaError(true);
+            }
+          }}
+          className="bg-[rgba(212,175,55,0.2)] border-2 border-[#D4AF37] text-[#D4AF37] font-bold px-8 py-3 rounded-lg"
+          data-testid="sinais-enter"
+        >
+          ENTRAR
+        </button>
+        {senhaError && <div className="text-red-500 text-sm">Senha incorreta</div>}
       </div>
     );
   }
 
-  const topRefs = getTopRefs();
-  const moreBlack = black >= red;
-  const activeStrategies = strategies.filter(s => s.active && s.triggerNums.length > 0 && s.entryNums.length > 0);
+  const keyboard = Array.from({ length: 36 }, (_, i) => i + 1);
+  const compact = isHorizontal;
 
-  // --- Sub-components ---
-  const CounterHeader = ({ compact }) => (
-    <div className={`flex justify-between items-center bg-[rgba(17,17,17,0.8)] rounded-xl border-2 border-[#D4AF37] gap-2 ${compact ? "p-2" : "p-4"}`}>
-      <div className="flex-1 text-center">
-        <small className="text-gray-400 text-xs">VERM.</small><br />
-        <span className={`font-black neon-red ${compact ? "text-2xl" : "text-4xl"}`}>{red}</span>
-      </div>
-      <div className="flex-[2] text-center">
-        <span className={compact ? "logo-metodo text-xl" : "logo-metodo"} style={compact ? { fontSize: "1.2rem" } : {}}>MÃ©todo L.O</span>
-      </div>
-      <div className="flex-1 text-center">
-        <small className="text-gray-400 text-xs">PRETO</small><br />
-        <span className={`font-black neon-black ${compact ? "text-2xl" : "text-4xl"}`}>{black}</span>
-      </div>
-    </div>
-  );
+  // Region frequency count
+  const regionCounts = {};
+  Object.keys(REGIOES_MAPEADAS).forEach(r => {
+    regionCounts[r] = history.filter(n => REGIOES_MAPEADAS[r].includes(n)).length;
+  });
 
-  const Keyboard = ({ compact }) => (
-    <div className={`grid grid-cols-6 bg-[rgba(17,17,17,0.9)] rounded-xl border-2 border-[#D4AF37] ${compact ? "p-1 flex-1 gap-[2px]" : "p-2 gap-1"}`}
+  const Keyboard = () => (
+    <div className={`grid grid-cols-6 gap-[2px] bg-[rgba(17,17,17,0.9)] rounded-xl border-2 border-[#D4AF37] ${compact ? "p-1" : "p-2"}`}
       style={compact ? { gridTemplateRows: "repeat(7, 1fr)" } : {}}>
-      <button className={`col-span-6 ${compact ? "bg-[#00ff41] text-black font-black text-base rounded cursor-pointer" : "roulette-btn green"}`}
-        onClick={() => addNumber(0)} data-testid="sinais-btn-0">0</button>
-      {keyboard.map(n => (
-        <button key={n} className={compact ? `${VERMELHOS.includes(n) ? "bg-[#ff3131]" : "bg-[#2b2b2b]"} text-white font-black text-sm rounded cursor-pointer` : `roulette-btn ${VERMELHOS.includes(n) ? "red" : "black"}`}
-          onClick={() => addNumber(n)} data-testid={`sinais-btn-${n}`}>{n}</button>
+      <button
+        className={`col-span-6 ${compact ? "bg-[#00ff41] text-black font-black text-base rounded cursor-pointer" : "roulette-btn green"}`}
+        onClick={() => addNumber(0)}
+        data-testid="btn-0"
+      >0</button>
+      {keyboard.map((n) => (
+        <button
+          key={n}
+          className={compact
+            ? `${VERMELHOS.includes(n) ? "bg-[#ff3131]" : "bg-[#2b2b2b]"} text-white font-black text-sm rounded cursor-pointer`
+            : `roulette-btn ${VERMELHOS.includes(n) ? "red" : "black"}`
+          }
+          onClick={() => addNumber(n)}
+          data-testid={`btn-${n}`}
+        >{n}</button>
       ))}
     </div>
   );
 
-  const ActionButtons = ({ compact }) => (
+  const ActionButtons = () => (
     <div className="flex gap-2">
-      <button onClick={undo} className={`flex-1 bg-black text-white font-bold rounded-lg border-2 border-[#D4AF37] hover:bg-[#1a1a1a] transition-colors ${compact ? "py-2 text-sm" : "py-4"}`}
-        data-testid="sinais-btn-undo">CORRIGIR</button>
-      <button onClick={limpar} className={`flex-1 bg-black text-white font-bold rounded-lg border-2 border-[#D4AF37] hover:bg-[#1a1a1a] transition-colors ${compact ? "py-2 text-sm" : "py-4"}`}
-        data-testid="sinais-btn-clear">LIMPAR</button>
+      <button
+        onClick={undo}
+        className={`flex-1 bg-black text-white font-bold rounded-lg border-2 border-[#D4AF37] hover:bg-[#1a1a1a] transition-colors ${compact ? "py-2 text-sm" : "py-4"}`}
+        data-testid="btn-undo"
+      >CORRIGIR</button>
+      <button
+        onClick={limpar}
+        className={`flex-1 bg-black text-white font-bold rounded-lg border-2 border-[#D4AF37] hover:bg-[#1a1a1a] transition-colors ${compact ? "py-2 text-sm" : "py-4"}`}
+        data-testid="btn-clear"
+      >LIMPAR</button>
     </div>
   );
 
-  const HistoryCard = ({ compact }) => {
-    const blinkIndices = getRepeatedIndices();
-    return (
-      <div className={`card-glass ${compact ? "!p-2" : ""}`}>
-        <div className="flex gap-2 mb-2">
-          {[12, 14, 50].map(v => (
-            <button key={v} className={`ciclo-btn ${limiteGiros === v ? "active" : ""} ${compact ? "!py-1 !text-xs" : ""}`}
-              onClick={() => setLimite(v)} data-testid={`sinais-btn-${v}-giros`}>{v} GIROS</button>
-          ))}
-        </div>
-        <div className="flex justify-between items-center mb-2">
-          <span className="label-accent" style={{ margin: 0, color: '#fff', borderColor: '#D4AF37', fontSize: compact ? '0.7rem' : '0.9rem' }}>HISTÃ“RICO</span>
-          <span className="bg-[#000] text-white px-2 py-0.5 rounded-lg font-bold text-xs border-2 border-[#D4AF37]">{giros.length} / {limiteGiros}</span>
-        </div>
-        <div ref={painelRef} className={`flex flex-row overflow-x-auto bg-[rgba(17,17,17,0.5)] border border-[#444] rounded-xl p-2 ${compact ? "min-h-[60px]" : "min-h-[100px]"}`}>
-          {[...giros].reverse().map((n, idx) => {
-            const parity = getParity(n); const highLow = getHighLow(n); const info = NUMBER_INFO[n] || {};
-            return (
-              <div key={idx} className="flex flex-col items-center gap-0.5 shrink-0"
-                style={compact ? { width: `calc(100% / ${limiteGiros})`, padding: '0 1px' } : { minWidth: '75px', padding: '0 2px' }}>
-                <div className={`mini-ball ${blinkIndices.has(idx) ? 'blink-gold' : ''}`}
-                  style={{ background: getBgColor(n), minWidth: compact ? 30 : 40, height: compact ? 30 : 40, fontSize: compact ? '0.8rem' : '1rem' }}>{n}</div>
-                <span className={`tag ${parity.className}`} style={{ fontSize: compact ? '0.5rem' : '0.65rem' }}>{parity.text}</span>
-                <span className={`tag ${highLow.className}`} style={{ fontSize: compact ? '0.5rem' : '0.65rem' }}>{highLow.text}</span>
-                {info.refs && <span className="tag" style={{ fontSize: compact ? '0.6rem' : '0.8rem', color: '#fff', border: '1px solid #D4AF37', fontWeight: 800 }}>{info.refs}</span>}
-              </div>
-            );
-          })}
-          {giros.length === 0 && <div className={`w-full text-center text-gray-500 ${compact ? "py-3 text-xs" : "py-8"}`}>Clique nos nÃºmeros para adicionar</div>}
-        </div>
+  const RegionsFilter = () => (
+    <div className={`card-glass ${compact ? "!p-2" : ""}`}>
+      <span className="label-accent" style={{ color: '#fff', borderColor: '#D4AF37', fontSize: compact ? '0.7rem' : '0.9rem' }}>
+        REGIÃ•ES {hasFilter && `(${selectedRegions.join(', ')})`}
+      </span>
+      <div className="grid grid-cols-3 gap-1 mt-2">
+        {Object.entries(REGIOES_MAPEADAS).map(([name, nums]) => {
+          const isSelected = selectedRegions.includes(name);
+          const count = regionCounts[name] || 0;
+          return (
+            <button
+              key={name}
+              onClick={() => toggleRegion(name)}
+              className={`rounded-lg text-center border-2 transition-all ${compact ? "p-1" : "p-2"} ${
+                isSelected
+                  ? "border-[#D4AF37] bg-[rgba(212,175,55,0.2)]"
+                  : "border-[#333] bg-[rgba(26,26,26,0.6)] hover:border-[#555]"
+              }`}
+              data-testid={`region-${name}`}
+            >
+              <span className={`font-bold ${compact ? "text-xs" : "text-sm"} ${isSelected ? "text-[#D4AF37]" : "text-white"}`}>
+                {name}
+              </span>
+              <br />
+              <small className={`${isSelected ? "text-[#D4AF37]" : "text-gray-400"} ${compact ? "text-xs" : ""}`}>{count}x</small>
+            </button>
+          );
+        })}
       </div>
-    );
-  };
+      {hasFilter && (
+        <button
+          onClick={() => setSelectedRegions([])}
+          className="w-full mt-2 py-1 text-xs text-gray-400 hover:text-white border border-[#333] rounded-lg hover:border-[#555] transition-colors"
+          data-testid="clear-filter"
+        >
+          LIMPAR FILTRO
+        </button>
+      )}
+    </div>
+  );
 
-  const RefAnalysisCard = ({ compact }) => {
-    if (giros.length === 0) return null;
-    const colorLabel = moreBlack ? 'VERMELHOS' : 'PRETOS';
-    return (
-      <div className={`card-glass border-2 border-[#D4AF37] ${compact ? "!p-2" : ""}`} data-testid="ref-analysis">
-        <span className="label-accent" style={{ color: '#fff', borderColor: '#D4AF37', fontSize: compact ? '0.7rem' : '0.9rem' }}>ANÃLISE IGUALITÃRIOS</span>
-        <div className="text-[10px] text-gray-500 mb-2">Mesa com mais {moreBlack ? 'preto' : 'vermelho'} â†’ contagem dos {colorLabel.toLowerCase()} nas referÃªncias</div>
-        {topRefs.length > 0 ? (
-          <div className="flex gap-3 justify-center">
-            {topRefs.map((r, i) => (
-              <div key={i} className="flex flex-col items-center bg-[rgba(0,0,0,0.5)] border-2 border-[#D4AF37] rounded-xl p-3" style={{ minWidth: compact ? 70 : 90 }}>
-                <div className="inline-flex items-center justify-center rounded-full text-white font-bold"
-                  style={{ background: getBgColor(r.num), minWidth: compact ? 36 : 46, height: compact ? 36 : 46, fontSize: compact ? '1rem' : '1.2rem', border: '3px solid #D4AF37', boxShadow: '0 0 12px rgba(212,175,55,0.6)' }}>{r.num}</div>
-                <span className="text-[#D4AF37] font-bold mt-1" style={{ fontSize: compact ? '0.8rem' : '1rem' }}>{r.count}x</span>
-              </div>
-            ))}
-          </div>
-        ) : <div className="text-center text-gray-600 text-sm py-2">Sem dados suficientes</div>}
-      </div>
-    );
-  };
-
-  const StrategyCard = ({ strat, compact }) => {
-    const sig = signals[strat.id];
-    const score = scores[strat.id] || { wins: 0, reds: 0 };
-    const remaining = sig ? MAX_ATTEMPTS - sig.attemptsUsed : 0;
-
-    return (
-      <div className={`card-glass border-2 border-[#D4AF37] ${compact ? "!p-2" : ""}`} data-testid={`gatilho-card-${strat.id}`}>
+  const HistoryPanel = () => (
+    <div className={`card-glass ${compact ? "!p-2" : ""}`}>
+      <div className="flex justify-between items-center mb-2">
         <span className="label-accent" style={{ margin: 0, color: '#fff', borderColor: '#D4AF37', fontSize: compact ? '0.7rem' : '0.9rem' }}>
-          {strat.name}
+          HISTÃ“RICO
         </span>
-
-        {sig ? (
-          <div className="gatilho-signal-box bg-[rgba(0,0,0,0.6)] border-2 border-[#D4AF37] rounded-xl p-3 mt-2" data-testid={`signal-active-${strat.id}`}>
-            <div className="text-center text-[#D4AF37] font-bold mb-2" style={{ fontSize: compact ? '0.75rem' : '0.9rem' }}>ENTRADA CONFIRMADA</div>
-            <div className="flex gap-2 flex-wrap justify-center mb-2">
-              {sig.entryNums.map(n => (
-                <div key={n} className="inline-flex items-center justify-center rounded-full text-white font-bold"
-                  style={{ background: getBgColor(n), width: compact ? 32 : 40, height: compact ? 32 : 40, fontSize: compact ? '0.8rem' : '0.95rem', border: '3px solid #D4AF37', boxShadow: '0 0 10px rgba(212,175,55,0.5)' }}>{n}</div>
-              ))}
-            </div>
-            <div className="text-center text-gray-400" style={{ fontSize: compact ? '0.6rem' : '0.75rem' }}>
-              {remaining} tentativa{remaining !== 1 ? 's' : ''} restante{remaining !== 1 ? 's' : ''}
-            </div>
+        <span className="bg-[#000] text-white px-2 py-0.5 rounded-lg font-bold text-xs border-2 border-[#D4AF37]" data-testid="history-counter">
+          {history.length} / 2000
+        </span>
+      </div>
+      <div
+        ref={painelRef}
+        className="flex flex-row flex-wrap gap-1 bg-[rgba(17,17,17,0.5)] border border-[#444] rounded-xl p-2 max-h-[500px] overflow-y-auto"
+        style={{ scrollbarWidth: 'thin', scrollbarColor: '#D4AF37 #111' }}
+        data-testid="history-panel"
+      >
+        {history.length === 0 ? (
+          <div className="w-full text-center text-gray-500 py-8">
+            Clique nos nÃºmeros para adicionar
           </div>
         ) : (
-          <div className="text-center text-sm py-2 mt-1" style={{ color: '#555' }} data-testid={`signal-idle-${strat.id}`}>
-            Aguardando gatilho...
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  // Compute which strategies have active signals
-  const triggeredStrategies = activeStrategies.filter(s => signals[s.id]);
-
-  const SignalsArea = ({ compact }) => {
-    if (activeStrategies.length === 0) {
-      return (
-        <div className={`card-glass border-2 border-[#D4AF37] text-center text-gray-600 text-sm ${compact ? '!p-2 py-4' : 'py-6'}`} data-testid="no-strategies">
-          Nenhuma estratÃ©gia ativa. Configure no painel Admin.
-        </div>
-      );
-    }
-
-    const ScoreboardPerStrategy = () => {
-      const totalWins = activeStrategies.reduce((sum, s) => sum + (scores[s.id]?.wins || 0), 0);
-      const totalReds = activeStrategies.reduce((sum, s) => sum + (scores[s.id]?.reds || 0), 0);
-      return (
-      <div className={`card-glass border-2 border-[#D4AF37] ${compact ? "!p-2" : ""}`} data-testid="scoreboard-all">
-        <div className="flex items-center justify-between">
-          <span className="label-accent" style={{ margin: 0, color: '#fff', borderColor: '#D4AF37', fontSize: compact ? '0.65rem' : '0.8rem' }}>
-            PLACAR
-          </span>
-          <div className="flex gap-3 items-center">
-            <span className="font-bold" style={{ color: '#00ff41', fontSize: compact ? '0.7rem' : '0.85rem' }}>GREEN: <span className="text-white font-bold px-2 py-0.5 rounded" style={{ background: 'rgba(0,255,65,0.15)', border: '1px solid rgba(0,255,65,0.4)' }}>{totalWins}</span></span>
-            <span className="font-bold" style={{ color: '#ff3131', fontSize: compact ? '0.7rem' : '0.85rem' }}>RED: <span className="text-white font-bold px-2 py-0.5 rounded" style={{ background: 'rgba(255,49,49,0.15)', border: '1px solid rgba(255,49,49,0.4)' }}>{totalReds}</span></span>
-          </div>
-        </div>
-        <div className="space-y-1 mt-2">
-          {activeStrategies.map(s => {
-            const sc = scores[s.id] || { wins: 0, reds: 0 };
+          [...history].reverse().map((n, idx) => {
+            const isInRegion = hasFilter && highlightedNumbers.has(n);
+            const isFaded = hasFilter && !isInRegion;
             return (
-              <div key={s.id} className="flex items-center justify-between bg-[rgba(0,0,0,0.3)] rounded-lg px-3 py-1.5" data-testid={`score-row-${s.id}`}>
-                <span className="text-white font-bold" style={{ fontSize: compact ? '0.7rem' : '0.8rem' }}>{s.name}</span>
-                <div className="flex gap-3">
-                  <span style={{ color: '#00ff41', fontSize: compact ? '0.7rem' : '0.8rem', fontWeight: 700 }}>G: {sc.wins}</span>
-                  <span style={{ color: '#ff3131', fontSize: compact ? '0.7rem' : '0.8rem', fontWeight: 700 }}>R: {sc.reds}</span>
-                </div>
+              <div
+                key={idx}
+                className="inline-flex items-center justify-center rounded-full text-white font-bold transition-all"
+                style={{
+                  background: getBgColor(n),
+                  width: compact ? 30 : 36,
+                  height: compact ? 30 : 36,
+                  fontSize: compact ? '0.7rem' : '0.8rem',
+                  opacity: isFaded ? 0.2 : 1,
+                  border: isInRegion ? '2px solid #D4AF37' : '1px solid rgba(255,255,255,0.15)',
+                  boxShadow: isInRegion ? '0 0 8px rgba(212,175,55,0.5)' : 'none',
+                }}
+                data-testid={`history-num-${idx}`}
+              >
+                {n}
               </div>
             );
-          })}
-        </div>
+          })
+        )}
       </div>
-      );
-    };
+    </div>
+  );
 
-    // Show triggered strategy cards, or a single idle card
-    if (triggeredStrategies.length > 0) {
-      return (
-        <>
-          {triggeredStrategies.map(s => <StrategyCard key={s.id} strat={s} compact={compact} />)}
-          <ScoreboardPerStrategy />
-        </>
-      );
-    }
-    return (
-      <>
-        <div className={`card-glass border-2 border-[#D4AF37] ${compact ? "!p-2" : ""}`} data-testid="gatilho-idle">
-          <span className="label-accent" style={{ margin: 0, color: '#fff', borderColor: '#D4AF37', fontSize: compact ? '0.7rem' : '0.9rem' }}>
-            GATILHOS DE ENTRADA
-          </span>
-          <div className="text-center text-gray-600 text-sm py-2 mt-1">Aguardando gatilho...</div>
-        </div>
-        <ScoreboardPerStrategy />
-      </>
-    );
-  };
-
-  // Horizontal layout
+  // --- HORIZONTAL LAYOUT ---
   if (isHorizontal) {
     return (
-      <div className="flex gap-2 h-full min-h-0" data-testid="sinais-tab">
-        <div className="flex flex-col gap-1 shrink-0" style={{ width: "280px" }}>
-          <CounterHeader compact />
-          <Keyboard compact />
-          <ActionButtons compact />
+      <div className="flex gap-2 h-full min-h-0 overflow-hidden" data-testid="sinais-tab">
+        <div className="flex flex-col gap-1 shrink-0 min-h-0" style={{ width: "40%" }}>
+          <Keyboard />
+          <ActionButtons />
         </div>
-        <div className="flex flex-col gap-1 min-h-0 overflow-y-auto" style={{ flex: 1, scrollbarWidth: 'thin', scrollbarColor: '#D4AF37 #111' }}>
-          <HistoryCard compact />
-          <RefAnalysisCard compact />
-          <SignalsArea compact />
+        <div className="flex flex-col gap-1 min-h-0 overflow-y-auto" style={{ flex: 1, minWidth: 0, scrollbarWidth: 'thin', scrollbarColor: '#D4AF37 #111' }}>
+          <RegionsFilter />
+          <HistoryPanel />
         </div>
       </div>
     );
   }
 
+  // --- VERTICAL LAYOUT ---
   return (
     <div className="space-y-3" data-testid="sinais-tab">
-      <CounterHeader compact={false} />
-      <Keyboard compact={false} />
-      <ActionButtons compact={false} />
-      <HistoryCard compact={false} />
-      <RefAnalysisCard compact={false} />
-      <SignalsArea compact={false} />
+      <Keyboard />
+      <ActionButtons />
+      <RegionsFilter />
+      <HistoryPanel />
     </div>
   );
 };
