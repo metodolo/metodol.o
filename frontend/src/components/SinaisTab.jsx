@@ -24,34 +24,31 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
   const [selectedRegions, setSelectedRegions] = useState([]);
   const painelRef = useRef(null);
   const isHorizontal = viewMode === "horizontal";
-  const lastRadarLen = useRef(0);
+  const lastSyncTime = useRef(0);
 
   // Save history to localStorage + sync to radar
   useEffect(() => {
     localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-    // Also write last 14 numbers to radar_giros so RadarTab picks them up
     const radarGiros = history.slice(-14);
     localStorage.setItem(RADAR_KEY, JSON.stringify(radarGiros));
   }, [history]);
 
-  // Poll radar_giros for numbers added from RadarTab
+  // Listen for numbers added from RadarTab
   useEffect(() => {
     const interval = setInterval(() => {
       try {
-        const radarData = JSON.parse(localStorage.getItem(RADAR_KEY) || '[]');
-        if (radarData.length > lastRadarLen.current && radarData.length > 0) {
-          // New numbers were added from RadarTab
-          const newNums = radarData.slice(lastRadarLen.current);
-          if (newNums.length > 0 && newNums.length <= 5) {
-            setHistory(prev => {
-              const updated = [...prev, ...newNums];
-              return updated.length > 2000 ? updated.slice(-2000) : updated;
-            });
-          }
+        const raw = localStorage.getItem('sync_new_number');
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        if (data.source === 'radar' && data.time > lastSyncTime.current) {
+          lastSyncTime.current = data.time;
+          setHistory(prev => {
+            const updated = [...prev, data.number];
+            return updated.length > 2000 ? updated.slice(-2000) : updated;
+          });
         }
-        lastRadarLen.current = radarData.length;
       } catch { /* ignore */ }
-    }, 500);
+    }, 300);
     return () => clearInterval(interval);
   }, []);
 
@@ -60,6 +57,8 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
       const updated = [...prev, n];
       return updated.length > 2000 ? updated.slice(-2000) : updated;
     });
+    // Sync: notify RadarTab
+    localStorage.setItem('sync_new_number', JSON.stringify({ number: n, time: Date.now(), source: 'sinais' }));
   };
 
   const undo = () => {
