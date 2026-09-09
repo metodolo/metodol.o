@@ -12,6 +12,7 @@ import {
 
 const SENHA = "13052017";
 const HISTORY_KEY = "sinais_history_2k";
+const RADAR_KEY = "radar_giros";
 
 const SinaisTab = ({ viewMode = "vertical" }) => {
   const [authenticated, setAuthenticated] = useState(() => sessionStorage.getItem('sinais_auth') === 'true');
@@ -23,11 +24,36 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
   const [selectedRegions, setSelectedRegions] = useState([]);
   const painelRef = useRef(null);
   const isHorizontal = viewMode === "horizontal";
+  const lastRadarLen = useRef(0);
 
-  // Save history to localStorage
+  // Save history to localStorage + sync to radar
   useEffect(() => {
     localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    // Also write last 14 numbers to radar_giros so RadarTab picks them up
+    const radarGiros = history.slice(-14);
+    localStorage.setItem(RADAR_KEY, JSON.stringify(radarGiros));
   }, [history]);
+
+  // Poll radar_giros for numbers added from RadarTab
+  useEffect(() => {
+    const interval = setInterval(() => {
+      try {
+        const radarData = JSON.parse(localStorage.getItem(RADAR_KEY) || '[]');
+        if (radarData.length > lastRadarLen.current && radarData.length > 0) {
+          // New numbers were added from RadarTab
+          const newNums = radarData.slice(lastRadarLen.current);
+          if (newNums.length > 0 && newNums.length <= 5) {
+            setHistory(prev => {
+              const updated = [...prev, ...newNums];
+              return updated.length > 2000 ? updated.slice(-2000) : updated;
+            });
+          }
+        }
+        lastRadarLen.current = radarData.length;
+      } catch { /* ignore */ }
+    }, 500);
+    return () => clearInterval(interval);
+  }, []);
 
   const addNumber = (n) => {
     setHistory(prev => {
@@ -46,6 +72,7 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
     const y = window.scrollY;
     setHistory([]);
     setSelectedRegions([]);
+    localStorage.setItem(RADAR_KEY, '[]');
     requestAnimationFrame(() => window.scrollTo(0, y));
   };
 
