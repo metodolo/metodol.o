@@ -23,26 +23,39 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
   const [selectedRegions, setSelectedRegions] = useState([]);
   const painelRef = useRef(null);
   const isHorizontal = viewMode === "horizontal";
-  const lastSyncTime = useRef(0);
+  const lastRadarGiros = useRef(JSON.stringify([]));
 
   // Save history to localStorage
   useEffect(() => {
     localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
   }, [history]);
 
-  // Listen for numbers added from RadarTab
+  // Listen for numbers added from RadarTab by polling radar_giros
   useEffect(() => {
     const interval = setInterval(() => {
       try {
-        const raw = localStorage.getItem('sync_new_number');
-        if (!raw) return;
-        const data = JSON.parse(raw);
-        if (data.source === 'radar' && data.time > lastSyncTime.current) {
-          lastSyncTime.current = data.time;
+        const raw = localStorage.getItem('radar_giros') || '[]';
+        if (raw === lastRadarGiros.current) return;
+        const currentRadar = JSON.parse(raw);
+        const prevRadar = JSON.parse(lastRadarGiros.current);
+        lastRadarGiros.current = raw;
+        // Detect new numbers added at the end
+        if (currentRadar.length > prevRadar.length) {
+          const newNums = currentRadar.slice(prevRadar.length);
           setHistory(prev => {
-            const updated = [...prev, data.number];
+            const updated = [...prev, ...newNums];
             return updated.length > 2000 ? updated.slice(-2000) : updated;
           });
+        } else if (currentRadar.length > 0 && currentRadar.length === prevRadar.length) {
+          // Same length but last element different = new number added (limit reached, oldest removed)
+          const lastNew = currentRadar[currentRadar.length - 1];
+          const lastOld = prevRadar[prevRadar.length - 1];
+          if (lastNew !== lastOld) {
+            setHistory(prev => {
+              const updated = [...prev, lastNew];
+              return updated.length > 2000 ? updated.slice(-2000) : updated;
+            });
+          }
         }
       } catch { /* ignore */ }
     }, 300);
@@ -54,8 +67,13 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
       const updated = [...prev, n];
       return updated.length > 2000 ? updated.slice(-2000) : updated;
     });
-    // Sync: notify RadarTab
-    localStorage.setItem('sync_new_number', JSON.stringify({ number: n, time: Date.now(), source: 'sinais' }));
+    // Sync to RadarTab: read current radar_giros, append, write back
+    try {
+      const current = JSON.parse(localStorage.getItem('radar_giros') || '[]');
+      const updated = [...current, n].slice(-14);
+      localStorage.setItem('radar_giros', JSON.stringify(updated));
+      lastRadarGiros.current = JSON.stringify(updated);
+    } catch { /* ignore */ }
   };
 
   const undo = () => {
@@ -276,6 +294,10 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
   if (isHorizontal) {
     return (
       <div className="flex gap-2 h-full min-h-0 overflow-hidden" data-testid="sinais-tab">
+        <div className="flex flex-col gap-1 shrink-0 min-h-0" style={{ width: "40%" }}>
+          <Keyboard />
+          <ActionButtons />
+        </div>
         <div className="flex flex-col gap-1 min-h-0 overflow-y-auto" style={{ flex: 1, minWidth: 0, scrollbarWidth: 'thin', scrollbarColor: '#D4AF37 #111' }}>
           <RegionsFilter />
           <HistoryPanel />
@@ -287,6 +309,8 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
   // --- VERTICAL LAYOUT ---
   return (
     <div className="space-y-3" data-testid="sinais-tab">
+      <Keyboard />
+      <ActionButtons />
       <RegionsFilter />
       <HistoryPanel />
     </div>
