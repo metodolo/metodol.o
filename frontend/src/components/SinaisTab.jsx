@@ -1,5 +1,5 @@
 /**
- * Sinais Tab (Em ConstruÃ§Ã£o) - HistÃ³rico com filtro por regiÃµes
+ * Sinais Tab (Em Construcao) - Historico com filtro por regioes
  * Password protected. Up to 2000 numbers history with region filtering.
  */
 import React, { useState, useEffect, useRef } from "react";
@@ -7,6 +7,7 @@ import {
   VERMELHOS,
   REGIOES_MAPEADAS,
   getBgColor,
+  colorizeTitle,
 } from "../engine/radarEngine";
 
 const SENHA = "13052017";
@@ -68,7 +69,7 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
   if (!authenticated) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4">
-        <div className="text-[#D4AF37] font-bold text-lg">ÃREA RESTRITA</div>
+        <div className="text-[#D4AF37] font-bold text-lg">{"\u00c1REA RESTRITA"}</div>
         <input
           type="password"
           value={senhaInput}
@@ -152,10 +153,14 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
     </div>
   );
 
+  const regioesLabel = "REGI" + "\u00d5" + "ES";
+  const historicoLabel = "HIST" + "\u00d3" + "RICO";
+  const placeholderText = "Clique nos n" + "\u00fa" + "meros para adicionar";
+
   const RegionsFilter = () => (
     <div className={`card-glass ${compact ? "!p-2" : ""}`}>
       <span className="label-accent" style={{ color: '#fff', borderColor: '#D4AF37', fontSize: compact ? '0.7rem' : '0.9rem' }}>
-        REGIÃ•ES {hasFilter && `(${selectedRegions.join(', ')})`}
+        {regioesLabel} {hasFilter && `(${selectedRegions.join(', ')})`}
       </span>
       <div className="grid grid-cols-3 gap-1 mt-2">
         {Object.entries(REGIOES_MAPEADAS).map(([name, nums]) => {
@@ -172,8 +177,12 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
               }`}
               data-testid={`region-${name}`}
             >
-              <span className={`font-bold ${compact ? "text-xs" : "text-sm"} ${isSelected ? "text-[#D4AF37]" : "text-white"}`}>
-                {name}
+              <span className={`font-bold ${compact ? "text-xs" : "text-sm"}`}>
+                {colorizeTitle(name).map((part, i) => (
+                  <span key={i} className={isSelected ? "text-[#D4AF37]" : part.color === "red" ? "txt-red" : part.color === "green" ? "txt-green" : "txt-white"}>
+                    {part.text}
+                  </span>
+                ))}
               </span>
               <br />
               <small className={`${isSelected ? "text-[#D4AF37]" : "text-gray-400"} ${compact ? "text-xs" : ""}`}>{count}x</small>
@@ -197,7 +206,7 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
     <div className={`card-glass ${compact ? "!p-2" : ""}`}>
       <div className="flex justify-between items-center mb-2">
         <span className="label-accent" style={{ margin: 0, color: '#fff', borderColor: '#D4AF37', fontSize: compact ? '0.7rem' : '0.9rem' }}>
-          HISTÃ“RICO
+          {historicoLabel}
         </span>
         <span className="bg-[#000] text-white px-2 py-0.5 rounded-lg font-bold text-xs border-2 border-[#D4AF37]" data-testid="history-counter">
           {history.length} / 2000
@@ -211,7 +220,7 @@ const SinaisTab = ({ viewMode = "vertical" }) => {
       >
         {history.length === 0 ? (
           <div className="w-full text-center text-gray-500 py-8">
-            Clique nos nÃºmeros para adicionar
+            {placeholderText}
           </div>
         ) : (
           [...history].reverse().map((n, idx) => {
